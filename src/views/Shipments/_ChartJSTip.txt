@@ -1,5 +1,0 @@
-Để sử dụng biểu đồ đẹp trong Vue, bạn cần cài đặt Chart.js:
-
-npm install chart.js
-
-Sau đó, bạn có thể import và sử dụng Chart.js như hướng dẫn trong file Reports_Shipments.vue đã được cập nhật. Nếu dùng Vue 3, có thể dùng trực tiếp Chart.js với ref và canvas như ví dụ dưới đây.
