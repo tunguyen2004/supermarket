@@ -148,6 +148,7 @@ export default {
 
     const menuItems = [
       { to: "/dashboard", icon: "fa-solid fa-house", label: "Tổng quan" },
+      { to: "/staff", icon: "fa-solid fa-user", label: "Nhân viên quản lý" },
       {
         icon: "fa-solid fa-file-invoice",
         label: "Đơn hàng",
