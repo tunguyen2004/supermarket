@@ -47,6 +47,14 @@ import Fundbook from "@/views/Cashbook/Fundbook.vue";
 //import trang tk
 import MyAccount from "@/views/Account/MyAccount.vue";
 
+// import trang quản lý nhân viên
+import Staff from "@/views/Users/personnel-management/staff.vue";
+
+
+// test role nhân viên 
+import staffRoutes from "./modules/staff.routes";
+
+
 const routes = [
   {
     path: "/",
@@ -61,6 +69,11 @@ const routes = [
         path: "dashboard",
         name: "DashboardOverview",
         component: DashboardOverview,
+      },
+      {
+        path: "staff",
+        name: "Staff",
+        component: Staff,
       },
       {
         path: "products",
@@ -218,21 +231,23 @@ const routes = [
       },
     ],
   },
-  {
-    path: "/register",
-    component: AuthLayout,
-    children: [
-      {
-        path: "",
-        component: RegisterPage,
-      },
-    ],
-  },
+  // mở trang đăng kí thì bỏ comment vào dòng này
+  // {
+  //   path: "/register",
+  //   component: AuthLayout,
+  //   children: [
+  //     {
+  //       path: "",
+  //       component: RegisterPage,
+  //     },
+  //   ],
+  // },
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
     component: () => import("@/views/NotFoundPage.vue"),
   },
+  ...staffRoutes,
 ];
 
 const router = createRouter({
