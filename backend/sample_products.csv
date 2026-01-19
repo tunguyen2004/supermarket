@@ -1,0 +1,4 @@
+code,name,category_code,brand_code,unit_code,description,sku,barcode,cost_price,selling_price
+MILK002,Sữa chua Vinamilk,FOOD,VINAMILK,PCS,Sữa chua hộp 100g,MILK002-SKU,8934567890789,8000,12000
+FANTA001,Fanta Cam,DRINK,COCACOLA,PCS,Nước ngọt Fanta lon 330ml,FANTA001-SKU,8934567890321,7000,11000
+SPRITE001,Sprite,DRINK,COCACOLA,PCS,Nước ngọt Sprite lon 330ml,SPRITE001-SKU,8934567890654,7000,11000
