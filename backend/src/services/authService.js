@@ -7,9 +7,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 /**
  * Tạo JWT token
  */
-const generateToken = (userId, email) => {
+const generateToken = (userId, email, roleId) => {
   return jwt.sign(
-    { id: userId, email: email },
+    { id: userId, email: email, role_id: roleId },
     JWT_SECRET,
     { expiresIn: '7d' } // Token hết hạn sau 7 ngày
   );
@@ -31,9 +31,19 @@ const login = async (req, res) => {
       });
     }
 
-    // Tìm user theo username
+    // Tìm user theo username (kèm role_id)
     const result = await db.query(
-      'SELECT id, username, email, password_hash, full_name FROM dim_users WHERE username = $1',
+      `SELECT 
+        u.id, 
+        u.username, 
+        u.email, 
+        u.password_hash, 
+        u.full_name,
+        u.role_id,
+        r.name as role_name
+      FROM dim_users u
+      LEFT JOIN subdim_roles r ON u.role_id = r.id
+      WHERE u.username = $1`,
       [username]
     );
 
@@ -56,8 +66,8 @@ const login = async (req, res) => {
       });
     }
 
-    // Tạo token
-    const token = generateToken(user.id, user.username);
+    // Tạo token (kèm role_id)
+    const token = generateToken(user.id, user.username, user.role_id);
 
     res.json({
       status: 'OK',
@@ -67,6 +77,8 @@ const login = async (req, res) => {
         username: user.username,
         email: user.email,
         full_name: user.full_name,
+        role_id: user.role_id,
+        role_name: user.role_name || 'User',
         token: token,
       },
     });
@@ -121,8 +133,8 @@ const refreshToken = async (req, res) => {
     // Kiểm tra xem token có hết hạn không
     const isExpired = decoded.exp * 1000 < Date.now();
 
-    // Tạo token mới
-    const newToken = generateToken(decoded.id, decoded.email);
+    // Tạo token mới (kèm role_id)
+    const newToken = generateToken(decoded.id, decoded.email, decoded.role_id);
 
     res.json({
       status: 'OK',
@@ -151,7 +163,17 @@ const getMe = async (req, res) => {
     const userId = req.user.id;
 
     const result = await db.query(
-      'SELECT id, username, email, full_name, created_at FROM dim_users WHERE id = $1',
+      `SELECT 
+        u.id, 
+        u.username, 
+        u.email, 
+        u.full_name,
+        u.role_id,
+        r.name as role_name,
+        u.created_at 
+      FROM dim_users u
+      LEFT JOIN subdim_roles r ON u.role_id = r.id
+      WHERE u.id = $1`,
       [userId]
     );
 
