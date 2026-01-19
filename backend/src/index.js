@@ -5,19 +5,19 @@ require('dotenv').config();
 // Import database
 const db = require('./config/database');
 
-// Import routes
-const apiRoutes = require('./routes/index');
-
 // Khởi tạo Express app
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// ============ HEALTH CHECK ============
+// Import router từ routes/index.js
+const router = require('./routes');
 
+// ============ ROUTES ============
+
+// Route 1: Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -25,51 +25,69 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ============ API ROUTES ============
+// Route 2: Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM dim_users');
+    
+    res.json({
+      status: 'OK',
+      message: 'Users retrieved successfully',
+      count: result.rows.length,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to fetch users',
+      error: error.message,
+    });
+  }
+});
 
-// Sử dụng routes từ routes/index.js
-app.use('/api', apiRoutes);
+// Route 3: Get user by ID
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query('SELECT * FROM dim_users WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        status: 'ERROR',
+        message: 'User not found',
+      });
+    }
+    
+    res.json({
+      status: 'OK',
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to fetch user',
+      error: error.message,
+    });
+  }
+});
 
-// ============ ROOT ENDPOINT ============
-
+// Route 4: Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    message: 'Supermarket Management System API',
+    message: 'Mini Backend API',
     version: '1.0.0',
-    modules: [
-      {
-        name: 'Authentication',
-        endpoints: [
-          'POST /api/auth/login - Đăng nhập',
-          'POST /api/auth/logout - Đăng xuất',
-          'POST /api/auth/refresh - Refresh token',
-          'GET /api/auth/me - Lấy thông tin user đang đăng nhập',
-        ],
-      },
-      {
-        name: 'Profile',
-        endpoints: [
-          'GET /api/users/profile - Xem thông tin cá nhân',
-          'PUT /api/users/profile - Cập nhật thông tin cá nhân',
-          'PUT /api/users/change-password - Đổi mật khẩu',
-          'POST /api/users/avatar - Upload avatar',
-        ],
-      },
-      {
-        name: 'Staff Management',
-        endpoints: [
-          'GET /api/staff - Danh sách nhân viên',
-          'POST /api/staff - Thêm nhân viên',
-          'GET /api/staff/:id - Chi tiết nhân viên',
-          'PUT /api/staff/:id - Sửa nhân viên',
-          'DELETE /api/staff/:id - Xóa nhân viên',
-          'PUT /api/staff/:id/role - Phân quyền nhân viên',
-        ],
-      },
+    endpoints: [
+      'GET /api/health - Server health check',
+      'GET /api/users - Get all users',
+      'GET /api/users/:id - Get user by ID',
     ],
   });
 });
 
+// ============ USE ROUTER ============
+// Sử dụng các routes được định nghĩa trong routes/index.js
+app.use('/api', router);
 
 // ============ ERROR HANDLING ============
 
@@ -89,8 +107,6 @@ app.listen(PORT, () => {
     ║  🚀 Server running on port ${PORT}    ║
     ║  📍 http://localhost:${PORT}           ║
     ║  Environment: ${process.env.NODE_ENV} ║
-    ║  📖 Docs: http://localhost:${PORT}    ║
     ╚═══════════════════════════════════════╝
   `);
 });
-
