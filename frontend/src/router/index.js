@@ -1,57 +1,57 @@
-import { createRouter, createWebHistory } from "vue-router";
-import AuthLayout from "@/layouts/AuthLayout.vue"; // layout cho các trang đăng nhập, đăng ký
-import LoginPage from "@/views/LoginPage.vue"; // trang đăng nhập
-import RegisterPage from "@/views/RegisterPage.vue"; // trang đăng ký
-import DashboardOverview from "@/views/DashboardOverview.vue"; // trang chủ dashboard
-import AppLayout from "@/layouts/AppLayout.vue"; // layout cho các trang ứng dụng chính
-// import các trang Product
-import Catalogs from "@/views/Product/Catalogs.vue"; // bảng giá
-import ProductList from "@/views/Product/ProductList.vue"; // danh sách sản phẩm
-import Collections from "@/views/Product/Collections.vue"; // danh mục sản phẩm
+﻿import { createRouter, createWebHistory } from "vue-router";
+import AuthLayout from "@/layouts/AuthLayout.vue"; // layout cho cÃ¡c trang Ä‘Äƒng nháº­p, Ä‘Äƒng kÃ½
+import LoginPage from "@/views/LoginPage.vue"; // trang Ä‘Äƒng nháº­p
+import RegisterPage from "@/views/RegisterPage.vue"; // trang Ä‘Äƒng kÃ½
+import DashboardOverview from "@/views/DashboardOverview.vue"; // trang chá»§ dashboard
+import AppLayout from "@/layouts/AppLayout.vue"; // layout cho cÃ¡c trang á»©ng dá»¥ng chÃ­nh
+// import cÃ¡c trang Product
+import Catalogs from "@/views/Product/Catalogs.vue"; // báº£ng giÃ¡
+import ProductList from "@/views/Product/ProductList.vue"; // danh sÃ¡ch sáº£n pháº©m
+import Collections from "@/views/Product/Collections.vue"; // danh má»¥c sáº£n pháº©m
 
-// import các trang Inventory
-import Inventories from "@/views/Inventory/Inventories.vue"; // danh sách tồn kho
-import Purchase_orders from "@/views/Inventory/Purchase_orders.vue"; // Danh sách đơn đặt hàng nhập
-import Receive_inventories from "@/views/Inventory/Receive_inventories.vue"; // Danh sách đơn nhập hàng
-import Stock_transfers from "@/views/Inventory/Stock_transfers.vue"; // chuyển kho
-import Supplier_returns from "@/views/Inventory/Supplier_returns.vue"; // trả hàng nhập
-import Suppliers from "@/views/Inventory/Suppliers.vue"; // nhà cung cấp
+// import cÃ¡c trang Inventory
+import Inventories from "@/views/Inventory/Inventories.vue"; // danh sÃ¡ch tá»“n kho
+import Purchase_orders from "@/views/Inventory/Purchase_orders.vue"; // Danh sÃ¡ch Ä‘Æ¡n Ä‘áº·t hÃ ng nháº­p
+import Receive_inventories from "@/views/Inventory/Receive_inventories.vue"; // Danh sÃ¡ch Ä‘Æ¡n nháº­p hÃ ng
+import Stock_transfers from "@/views/Inventory/Stock_transfers.vue"; // chuyá»ƒn kho
+import Supplier_returns from "@/views/Inventory/Supplier_returns.vue"; // tráº£ hÃ ng nháº­p
+import Suppliers from "@/views/Inventory/Suppliers.vue"; // nhÃ  cung cáº¥p
 
-// import các trang Oders
-import Orders from "@/views/Orders/Orders.vue"; // danh sách đơn hàng
-import Draft_Orders from "@/views/Orders/Draft_Orders.vue"; // đơn hàng nháp
-import Order_Returns from "@/views/Orders/Order_Returns.vue"; // trả hàng
-import Checkouts from "@/views/Orders/Checkouts.vue"; // đơn hàng chưa hoàn tất
-import OrderForm from "@/views/Orders/OrderForm.vue"; // form tạo và sửa đơn hàng
+// import cÃ¡c trang Oders
+import Orders from "@/views/Orders/Orders.vue"; // danh sÃ¡ch Ä‘Æ¡n hÃ ng
+import Draft_Orders from "@/views/Orders/Draft_Orders.vue"; // Ä‘Æ¡n hÃ ng nhÃ¡p
+import Order_Returns from "@/views/Orders/Order_Returns.vue"; // tráº£ hÃ ng
+import Checkouts from "@/views/Orders/Checkouts.vue"; // Ä‘Æ¡n hÃ ng chÆ°a hoÃ n táº¥t
+import OrderForm from "@/views/Orders/OrderForm.vue"; // form táº¡o vÃ  sá»­a Ä‘Æ¡n hÃ ng
 
-// các trang sales
-import Discounts from "@/views/Sales/Discounts.vue"; // giảm giá
+// cÃ¡c trang sales
+import Discounts from "@/views/Sales/Discounts.vue"; // giáº£m giÃ¡
 import DiscountForm from "@/views/Sales/DiscountForm.vue";
 
-// import các trang vận chuyển
-import Shipments from "@/views/Shipments/Shipments.vue"; // danh sách vận chuyển
-import Reports_Shipments from "@/views/Shipments/Reports_Shipments.vue"; // báo cáo tổng quan
+// import cÃ¡c trang váº­n chuyá»ƒn
+import Shipments from "@/views/Shipments/Shipments.vue"; // danh sÃ¡ch váº­n chuyá»ƒn
+import Reports_Shipments from "@/views/Shipments/Reports_Shipments.vue"; // bÃ¡o cÃ¡o tá»•ng quan
 import ShipmentForm from "@/views/Shipments/ShipmentForm.vue";
 
-// import các người dùng
-import CustomerList from "@/views/Users/CustomerList.vue"; // danh sách khách hàng
-import Customer_groups from "@/views/Users/Customer_groups.vue"; // nhóm khách hàng
+// import cÃ¡c ngÆ°á»i dÃ¹ng
+import CustomerList from "@/views/Users/CustomerList.vue"; // danh sÃ¡ch khÃ¡ch hÃ ng
+import Customer_groups from "@/views/Users/Customer_groups.vue"; // nhÃ³m khÃ¡ch hÃ ng
 
 // import reports
-import Reports_list from "@/views/Reports/Reports_list.vue"; // danh sách báo cáo
-import Reports from "@/views/Reports/Reports.vue"; // báo cáo tổng quan
+import Reports_list from "@/views/Reports/Reports_list.vue"; // danh sÃ¡ch bÃ¡o cÃ¡o
+import Reports from "@/views/Reports/Reports.vue"; // bÃ¡o cÃ¡o tá»•ng quan
 
-// import trang sổ quỹ fundbook
+// import trang sá»• quá»¹ fundbook
 import Fundbook from "@/views/Cashbook/Fundbook.vue";
 
 //import trang tk
 import MyAccount from "@/views/Account/MyAccount.vue";
 
-// import trang quản lý nhân viên
+// import trang quáº£n lÃ½ nhÃ¢n viÃªn
 import Staff from "@/views/Users/personnel-management/staff.vue";
 
 
-// test role nhân viên 
+// test role nhÃ¢n viÃªn 
 import staffRoutes from "./modules/staff.routes";
 
 
@@ -59,7 +59,7 @@ const routes = [
   {
     path: "/",
     component: AppLayout,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, roles: ["admin"] },
     children: [
       {
         path: "",
@@ -206,10 +206,10 @@ const routes = [
         component: Fundbook,
       },
       {
-        path: "/account",
+        path: "account",
         name: "MyAccount",
         component: MyAccount,
-        meta: { requiresAuth: true, title: "Tài khoản cá nhân" },
+        meta: { requiresAuth: true, title: "TÃ i khoáº£n cÃ¡ nhÃ¢n" },
       },
       {
         path: "products/new",
@@ -217,7 +217,7 @@ const routes = [
         component: () => import("@/components/CreateProduct.vue"),
       },
 
-      // Thêm các route con khác nếu cần
+      // ThÃªm cÃ¡c route con khÃ¡c náº¿u cáº§n
     ],
   },
   {
@@ -231,7 +231,7 @@ const routes = [
       },
     ],
   },
-  // mở trang đăng kí thì bỏ comment vào dòng này
+  // má»Ÿ trang Ä‘Äƒng kÃ­ thÃ¬ bá» comment vÃ o dÃ²ng nÃ y
   // {
   //   path: "/register",
   //   component: AuthLayout,
@@ -242,12 +242,12 @@ const routes = [
   //     },
   //   ],
   // },
+  ...staffRoutes,
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
     component: () => import("@/views/NotFoundPage.vue"),
   },
-  ...staffRoutes,
 ];
 
 const router = createRouter({
@@ -255,4 +255,29 @@ const router = createRouter({
   routes,
 });
 
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth);
+  const routeRoles = to.matched.flatMap((record) => record.meta?.roles || []);
+  const token = localStorage.getItem("token");
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = storedUser.role;
+
+  if (requiresAuth && !token) {
+    return next({ name: "Login", query: { redirect: to.fullPath } });
+  }
+
+  if (routeRoles.length && !routeRoles.includes(userRole)) {
+    if (userRole === "admin") {
+      return next({ name: "DashboardOverview" });
+    }
+    if (userRole === "staff") {
+      return next({ name: "StaffPOS" });
+    }
+    return next({ name: "Login" });
+  }
+
+  next();
+});
+
 export default router;
+

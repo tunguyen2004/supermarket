@@ -102,7 +102,7 @@ const handleLogin = async () => {
   isLoading.value = true;
   error.value = "";
   try {
-    await login(username.value, password.value);
+    const loggedInUser = await login(username.value, password.value);
 
     // ✅ Hiển thị alert đẹp
     await Swal.fire({
@@ -114,7 +114,9 @@ const handleLogin = async () => {
       timerProgressBar: true,
     });
 
-    router.push({ name: "DashboardOverview" });
+    const targetRoute =
+      loggedInUser?.role === "staff" ? { name: "StaffPOS" } : { name: "DashboardOverview" };
+    router.push(targetRoute);
   } catch (err) {
     // ❌ Alert lỗi
     await Swal.fire({

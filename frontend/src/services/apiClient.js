@@ -3,8 +3,8 @@ import axios from "axios";
 
 // Tạo instance axios
 const apiClient = axios.create({
-  baseURL: "https://api.example.com", // Đổi sang API backend thật của bạn
-  timeout: 10000, // 10 giây
+  baseURL: "http://localhost:5000", // Đổi sang API backend thật của bạn
+  timeout: 20000, // 20 giây
   headers: {
     "Content-Type": "application/json",
   },
@@ -13,13 +13,13 @@ const apiClient = axios.create({
 // Thêm interceptors để tự động gắn token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accestoken");
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Xử lý lỗi chung
@@ -31,7 +31,7 @@ apiClient.interceptors.response.use(
       // Có thể redirect về trang login
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

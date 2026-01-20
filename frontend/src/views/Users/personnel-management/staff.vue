@@ -97,7 +97,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="joinDate" label="Ngày vào làm" width="140" />
-        <el-table-column label="Thao tác" width="120" align="center" fixed="right">
+        <el-table-column
+          label="Thao tác"
+          width="120"
+          align="center"
+          fixed="right"
+        >
           <template #default="scope">
             <div class="action-buttons">
               <el-button
@@ -217,6 +222,21 @@
       :fullscreen="isMobile"
     >
       <el-form :model="form" label-position="top" class="staff-form">
+        <el-form-item label="Tên đăng nhập" required>
+          <el-input
+            v-model="form.username"
+            placeholder="Nhập tên đăng nhập"
+            :disabled="isEditMode"
+          />
+        </el-form-item>
+        <el-form-item label="Mật khẩu" required v-if="!isEditMode">
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="Nhập mật khẩu"
+            show-password
+          />
+        </el-form-item>
         <el-form-item label="Họ và tên" required>
           <el-input v-model="form.name" placeholder="Nhập họ và tên" />
         </el-form-item>
@@ -228,10 +248,7 @@
           />
         </el-form-item>
         <el-form-item label="Số điện thoại" required>
-          <el-input
-            v-model="form.phone"
-            placeholder="Nhập số điện thoại"
-          />
+          <el-input v-model="form.phone" placeholder="Nhập số điện thoại" />
         </el-form-item>
         <el-form-item label="Chức vụ" required>
           <el-select v-model="form.position" placeholder="Chọn chức vụ">
@@ -243,7 +260,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="Phòng ban" required>
+        <!-- <el-form-item label="Phòng ban" required>
           <el-select v-model="form.department" placeholder="Chọn phòng ban">
             <el-option
               v-for="dept in departments"
@@ -252,7 +269,7 @@
               :value="dept"
             />
           </el-select>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="Ngày vào làm" required>
           <el-date-picker
             v-model="form.joinDate"
@@ -266,18 +283,18 @@
         <el-form-item label="Trạng thái" required>
           <el-radio-group v-model="form.status">
             <el-radio label="active">Đang làm việc</el-radio>
-            <el-radio label="suspended">Tạm nghỉ</el-radio>
+            <!-- <el-radio label="suspended">Tạm nghỉ</el-radio> -->
             <el-radio label="inactive">Nghỉ việc</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="Ghi chú">
+        <!-- <el-form-item label="Ghi chú">
           <el-input
             v-model="form.notes"
             type="textarea"
             :rows="3"
             placeholder="Nhập ghi chú (nếu có)"
           />
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
       <template #footer>
         <el-button @click="drawerVisible = false">Hủy</el-button>
@@ -289,13 +306,10 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
-import {
-  Search,
-  Plus,
-  Edit,
-  Delete,
-} from "@element-plus/icons-vue";
+import { Search, Plus, Edit, Delete } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import staffService from "@/services/staffService";
+import dayjs from "dayjs";
 
 // --- RESPONSIVE STATE ---
 const isMobile = ref(false);
@@ -305,6 +319,7 @@ const checkScreenSize = () => {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
+  fetchStaffList();
 });
 onUnmounted(() => {
   window.removeEventListener("resize", checkScreenSize);
@@ -318,105 +333,45 @@ const selectedDepartment = ref(null);
 const selectedPosition = ref(null);
 const selectedStatus = ref(null);
 
-// Dữ liệu mẫu
-const staffList = ref([
-  {
-    id: 1,
-    name: "Nguyễn Văn An",
-    email: "an.nguyen@supermarket.com",
-    phone: "0905123456",
-    position: "Quản lý",
-    department: "Quản lý",
-    status: "active",
-    joinDate: "15/01/2020",
-    avatarUrl: "",
-    notes: "",
-  },
-  {
-    id: 2,
-    name: "Trần Thị Bình",
-    email: "binh.tran@supermarket.com",
-    phone: "0913654321",
-    position: "Nhân viên bán hàng",
-    department: "Bán hàng",
-    status: "active",
-    joinDate: "20/03/2021",
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    notes: "",
-  },
-  {
-    id: 3,
-    name: "Lê Hoàng Cường",
-    email: "cuong.le@supermarket.com",
-    phone: "0987111222",
-    position: "Thu ngân",
-    department: "Bán hàng",
-    status: "active",
-    joinDate: "10/05/2021",
-    avatarUrl: "",
-    notes: "",
-  },
-  {
-    id: 4,
-    name: "Phạm Mỹ Duyên",
-    email: "duyen.pham@supermarket.com",
-    phone: "0933555888",
-    position: "Nhân viên kho",
-    department: "Kho",
-    status: "active",
-    joinDate: "05/07/2021",
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026705d",
-    notes: "",
-  },
-  {
-    id: 5,
-    name: "Võ Thành Danh",
-    email: "danh.vo@supermarket.com",
-    phone: "0977999000",
-    position: "Nhân viên bán hàng",
-    department: "Bán hàng",
-    status: "suspended",
-    joinDate: "12/09/2021",
-    avatarUrl: "",
-    notes: "Tạm nghỉ do lý do cá nhân",
-  },
-  {
-    id: 6,
-    name: "Đỗ Ngọc Giang",
-    email: "giang.do@supermarket.com",
-    phone: "0945121212",
-    position: "Kế toán",
-    department: "Kế toán",
-    status: "active",
-    joinDate: "01/11/2021",
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026706d",
-    notes: "",
-  },
-  {
-    id: 7,
-    name: "Hoàng Văn Hùng",
-    email: "hung.hoang@supermarket.com",
-    phone: "0966333444",
-    position: "Nhân viên bảo vệ",
-    department: "Bảo vệ",
-    status: "active",
-    joinDate: "20/12/2021",
-    avatarUrl: "",
-    notes: "",
-  },
-  {
-    id: 8,
-    name: "Nguyễn Thị Lan",
-    email: "lan.nguyen@supermarket.com",
-    phone: "0922444555",
-    position: "Nhân viên bán hàng",
-    department: "Bán hàng",
-    status: "inactive",
-    joinDate: "15/02/2022",
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026707d",
-    notes: "Đã nghỉ việc",
-  },
-]);
+const staffList = ref([]);
+const loading = ref(false);
+
+const roleMapping = {
+  1: "Quản trị viên",
+  2: "Nhân viên bán hàng",
+};
+
+const fetchStaffList = async () => {
+  loading.value = true;
+  try {
+    const response = await staffService.getStaffs();
+    // Giả sử response.data.data là mảng users
+    const items = response.data.data || [];
+    staffList.value = items.map((item) => ({
+      id: item.id,
+      name: item.full_name,
+      email: item.email,
+      phone: item.phone,
+      username: item.username,
+      // Map role_id sang tên chức vụ (nếu API trả về role_id, nếu không thì để trống)
+      position: roleMapping[item.role_id] || "Nhân viên",
+      role_id: item.role_id,
+      // API chưa có department, tạm để trống hoặc hardcode
+      department: "Cửa hàng",
+      status: item.is_active ? "active" : "inactive",
+      joinDate: item.created_at
+        ? dayjs(item.created_at).format("DD/MM/YYYY")
+        : "",
+      avatarUrl: "", // API chưa có avatar
+      notes: "",
+    }));
+  } catch (error) {
+    console.error(error);
+    ElMessage.error("Không thể tải danh sách nhân viên");
+  } finally {
+    loading.value = false;
+  }
+};
 
 const departments = computed(() => {
   const depts = staffList.value.map((s) => s.department);
@@ -424,8 +379,8 @@ const departments = computed(() => {
 });
 
 const positions = computed(() => {
-  const pos = staffList.value.map((s) => s.position);
-  return [...new Set(pos)];
+  // Hoặc dùng danh sách cứng nếu muốn
+  return Object.values(roleMapping);
 });
 
 const filteredStaff = computed(() => {
@@ -436,18 +391,18 @@ const filteredStaff = computed(() => {
     const searchTerm = search.value.toLowerCase();
     result = result.filter(
       (item) =>
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.phone.includes(searchTerm) ||
-        item.email.toLowerCase().includes(searchTerm) ||
-        item.position.toLowerCase().includes(searchTerm) ||
-        item.department.toLowerCase().includes(searchTerm)
+        (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+        (item.phone && item.phone.includes(searchTerm)) ||
+        (item.email && item.email.toLowerCase().includes(searchTerm)) ||
+        (item.position && item.position.toLowerCase().includes(searchTerm)) ||
+        (item.username && item.username.toLowerCase().includes(searchTerm)),
     );
   }
 
   // Lọc theo phòng ban
   if (selectedDepartment.value) {
     result = result.filter(
-      (item) => item.department === selectedDepartment.value
+      (item) => item.department === selectedDepartment.value,
     );
   }
 
@@ -478,13 +433,16 @@ const drawerVisible = ref(false);
 const isEditMode = ref(false);
 const form = reactive({
   id: null,
+  username: "",
+  password: "",
   name: "",
   email: "",
   phone: "",
-  position: "",
-  department: "",
+  position: "", // UI display only? Or map back to role_id?
+  role_id: 2, // Default role
+  department: "Cửa hàng",
   status: "active",
-  joinDate: "",
+  joinDate: "", // Read only or update? API doesn't support update join date
   notes: "",
 });
 
@@ -493,13 +451,16 @@ const openAddStaffDialog = () => {
   isEditMode.value = false;
   Object.assign(form, {
     id: null,
+    username: "",
+    password: "",
     name: "",
     email: "",
     phone: "",
-    position: "",
-    department: "",
+    role_id: 2,
+    position: roleMapping[2],
+    department: "Cửa hàng",
     status: "active",
-    joinDate: "",
+    joinDate: dayjs().format("YYYY-MM-DD"),
     notes: "",
   });
   drawerVisible.value = true;
@@ -507,34 +468,78 @@ const openAddStaffDialog = () => {
 
 const openEditDialog = (staff) => {
   isEditMode.value = true;
-  Object.assign(form, { ...staff });
+  Object.assign(form, {
+    ...staff,
+    // Cần giữ role_id nếu có trong staff, nếu không map từ position
+  });
+  // Map position back to role_id if needed or ensure staff object has role_id
+  if (!form.role_id) {
+    // Simple reverse mapping lookup if needed, or default
+    const entry = Object.entries(roleMapping).find(
+      ([k, v]) => v === form.position,
+    );
+    if (entry) form.role_id = parseInt(entry[0]);
+  }
+
   drawerVisible.value = true;
 };
 
-const handleSave = () => {
-  if (!form.name || !form.email || !form.phone || !form.position || !form.department) {
+const handleSave = async () => {
+  if (!form.name || !form.email || !form.phone) {
     ElMessage.error("Vui lòng điền đầy đủ thông tin bắt buộc.");
     return;
   }
 
   if (isEditMode.value) {
-    // Update logic (chưa có API)
-    const index = staffList.value.findIndex((s) => s.id === form.id);
-    if (index !== -1) {
-      staffList.value[index] = { ...form };
-    }
-    ElMessage.success("Cập nhật nhân viên thành công!");
-  } else {
-    // Create logic (chưa có API)
-    staffList.value.unshift({
-      ...form,
-      id: Date.now(),
-      avatarUrl: "",
-    });
-    ElMessage.success("Thêm nhân viên thành công!");
-  }
+    try {
+      // 1. Cập nhật thông tin cơ bản
+      await staffService.updateStaff(form.id, {
+        full_name: form.name,
+        phone: form.phone,
+        // API update info chỉ nhận full_name, phone như mô tả
+      });
 
-  drawerVisible.value = false;
+      // 2. Cập nhật role (nếu role thay đổi và logic form cho phép chọn role)
+      // Hiện tại form dùng select position bind vào form.position string.
+      // Cần logic map form.position về role_id để gọi API update role.
+      // Giả sử form có select role_id (cần sửa template)
+      if (form.role_id) {
+        await staffService.updateStaffRole(form.id, form.role_id);
+      }
+
+      ElMessage.success("Cập nhật nhân viên thành công!");
+      fetchStaffList();
+      drawerVisible.value = false;
+    } catch (error) {
+      console.error(error);
+      ElMessage.error(
+        error.response?.data?.message || "Lỗi cập nhật nhân viên",
+      );
+    }
+  } else {
+    // Thêm mới
+    if (!form.username || !form.password) {
+      ElMessage.error("Vui lòng nhập tên đăng nhập và mật khẩu");
+      return;
+    }
+
+    try {
+      await staffService.createStaff({
+        username: form.username,
+        email: form.email,
+        full_name: form.name,
+        phone: form.phone,
+        password: form.password,
+        role_id: form.role_id,
+      });
+      ElMessage.success("Thêm nhân viên thành công!");
+      fetchStaffList();
+      drawerVisible.value = false;
+    } catch (error) {
+      console.error(error);
+      ElMessage.error(error.response?.data?.message || "Lỗi thêm nhân viên");
+    }
+  }
 };
 
 const handleDelete = (staff) => {
@@ -545,11 +550,17 @@ const handleDelete = (staff) => {
       confirmButtonText: "Đồng ý",
       cancelButtonText: "Hủy",
       type: "warning",
-    }
+    },
   )
-    .then(() => {
-      staffList.value = staffList.value.filter((s) => s.id !== staff.id);
-      ElMessage.success("Xóa thành công");
+    .then(async () => {
+      try {
+        await staffService.deleteStaff(staff.id);
+        ElMessage.success("Xóa thành công");
+        fetchStaffList();
+      } catch (error) {
+        console.error(error);
+        ElMessage.error("Xóa thất bại");
+      }
     })
     .catch(() => {});
 };

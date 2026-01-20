@@ -1,6 +1,13 @@
-import { ref } from "vue";
+﻿import { ref } from "vue";
 import { useRouter } from "vue-router";
 import authService from "@/services/authService";
+
+const normalizeRole = (role_id, role_name) => {
+  const name = (role_name || "").toLowerCase();
+  if (role_id === 1 || name.includes("admin")) return "admin";
+  if (role_id === 2 || name.includes("staff")) return "staff";
+  return undefined;
+};
 
 export function useAuth() {
   const router = useRouter();
@@ -10,12 +17,26 @@ export function useAuth() {
   const login = async (username, password) => {
     try {
       const response = await authService.login({ username, password });
-      const { token, user: userData } = response.data;
+      const payload = response?.data?.data ?? response?.data ?? {};
+      const token = payload.token;
+      const role = normalizeRole(payload.role_id, payload.role_name);
+      if (!token) throw new Error("Thiếu token từ server");
+
+      const normalizedUser = {
+        id: payload.id,
+        username: payload.username,
+        email: payload.email,
+        full_name: payload.full_name,
+        role_id: payload.role_id,
+        role_name: payload.role_name,
+        role,
+      };
+
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
-      user.value = userData;
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
+      user.value = normalizedUser;
       isAuthenticated.value = true;
-      return response.data;
+      return normalizedUser;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Đăng nhập thất bại");
     }
@@ -28,12 +49,26 @@ export function useAuth() {
         email,
         password,
       });
-      const { token, user: userData } = response.data;
+      const payload = response?.data?.data ?? response?.data ?? {};
+      const role = normalizeRole(payload.role_id, payload.role_name);
+      const token = payload.token;
+      if (!token) throw new Error("Thiếu token từ server");
+
+      const normalizedUser = {
+        id: payload.id,
+        username: payload.username,
+        email: payload.email,
+        full_name: payload.full_name,
+        role_id: payload.role_id,
+        role_name: payload.role_name,
+        role,
+      };
+
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
-      user.value = userData;
+      localStorage.setItem("user", JSON.stringify(normalizedUser));
+      user.value = normalizedUser;
       isAuthenticated.value = true;
-      return response.data;
+      return normalizedUser;
     } catch (error) {
       throw new Error(error.response?.data?.message || "Đăng ký thất bại");
     }
@@ -46,7 +81,7 @@ export function useAuth() {
       localStorage.removeItem("user");
       user.value = {};
       isAuthenticated.value = false;
-      router.push({ name: "LoginPage" });
+      router.push({ name: "Login" });
     } catch (error) {
       console.error("Đăng xuất thất bại:", error);
     }

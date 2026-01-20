@@ -185,6 +185,9 @@
 
 <script>
 import { ref, computed } from "vue";
+import { ElPopover, ElTabs, ElTabPane } from "element-plus";
+import authService from "@/services/authService";
+import apiClient from "@/services/apiClient";
 
 export default {
   name: "AppHeader",
@@ -201,7 +204,7 @@ export default {
     const filteredSuggestions = computed(() => {
       if (!searchQuery.value) return suggestions.value;
       return suggestions.value.filter((item) =>
-        item.text.toLowerCase().includes(searchQuery.value.toLowerCase())
+        item.text.toLowerCase().includes(searchQuery.value.toLowerCase()),
       );
     });
     const selectSuggestion = (item) => {
@@ -249,8 +252,9 @@ export default {
       window.location.href = path;
     };
     const logout = () => {
-      window.location.href = "/login";
-      console.log("Đăng xuất");
+      authService.logout().then(() => {
+        window.location.href = "/login";
+      });
     };
 
     return {
