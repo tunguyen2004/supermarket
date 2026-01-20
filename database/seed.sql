@@ -131,12 +131,4 @@ VALUES
 (1, 2, 200, 30),
 (2, 1, 150, 20);
 
--- =========================
--- TIME DIMENSION (SAMPLE)
--- =========================
-INSERT INTO dim_time
-(date_key, day_of_week, month, quarter, year, is_weekend)
-VALUES
-(CURRENT_DATE, EXTRACT(DOW FROM CURRENT_DATE), EXTRACT(MONTH FROM CURRENT_DATE),
- EXTRACT(QUARTER FROM CURRENT_DATE), EXTRACT(YEAR FROM CURRENT_DATE),
- EXTRACT(DOW FROM CURRENT_DATE) IN (0,6));
+
