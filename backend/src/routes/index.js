@@ -26,14 +26,6 @@ const router = express.Router();
 router.post('/auth/login', authService.login);
 
 /**
- * @GET /api/auth/me
- * @description Lấy thông tin user đang đăng nhập
- * @headers Authorization: Bearer <token>
- * @returns { id, username, email, full_name, created_at }
- */
-router.get('/auth/me', verifyToken, authService.getMe);
-
-/**
  * @POST /api/auth/logout
  * @description Đăng xuất (phía client xóa token)
  * @headers Authorization: Bearer <token>

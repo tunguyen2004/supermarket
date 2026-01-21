@@ -449,6 +449,5 @@ module.exports = {
   login,
   logout,
   refreshToken,
-  getMe,
   getRoles,
 };

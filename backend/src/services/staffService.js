@@ -17,12 +17,14 @@ const getStaffList = async (req, res) => {
     const countResult = await db.query('SELECT COUNT(*) FROM dim_users');
     const total = parseInt(countResult.rows[0].count);
 
-    // Lấy danh sách nhân viên
+    // Lấy danh sách nhân viên với role_id và role_name
     const result = await db.query(
       `SELECT 
-        id, username, email, full_name, phone, is_active, created_at 
-       FROM dim_users 
-       ORDER BY created_at DESC
+        u.id, u.username, u.email, u.full_name, u.phone, u.is_active, u.created_at,
+        u.role_id, r.name as role_name
+       FROM dim_users u
+       LEFT JOIN subdim_roles r ON u.role_id = r.id
+       ORDER BY u.created_at DESC
        LIMIT $1 OFFSET $2`,
       [parsedLimit, parsedOffset]
     );
@@ -132,9 +134,11 @@ const getStaffDetail = async (req, res) => {
 
     const result = await db.query(
       `SELECT 
-        id, username, email, full_name, phone, is_active, created_at
-       FROM dim_users 
-       WHERE id = $1`,
+        u.id, u.username, u.email, u.full_name, u.phone, u.is_active, u.created_at,
+        u.role_id, r.name as role_name
+       FROM dim_users u
+       LEFT JOIN subdim_roles r ON u.role_id = r.id
+       WHERE u.id = $1`,
       [id]
     );
 
@@ -162,12 +166,12 @@ const getStaffDetail = async (req, res) => {
 
 /**
  * Sửa thông tin nhân viên - PUT /api/staff/:id
- * Body: { full_name, phone }
+ * Body: { full_name, phone, role_id }
  */
 const updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, phone } = req.body;
+    const { full_name, phone, role_id } = req.body;
 
     if (!full_name) {
       return res.status(400).json({
@@ -176,13 +180,47 @@ const updateStaff = async (req, res) => {
       });
     }
 
-    const result = await db.query(
-      `UPDATE dim_users 
-       SET full_name = $1, phone = $2
-       WHERE id = $3
-       RETURNING id, username, email, full_name, phone, is_active`,
-      [full_name, phone || null, id]
-    );
+    // Kiểm tra role_id hợp lệ nếu được cung cấp
+    if (role_id !== undefined) {
+      if (typeof role_id !== 'number') {
+        return res.status(400).json({
+          status: 'ERROR',
+          message: 'role_id must be a number',
+        });
+      }
+
+      const roleExists = await db.query(
+        'SELECT id FROM subdim_roles WHERE id = $1',
+        [role_id]
+      );
+
+      if (roleExists.rows.length === 0) {
+        return res.status(400).json({
+          status: 'ERROR',
+          message: 'Invalid role_id',
+        });
+      }
+    }
+
+    // Cập nhật nhân viên với hoặc không có role_id
+    let result;
+    if (role_id !== undefined) {
+      result = await db.query(
+        `UPDATE dim_users 
+         SET full_name = $1, phone = $2, role_id = $3
+         WHERE id = $4
+         RETURNING id, username, email, full_name, phone, role_id, is_active`,
+        [full_name, phone || null, role_id, id]
+      );
+    } else {
+      result = await db.query(
+        `UPDATE dim_users 
+         SET full_name = $1, phone = $2
+         WHERE id = $3
+         RETURNING id, username, email, full_name, phone, role_id, is_active`,
+        [full_name, phone || null, id]
+      );
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -191,10 +229,21 @@ const updateStaff = async (req, res) => {
       });
     }
 
+    // Lấy role_name để trả về
+    const staffWithRole = await db.query(
+      `SELECT 
+        u.id, u.username, u.email, u.full_name, u.phone, u.role_id, u.is_active,
+        r.name as role_name
+       FROM dim_users u
+       LEFT JOIN subdim_roles r ON u.role_id = r.id
+       WHERE u.id = $1`,
+      [id]
+    );
+
     res.json({
       status: 'OK',
       message: 'Staff updated successfully',
-      data: result.rows[0],
+      data: staffWithRole.rows[0],
     });
   } catch (error) {
     console.error('Update staff error:', error);

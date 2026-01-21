@@ -11,9 +11,13 @@ const getProfile = async (req, res) => {
 
     const result = await db.query(
       `SELECT 
-        id, username, email, full_name, phone, is_active, created_at 
-       FROM dim_users 
-       WHERE id = $1`,
+        u.id, u.username, u.email, u.full_name, u.phone, 
+        u.date_of_birth, u.gender, u.address,
+        u.role_id, r.name as role_name,
+        u.is_active, u.created_at 
+       FROM dim_users u
+       LEFT JOIN subdim_roles r ON u.role_id = r.id
+       WHERE u.id = $1`,
       [userId]
     );
 
@@ -42,12 +46,12 @@ const getProfile = async (req, res) => {
 /**
  * Cập nhật thông tin cá nhân - PUT /api/users/profile
  * Cần header: Authorization: Bearer <token>
- * Body: { full_name, phone }
+ * Body: { full_name, phone, date_of_birth, gender, address }
  */
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { full_name, phone } = req.body;
+    const { full_name, phone, date_of_birth, gender, address } = req.body;
 
     // Kiểm tra input
     if (!full_name) {
@@ -57,12 +61,20 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    // Validate gender nếu được cung cấp
+    if (gender && !['male', 'female', 'other'].includes(gender)) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'Gender must be one of: male, female, other',
+      });
+    }
+
     const result = await db.query(
       `UPDATE dim_users 
-       SET full_name = $1, phone = $2
-       WHERE id = $3
-       RETURNING id, username, email, full_name, phone, is_active`,
-      [full_name, phone || null, userId]
+       SET full_name = $1, phone = $2, date_of_birth = $3, gender = $4, address = $5
+       WHERE id = $6
+       RETURNING id, username, email, full_name, phone, date_of_birth, gender, address, is_active`,
+      [full_name, phone || null, date_of_birth || null, gender || null, address || null, userId]
     );
 
     if (result.rows.length === 0) {

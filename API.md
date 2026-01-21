@@ -1,7 +1,7 @@
 # 📚 API Documentation - Supermarket Management System
 
-**Cập nhật:** 19/01/2026  
-**Version:** 1.0.0
+**Cập nhật:** 21/01/2026  
+**Version:** 1.1.0
 
 ---
 
@@ -63,7 +63,7 @@ http://localhost:5000/api
 
 ## 📋 Mục Lục
 
-1. [Module 1: Authentication](#module-1-authentication) - 4 APIs
+1. [Module 1: Authentication](#module-1-authentication) - 3 APIs
 2. [Module 2: Staff Management](#module-2-staff-management) - 6 APIs
 3. [Module 3: Profile Management](#module-3-profile-management) - 3 APIs
 4. [Module 4: Products](#module-4-products) - 10 APIs
@@ -97,6 +97,9 @@ http://localhost:5000/api
     "username": "admin",
     "email": "admin@supermarket.com",
     "full_name": "Administrator",
+    "role_id": 1,
+    "role_name": "Admin",
+    "is_active": true,
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
@@ -104,30 +107,7 @@ http://localhost:5000/api
 
 ---
 
-### 1.2 Lấy thông tin user đang đăng nhập
-**Postman Setup:**
-- **Method:** `GET`
-- **URL:** `http://localhost:5000/api/auth/me`
-- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
-
-**Response (Success - 200):**
-```json
-{
-  "status": "OK",
-  "message": "User info retrieved",
-  "data": {
-    "id": 1,
-    "username": "admin",
-    "email": "admin@supermarket.com",
-    "full_name": "Administrator",
-    "created_at": "2026-01-19T10:30:00.000Z"
-  }
-}
-```
-
----
-
-### 1.3 Đăng xuất
+### 1.2 Đăng xuất
 **Postman Setup:**
 - **Method:** `POST`
 - **URL:** `http://localhost:5000/api/auth/logout`
@@ -137,13 +117,14 @@ http://localhost:5000/api
 ```json
 {
   "status": "OK",
-  "message": "Logout successful. Please remove token on client side"
+  "message": "Logout successful",
+  "note": "User status has been set to offline"
 }
 ```
 
 ---
 
-### 1.4 Refresh Token
+### 1.3 Refresh Token
 **Postman Setup:**
 - **Method:** `POST`
 - **URL:** `http://localhost:5000/api/auth/refresh`
@@ -164,6 +145,48 @@ http://localhost:5000/api
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "wasExpired": false
+  }
+}
+```
+
+---
+
+### 1.4 Lấy danh sách Roles
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/auth/roles`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "status": "OK",
+  "message": "Roles retrieved successfully",
+  "data": {
+    "roles": {
+      "1": {
+        "id": 1,
+        "code": "ADMIN",
+        "name": "Admin",
+        "description": "Toàn quyền quản lý hệ thống",
+        "permissions": ["manage_staff", "manage_products", "manage_categories", "manage_orders", "view_reports", "manage_settings"]
+      },
+      "2": {
+        "id": 2,
+        "code": "STAFF",
+        "name": "Staff",
+        "description": "Nhân viên thường - quyền cơ bản",
+        "permissions": ["view_products", "view_categories", "create_orders", "view_own_orders"]
+      },
+      "3": {
+        "id": 3,
+        "code": "MANAGER",
+        "name": "Manager",
+        "description": "Quản lý cấp trung",
+        "permissions": ["manage_products", "manage_categories", "manage_orders", "view_reports"]
+      }
+    },
+    "roleList": [...]
   }
 }
 ```
@@ -197,7 +220,9 @@ http://localhost:5000/api
       "full_name": "Staff Member 1",
       "phone": "0912345678",
       "is_active": true,
-      "created_at": "2026-01-19T10:30:00.000Z"
+      "created_at": "2026-01-19T10:30:00.000Z",
+      "role_id": 2,
+      "role_name": "Staff"
     }
   ],
   "pagination": {
@@ -273,14 +298,16 @@ http://localhost:5000/api
     "full_name": "Nguyễn Văn A",
     "phone": "0912345678",
     "is_active": true,
-    "created_at": "2026-01-19T11:00:00.000Z"
+    "created_at": "2026-01-19T11:00:00.000Z",
+    "role_id": 2,
+    "role_name": "Staff"
   }
 }
 ```
 
 ---
 
-### 2.4 Cập nhật nhân viên
+### 2.4 Cập nhật nhân viên (bao gồm phân quyền)
 **Postman Setup:**
 - **Method:** `PUT`
 - **URL:** `http://localhost:5000/api/staff/2` (thay `2` bằng ID)
@@ -291,9 +318,14 @@ http://localhost:5000/api
 ```json
 {
   "full_name": "Nguyễn Văn B",
-  "phone": "0987654321"
+  "phone": "0987654321",
+  "role_id": 3
 }
 ```
+
+**Lưu ý:**
+- `role_id` là **optional**, nếu không truyền sẽ giữ nguyên role hiện tại
+- Các role_id: 1=Admin, 2=Staff, 3=Manager
 
 **Response (Success - 200):**
 ```json
@@ -306,7 +338,9 @@ http://localhost:5000/api
     "email": "staff1@supermarket.com",
     "full_name": "Nguyễn Văn B",
     "phone": "0987654321",
-    "is_active": true
+    "role_id": 3,
+    "is_active": true,
+    "role_name": "Manager"
   }
 }
 ```
@@ -329,7 +363,7 @@ http://localhost:5000/api
 
 ---
 
-### 2.6 Phân quyền nhân viên
+### 2.6 Phân quyền nhân viên (API riêng)
 **Postman Setup:**
 - **Method:** `PUT`
 - **URL:** `http://localhost:5000/api/staff/2/role` (thay `2` bằng ID)
@@ -384,7 +418,12 @@ http://localhost:5000/api
     "username": "admin",
     "email": "admin@supermarket.com",
     "full_name": "Administrator",
-    "phone": null,
+    "phone": "0987654321",
+    "date_of_birth": "1990-01-15",
+    "gender": "male",
+    "address": "123 Đường ABC, Quận 1, TP.HCM",
+    "role_id": 1,
+    "role_name": "Admin",
     "is_active": true,
     "created_at": "2026-01-19T10:30:00.000Z"
   }
@@ -404,9 +443,19 @@ http://localhost:5000/api
 ```json
 {
   "full_name": "Admin Supermarket",
-  "phone": "0987654321"
+  "phone": "0987654321",
+  "date_of_birth": "1990-01-15",
+  "gender": "male",
+  "address": "123 Đường ABC, Quận 1, TP.HCM"
 }
 ```
+
+**Lưu ý:**
+- `full_name`: **Bắt buộc**
+- `phone`: Optional
+- `date_of_birth`: Optional, định dạng `YYYY-MM-DD`
+- `gender`: Optional, chỉ chấp nhận: `male`, `female`, `other`
+- `address`: Optional
 
 **Response (Success - 200):**
 ```json
@@ -419,6 +468,9 @@ http://localhost:5000/api
     "email": "admin@supermarket.com",
     "full_name": "Admin Supermarket",
     "phone": "0987654321",
+    "date_of_birth": "1990-01-15",
+    "gender": "male",
+    "address": "123 Đường ABC, Quận 1, TP.HCM",
     "is_active": true
   }
 }
