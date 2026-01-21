@@ -239,14 +239,21 @@ CREATE TABLE dim_users (
     date_of_birth DATE,
     gender VARCHAR(10),
     address TEXT,
+    avatar_url VARCHAR(500),
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP,
+    failed_login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_store
         FOREIGN KEY (store_id) REFERENCES dim_stores(id),
     CONSTRAINT fk_user_role
         FOREIGN KEY (role_id) REFERENCES subdim_roles(id)
 );
+
+-- Indexes for dim_users
+CREATE INDEX idx_users_locked_until ON dim_users(locked_until);
+CREATE INDEX idx_users_is_active ON dim_users(is_active);
 
 -- =========================
 -- FACT TABLES

@@ -63,9 +63,9 @@ http://localhost:5000/api
 
 ## 📋 Mục Lục
 
-1. [Module 1: Authentication](#module-1-authentication) - 3 APIs
+1. [Module 1: Authentication](#module-1-authentication) - 4 APIs
 2. [Module 2: Staff Management](#module-2-staff-management) - 6 APIs
-3. [Module 3: Profile Management](#module-3-profile-management) - 3 APIs
+3. [Module 3: Profile Management](#module-3-profile-management) - 5 APIs
 4. [Module 4: Products](#module-4-products) - 10 APIs
 5. [Module 5: Collections](#module-5-collections) - 6 APIs
 
@@ -219,6 +219,7 @@ http://localhost:5000/api
       "email": "staff1@supermarket.com",
       "full_name": "Staff Member 1",
       "phone": "0912345678",
+      "avatar_url": "/uploads/avatars/avatar-2-1737450000000-123456789.jpg",
       "is_active": true,
       "created_at": "2026-01-19T10:30:00.000Z",
       "role_id": 2,
@@ -297,6 +298,7 @@ http://localhost:5000/api
     "email": "staff1@supermarket.com",
     "full_name": "Nguyễn Văn A",
     "phone": "0912345678",
+    "avatar_url": "/uploads/avatars/avatar-2-1737450000000-123456789.jpg",
     "is_active": true,
     "created_at": "2026-01-19T11:00:00.000Z",
     "role_id": 2,
@@ -422,6 +424,7 @@ http://localhost:5000/api
     "date_of_birth": "1990-01-15",
     "gender": "male",
     "address": "123 Đường ABC, Quận 1, TP.HCM",
+    "avatar_url": "/uploads/avatars/avatar-1-1737450000000-123456789.jpg",
     "role_id": 1,
     "role_name": "Admin",
     "is_active": true,
@@ -471,6 +474,7 @@ http://localhost:5000/api
     "date_of_birth": "1990-01-15",
     "gender": "male",
     "address": "123 Đường ABC, Quận 1, TP.HCM",
+    "avatar_url": "/uploads/avatars/avatar-1-1737450000000-123456789.jpg",
     "is_active": true
   }
 }
@@ -499,6 +503,76 @@ http://localhost:5000/api
 {
   "status": "OK",
   "message": "Password changed successfully"
+}
+```
+
+---
+
+### 3.4 Upload Avatar
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/users/avatar`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **form-data**
+- Thêm key: `avatar` | Type: `File` | Chọn file ảnh
+
+**Lưu ý:**
+- Chỉ chấp nhận file ảnh: **JPG, PNG, GIF, WEBP**
+- Kích thước tối đa: **5MB**
+- Avatar cũ sẽ tự động bị xóa khi upload avatar mới
+
+**Request (Form Data):**
+| Key | Type | Value |
+|-----|------|-------|
+| avatar | File | Chọn file ảnh |
+
+**Response (Success - 200):**
+```json
+{
+  "status": "OK",
+  "message": "Avatar uploaded successfully",
+  "data": {
+    "avatar_url": "/uploads/avatars/avatar-1-1737450000000-123456789.jpg",
+    "user": {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@supermarket.com",
+      "full_name": "Administrator",
+      "avatar_url": "/uploads/avatars/avatar-1-1737450000000-123456789.jpg"
+    }
+  }
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+  "status": "ERROR",
+  "message": "No file uploaded. Please select an image file (JPG, PNG, GIF, WEBP)"
+}
+```
+
+**Response (Error - 400 - File không hợp lệ):**
+```json
+{
+  "success": false,
+  "message": "Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WEBP)"
+}
+```
+
+---
+
+### 3.5 Xóa Avatar
+**Postman Setup:**
+- **Method:** `DELETE`
+- **URL:** `http://localhost:5000/api/users/avatar`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "status": "OK",
+  "message": "Avatar deleted successfully"
 }
 ```
 

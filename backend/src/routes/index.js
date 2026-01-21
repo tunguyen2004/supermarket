@@ -6,7 +6,7 @@ const productService = require('../services/productService');
 const collectionService = require('../services/collectionService');
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin, requireManagerOrAdmin, requireRole } = require('../middleware/authorize');
-const { uploadCSV, handleMulterError } = require('../middleware/upload');
+const { uploadCSV, uploadAvatar, handleMulterError } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -157,10 +157,18 @@ router.put('/users/change-password', verifyToken, profileService.changePassword)
  * @POST /api/users/avatar
  * @description Upload ảnh đại diện
  * @headers Authorization: Bearer <token>
- * @form-data { file: File }
- * @returns { url }
+ * @form-data { avatar: File (JPG, PNG, GIF, WEBP - max 5MB) }
+ * @returns { avatar_url, user }
  */
-router.post('/users/avatar', verifyToken, profileService.uploadAvatar);
+router.post('/users/avatar', verifyToken, uploadAvatar.single('avatar'), handleMulterError, profileService.uploadAvatar);
+
+/**
+ * @DELETE /api/users/avatar
+ * @description Xóa ảnh đại diện
+ * @headers Authorization: Bearer <token>
+ * @returns { message: "Avatar deleted successfully" }
+ */
+router.delete('/users/avatar', verifyToken, profileService.deleteAvatar);
 
 /**
  * ============================================================================

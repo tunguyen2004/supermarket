@@ -20,7 +20,7 @@ const getStaffList = async (req, res) => {
     // Lấy danh sách nhân viên với role_id và role_name
     const result = await db.query(
       `SELECT 
-        u.id, u.username, u.email, u.full_name, u.phone, u.is_active, u.created_at,
+        u.id, u.username, u.email, u.full_name, u.phone, u.avatar_url, u.is_active, u.created_at,
         u.role_id, r.name as role_name
        FROM dim_users u
        LEFT JOIN subdim_roles r ON u.role_id = r.id
@@ -134,7 +134,7 @@ const getStaffDetail = async (req, res) => {
 
     const result = await db.query(
       `SELECT 
-        u.id, u.username, u.email, u.full_name, u.phone, u.is_active, u.created_at,
+        u.id, u.username, u.email, u.full_name, u.phone, u.avatar_url, u.is_active, u.created_at,
         u.role_id, r.name as role_name
        FROM dim_users u
        LEFT JOIN subdim_roles r ON u.role_id = r.id

@@ -1,0 +1,625 @@
+{
+  "info": {
+    "_postman_id": "2d8f7e2a-8b7a-4d27-9a8a-5e1e2d9d3c11",
+    "name": "Supermarket API Complete",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Supermarket Management System API - Version 1.1.0 (Updated: 21/01/2026)"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Module 1 - Authentication",
+      "item": [
+        {
+          "name": "1.1 Login (Get Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "let res = pm.response.json();",
+                  "if (res && res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "  console.log('Token saved to collection variables');",
+                  "} else {",
+                  "  console.warn('Token not found in response at data.token');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Đăng nhập và lấy JWT token. Token sẽ tự động được lưu vào collection variables."
+          }
+        },
+        {
+          "name": "1.2 Logout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Đăng xuất - set user status thành offline"
+          }
+        },
+        {
+          "name": "1.3 Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Làm mới token khi token cũ hết hạn"
+          }
+        },
+        {
+          "name": "1.4 Get Roles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "roles"]
+            },
+            "description": "Lấy danh sách roles và permissions"
+          }
+        }
+      ],
+      "description": "Module Authentication: Đăng nhập, đăng xuất, refresh token, lấy roles"
+    },
+    {
+      "name": "Module 2 - Staff Management",
+      "item": [
+        {
+          "name": "2.1 List Staff",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/staff?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff"],
+              "query": [
+                { "key": "limit", "value": "10", "description": "Số bản ghi mỗi trang (default: 10)" },
+                { "key": "offset", "value": "0", "description": "Bắt đầu từ bản ghi số mấy (default: 0)" }
+              ]
+            },
+            "description": "Danh sách nhân viên với phân trang. Response có avatar_url."
+          }
+        },
+        {
+          "name": "2.2 Add Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"staff1\",\n  \"email\": \"staff1@supermarket.com\",\n  \"full_name\": \"Nguyễn Văn A\",\n  \"phone\": \"0912345678\",\n  \"password\": \"password123\",\n  \"role_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff"]
+            },
+            "description": "Thêm nhân viên mới. role_id: 1=Admin, 2=Staff, 3=Manager"
+          }
+        },
+        {
+          "name": "2.3 Staff Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/staff/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "2"]
+            },
+            "description": "Chi tiết nhân viên theo ID. Response có avatar_url."
+          }
+        },
+        {
+          "name": "2.4 Update Staff",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nguyễn Văn B\",\n  \"phone\": \"0987654321\",\n  \"role_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "2"]
+            },
+            "description": "Cập nhật nhân viên. role_id là optional."
+          }
+        },
+        {
+          "name": "2.5 Delete Staff",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/staff/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "2"]
+            },
+            "description": "Xóa nhân viên theo ID"
+          }
+        },
+        {
+          "name": "2.6 Update Staff Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff/2/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "2", "role"]
+            },
+            "description": "Phân quyền nhân viên. role_id: 1=Admin, 2=Staff, 3=Manager"
+          }
+        }
+      ],
+      "description": "Module Staff Management: Quản lý nhân viên (chỉ Admin)"
+    },
+    {
+      "name": "Module 3 - Profile Management",
+      "item": [
+        {
+          "name": "3.1 Get Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            },
+            "description": "Xem thông tin profile cá nhân. Response có avatar_url."
+          }
+        },
+        {
+          "name": "3.2 Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Admin Supermarket\",\n  \"phone\": \"0987654321\",\n  \"date_of_birth\": \"1990-01-15\",\n  \"gender\": \"male\",\n  \"address\": \"123 Đường ABC, Quận 1, TP.HCM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            },
+            "description": "Cập nhật profile. full_name bắt buộc, gender: male/female/other"
+          }
+        },
+        {
+          "name": "3.3 Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"1\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "change-password"]
+            },
+            "description": "Đổi mật khẩu. Mật khẩu mới tối thiểu 6 ký tự."
+          }
+        },
+        {
+          "name": "3.4 Upload Avatar",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "",
+                  "description": "File ảnh (JPG, PNG, GIF, WEBP - max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "avatar"]
+            },
+            "description": "Upload ảnh đại diện. Chỉ chấp nhận JPG, PNG, GIF, WEBP. Tối đa 5MB. Avatar cũ sẽ tự động bị xóa."
+          }
+        },
+        {
+          "name": "3.5 Delete Avatar",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/users/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "avatar"]
+            },
+            "description": "Xóa ảnh đại diện"
+          }
+        }
+      ],
+      "description": "Module Profile Management: Quản lý thông tin cá nhân, avatar"
+    },
+    {
+      "name": "Module 4 - Products",
+      "item": [
+        {
+          "name": "4.1 List Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "search", "value": "", "disabled": true, "description": "Tìm theo tên hoặc mã" },
+                { "key": "category_id", "value": "", "disabled": true, "description": "Lọc theo danh mục" },
+                { "key": "brand_id", "value": "", "disabled": true, "description": "Lọc theo thương hiệu" },
+                { "key": "is_active", "value": "", "disabled": true, "description": "Lọc theo trạng thái" },
+                { "key": "page", "value": "1", "description": "Trang (default: 1)" },
+                { "key": "limit", "value": "10", "description": "Số lượng/trang" }
+              ]
+            },
+            "description": "Danh sách sản phẩm với phân trang và lọc"
+          }
+        },
+        {
+          "name": "4.2 Add Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"MILK002\",\n  \"name\": \"Sữa chua Vinamilk\",\n  \"category_id\": 1,\n  \"brand_id\": 1,\n  \"unit_id\": 1,\n  \"description\": \"Sữa chua hộp 100g\",\n  \"is_active\": true,\n  \"sku\": \"MILK002-SKU\",\n  \"barcode\": \"8934567890789\",\n  \"cost_price\": 8000,\n  \"selling_price\": 12000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Thêm sản phẩm mới (Manager/Admin only)"
+          }
+        },
+        {
+          "name": "4.3 Product Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "1"]
+            },
+            "description": "Chi tiết sản phẩm theo ID"
+          }
+        },
+        {
+          "name": "4.4 Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sữa tươi Vinamilk 1L\",\n  \"description\": \"Sữa tươi tiệt trùng 1 lít\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "1"]
+            },
+            "description": "Cập nhật sản phẩm (Manager/Admin only)"
+          }
+        },
+        {
+          "name": "4.5 Delete Product",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/products/7",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "7"]
+            },
+            "description": "Xóa sản phẩm (Manager/Admin only)"
+          }
+        },
+        {
+          "name": "4.6 Bulk Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_ids\": [1, 2, 3],\n  \"is_active\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/bulk-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "bulk-status"]
+            },
+            "description": "Bật/tắt trạng thái nhiều sản phẩm (Manager/Admin only)"
+          }
+        },
+        {
+          "name": "4.7 Export Products CSV",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "export"]
+            },
+            "description": "Export danh sách sản phẩm ra file CSV"
+          }
+        },
+        {
+          "name": "4.8 Import Products CSV",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "File CSV chứa danh sách sản phẩm"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/import",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "import"]
+            },
+            "description": "Import sản phẩm từ file CSV (Manager/Admin only)"
+          }
+        },
+        {
+          "name": "4.9 List Brands",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/brands",
+              "host": ["{{baseUrl}}"],
+              "path": ["brands"]
+            },
+            "description": "Danh sách thương hiệu"
+          }
+        },
+        {
+          "name": "4.10 List Units",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/units",
+              "host": ["{{baseUrl}}"],
+              "path": ["units"]
+            },
+            "description": "Danh sách đơn vị tính"
+          }
+        }
+      ],
+      "description": "Module Products: Quản lý sản phẩm, import/export CSV"
+    },
+    {
+      "name": "Module 5 - Collections",
+      "item": [
+        {
+          "name": "5.1 List Collections",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/collections?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections"],
+              "query": [
+                { "key": "search", "value": "", "disabled": true, "description": "Tìm theo tên hoặc mã" },
+                { "key": "parent_id", "value": "", "disabled": true, "description": "Lọc theo danh mục cha" },
+                { "key": "page", "value": "1", "description": "Trang (default: 1)" },
+                { "key": "limit", "value": "50", "description": "Số lượng/trang" }
+              ]
+            },
+            "description": "Danh sách danh mục với phân trang"
+          }
+        },
+        {
+          "name": "5.2 Collections Tree",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/collections/tree",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections", "tree"]
+            },
+            "description": "Cây danh mục (Tree View) với children lồng nhau"
+          }
+        },
+        {
+          "name": "5.3a Add Collection (Parent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SNACK\",\n  \"name\": \"Bánh kẹo\",\n  \"parent_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/collections",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections"]
+            },
+            "description": "Thêm danh mục cấp 1 (parent_id = null)"
+          }
+        },
+        {
+          "name": "5.3b Add Collection (Child)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CANDY\",\n  \"name\": \"Kẹo\",\n  \"parent_id\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/collections",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections"]
+            },
+            "description": "Thêm danh mục con (parent_id = ID danh mục cha)"
+          }
+        },
+        {
+          "name": "5.4 Collection Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/collections/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections", "1"]
+            },
+            "description": "Chi tiết danh mục theo ID"
+          }
+        },
+        {
+          "name": "5.5 Update Collection",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Thực phẩm & Đồ uống\",\n  \"parent_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/collections/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections", "1"]
+            },
+            "description": "Cập nhật danh mục"
+          }
+        },
+        {
+          "name": "5.6 Delete Collection",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/collections/3",
+              "host": ["{{baseUrl}}"],
+              "path": ["collections", "3"]
+            },
+            "description": "Xóa danh mục. Không thể xóa nếu có sản phẩm hoặc danh mục con."
+          }
+        }
+      ],
+      "description": "Module Collections: Quản lý danh mục sản phẩm"
+    }
+  ]
+}
