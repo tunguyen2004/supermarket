@@ -223,13 +223,14 @@
     </div>
 
     <!-- FORM COMPONENT -->
-    <!-- <product-form
+    <product-form
+      v-if="!isLoading"
       :visible="dialogVisible"
       :product="currentProduct"
       @close="closeForm"
       @submit="handleFormSubmit"
       style="max-width: 450px"
-    /> -->
+    />
 
     <!-- hidden file input for import -->
     <input
@@ -259,6 +260,9 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  bulkUpdateStatus,
+  exportProducts,
+  importProducts,
 } from "@/services/productService";
 import ProductForm from "@/components/ProductForm.vue";
 import { useRouter } from "vue-router";
@@ -299,11 +303,23 @@ function goToCreateProduct() {
 const fetchProducts = async () => {
   isLoading.value = true;
   try {
-    const response = await getProducts();
-    // kỳ vọng response.data là mảng sản phẩm {id,name,brand,type,stock,isActive,imageUrl}
-    products.value = Array.isArray(response.data) ? response.data : [];
+    const response = await getProducts({ page: 1, limit: 100 });
+    const data = response.data?.data;
+
+    // Map API data to frontend structure
+    const items = (data?.products || []).map((p) => ({
+      ...p,
+      brand: p.brand_name || p.brand || "",
+      type: p.category_name || p.category || "",
+      isActive: p.is_active,
+      stock: p.stock !== undefined ? p.stock : 0,
+      imageUrl: p.imageUrl || "",
+    }));
+
+    products.value = items;
   } catch (e) {
     ElMessage.error("Không thể tải danh sách sản phẩm.");
+    console.error(e);
   } finally {
     isLoading.value = false;
   }
@@ -311,10 +327,10 @@ const fetchProducts = async () => {
 
 // --- Filters ---
 const uniqueBrands = computed(() =>
-  Array.from(new Set(products.value.map((p) => p.brand).filter(Boolean)))
+  Array.from(new Set(products.value.map((p) => p.brand).filter(Boolean))),
 );
 const uniqueTypes = computed(() =>
-  Array.from(new Set(products.value.map((p) => p.type).filter(Boolean)))
+  Array.from(new Set(products.value.map((p) => p.type).filter(Boolean))),
 );
 
 const filteredProducts = computed(() => {
@@ -325,7 +341,7 @@ const filteredProducts = computed(() => {
       (p) =>
         (p.name || "").toLowerCase().includes(q) ||
         String(p.id).includes(q) ||
-        (p.brand || "").toLowerCase().includes(q)
+        (p.brand || "").toLowerCase().includes(q),
     );
   }
   if (activeTab.value === "active") arr = arr.filter((p) => p.isActive);
@@ -362,17 +378,17 @@ const bulkActivate = async (isActive) => {
         rows.length
       } sản phẩm?`,
       "Xác nhận",
-      { type: "warning" }
+      { type: "warning" },
     );
   } catch {
     return;
   }
-  // Gọi lần lượt updateProduct (có thể tối ưu bằng batch API nếu backend hỗ trợ)
+
   isLoading.value = true;
   try {
-    for (const r of rows) {
-      await updateProduct(r.id, { isActive });
-    }
+    const ids = rows.map((r) => r.id);
+    await bulkUpdateStatus(ids, isActive);
+
     ElNotification({
       title: "Thành công",
       message: "Đã cập nhật trạng thái hàng loạt.",
@@ -393,7 +409,7 @@ const bulkDelete = async () => {
     await ElMessageBox.confirm(
       `Xoá ${rows.length} sản phẩm đã chọn?`,
       "Xác nhận xoá",
-      { type: "warning" }
+      { type: "warning" },
     );
   } catch {
     return;
@@ -424,17 +440,27 @@ const closeForm = () => {
 
 const handleFormSubmit = async (formData) => {
   try {
+    // Map frontend fields to backend fields
+    const payload = {
+      ...formData,
+      is_active: formData.isActive,
+      // Lưu ý: Backend yêu cầu category_id, brand_id, unit_id.
+      // Form hiện tại đang submit text, cần cập nhật ProductForm để chọn ID.
+    };
+
     if (currentProduct.value) {
-      await updateProduct(currentProduct.value.id, formData);
+      await updateProduct(currentProduct.value.id, payload);
       ElMessage.success("Cập nhật sản phẩm thành công!");
     } else {
-      await createProduct(formData);
+      await createProduct(payload);
       ElMessage.success("Tạo sản phẩm thành công!");
     }
     await fetchProducts();
     closeForm();
-  } catch {
-    ElMessage.error("Đã có lỗi xảy ra.");
+  } catch (err) {
+    ElMessage.error(
+      "Lỗi: " + (err.response?.data?.message || "Đã có lỗi xảy ra."),
+    );
   }
 };
 
@@ -442,7 +468,7 @@ const handleDelete = (product) => {
   ElMessageBox.confirm(
     `Bạn có chắc chắn muốn xóa sản phẩm "${product.name}" không?`,
     "Xác nhận xóa",
-    { confirmButtonText: "Xóa", cancelButtonText: "Hủy", type: "warning" }
+    { confirmButtonText: "Xóa", cancelButtonText: "Hủy", type: "warning" },
   )
     .then(async () => {
       try {
@@ -457,152 +483,49 @@ const handleDelete = (product) => {
 };
 
 // --- Export/Import ---
-const handleExport = () => {
-  const headers = [
-    "ID",
-    "Name",
-    "Brand",
-    "Type",
-    "Stock",
-    "IsActive",
-    "ImageURL",
-  ];
-  const rows = filteredProducts.value.map((p) => [
-    p.id,
-    esc(p.name),
-    esc(p.brand),
-    esc(p.type),
-    p.stock,
-    p.isActive,
-    esc(p.imageUrl),
-  ]);
-  const csv = [
-    headers.join(","),
-    ...rows.map((r) => r.map(csvCell).join(",")),
-  ].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "products.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  ElMessage.success("Đã xuất file thành công!");
-};
-
-const esc = (v) => (v == null ? "" : String(v));
-const csvCell = (v) => {
-  const s = esc(v);
-  if (s.includes(",") || s.includes('"') || s.includes("\n"))
-    return '"' + s.replaceAll('"', '""') + '"';
-  return s;
+const handleExport = async () => {
+  if (filteredProducts.value.length === 0) return;
+  try {
+    const response = await exportProducts();
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "products.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    ElMessage.success("Đã xuất file thành công!");
+  } catch (e) {
+    ElMessage.error("Xuất file thất bại.");
+  }
 };
 
 const fileInput = ref(null);
 const triggerImport = () => fileInput.value?.click();
 
-const onFileChosen = (e) => {
+const onFileChosen = async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async (evt) => {
-    try {
-      const text = evt.target.result;
-      const rows = parseCSV(String(text));
-      // map columns (case-insensitive)
-      const cols = rows.shift() || [];
-      const idx = (name) =>
-        cols.findIndex((c) => String(c).trim().toLowerCase() === name);
-      const idIdx = idx("id"),
-        nameIdx = idx("name"),
-        brandIdx = idx("brand"),
-        typeIdx = idx("type"),
-        stockIdx = idx("stock"),
-        activeIdx = idx("isactive"),
-        imgIdx = idx("imageurl");
-      if (nameIdx === -1) throw new Error("Thiếu cột Name trong CSV");
 
-      isLoading.value = true;
-      // upsert từng dòng
-      for (const r of rows) {
-        const payload = {
-          name: r[nameIdx] ?? "",
-          brand: brandIdx > -1 ? r[brandIdx] : "",
-          type: typeIdx > -1 ? r[typeIdx] : "",
-          stock: stockIdx > -1 ? Number(r[stockIdx] || 0) : 0,
-          isActive:
-            activeIdx > -1
-              ? String(r[activeIdx]).toLowerCase().trim() === "true"
-              : true,
-          imageUrl: imgIdx > -1 ? r[imgIdx] : "",
-        };
-        if (idIdx > -1 && r[idIdx]) {
-          // update nếu có ID
-          await updateProduct(r[idIdx], payload);
-        } else {
-          await createProduct(payload);
-        }
-      }
-      ElNotification({
-        title: "Nhập file thành công",
-        message: "Dữ liệu đã được cập nhật.",
-        type: "success",
-      });
-      await fetchProducts();
-    } catch (err) {
-      ElMessage.error("Lỗi nhập file: " + (err?.message || "Không xác định"));
-    } finally {
-      isLoading.value = false;
-      e.target.value = "";
-    }
-  };
-  reader.readAsText(file);
+  isLoading.value = true;
+  try {
+    await importProducts(file);
+    ElNotification({
+      title: "Nhập file thành công",
+      message: "Dữ liệu đã được cập nhật.",
+      type: "success",
+    });
+    await fetchProducts();
+  } catch (err) {
+    ElMessage.error(
+      "Lỗi nhập file: " + (err.response?.data?.message || err.message),
+    );
+  } finally {
+    isLoading.value = false;
+    e.target.value = "";
+  }
 };
-
-// CSV parser đơn giản (hỗ trợ dấu phẩy trong dấu nháy)
-function parseCSV(text) {
-  const rows = [];
-  let cur = [];
-  let cell = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        cell += ch;
-      }
-    } else {
-      if (ch === '"') inQuotes = true;
-      else if (ch === ",") {
-        cur.push(cell);
-        cell = "";
-      } else if (ch === "\n" || ch === "\r") {
-        if (cell !== "" || cur.length > 0) {
-          cur.push(cell);
-          rows.push(cur);
-          cur = [];
-          cell = "";
-        }
-        // skip \r\n pairs gracefully
-      } else {
-        cell += ch;
-      }
-    }
-  }
-  if (cell !== "" || cur.length > 0) {
-    cur.push(cell);
-    rows.push(cur);
-  }
-  // cleanup empty trailing newline
-  return rows.filter((r) => r.length > 0);
-}
 </script>
 
 <style scoped>

@@ -1,57 +1,70 @@
-const sampleProducts = [
-    {
-        id: 1,
-        name: "Kem dưỡng ẩm Nivea Soft 200ml",
-        imageUrl: "https://i.imgur.com/8mB3H6f.png",
-        stock: 150,
-        type: "Chăm sóc da mặt",
-        brand: "Nivea",
-        isActive: true,
-    },
-    {
-        id: 2,
-        name: "Mặt nạ ngủ Laneige",
-        imageUrl: "https://i.imgur.com/sC7t1qg.png",
-        stock: 88,
-        type: "Chăm sóc da mặt",
-        brand: "Laneige",
-        isActive: true,
-    },
-    {
-        id: 3,
-        name: "Kem dưỡng V7 Toning Light",
-        imageUrl: "https://i.imgur.com/L1dC6dC.png",
-        stock: 0,
-        type: "Chăm sóc da mặt",
-        brand: "Dr.Jart+",
-        isActive: false,
-    },
-];
+import apiClient from "./apiClient";
+console.log("productService loaded");
 
-export const getProducts = async () => {
-    return Promise.resolve({ data: sampleProducts });
+// Lấy danh sách sản phẩm
+// params: { page, limit, search, ... }
+export const getProducts = async (params) => {
+  return apiClient.get("/api/products", { params });
 };
 
+// Lấy chi tiết sản phẩm
+export const getProductById = async (id) => {
+  return apiClient.get(`/api/products/${id}`);
+};
+
+// Thêm sản phẩm mới
 export const createProduct = async (productData) => {
-    const newProduct = { ...productData, id: new Date().getTime() };
-    sampleProducts.push(newProduct);
-    return Promise.resolve({ data: newProduct });
+  return apiClient.post("/api/products", productData);
 };
 
+// Cập nhật sản phẩm
 export const updateProduct = async (id, productData) => {
-    const index = sampleProducts.findIndex(p => p.id === id);
-    if (index !== -1) {
-        sampleProducts[index] = { ...sampleProducts[index], ...productData };
-        return Promise.resolve({ data: sampleProducts[index] });
-    }
-    return Promise.reject(new Error('Product not found'));
+  return apiClient.put(`/api/products/${id}`, productData);
 };
 
+// Xóa sản phẩm
 export const deleteProduct = async (id) => {
-    const index = sampleProducts.findIndex(p => p.id === id);
-    if (index !== -1) {
-        sampleProducts.splice(index, 1);
-        return Promise.resolve();
-    }
-    return Promise.reject(new Error('Product not found'));
+  return apiClient.delete(`/api/products/${id}`);
+};
+
+// Bật/tắt trạng thái hàng loạt
+export const bulkUpdateStatus = async (productIds, isActive) => {
+  return apiClient.patch("/api/products/bulk-status", {
+    product_ids: productIds,
+    is_active: isActive,
+  });
+};
+
+// Export CSV
+export const exportProducts = async () => {
+  return apiClient.get("/api/products/export", {
+    responseType: "blob", // Quan trọng để tải file
+  });
+};
+
+// Import CSV
+export const importProducts = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiClient.post("/api/products/import", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+// Lấy danh sách thương hiệu
+export const getBrands = async () => {
+  return apiClient.get("/api/brands");
+};
+
+// Lấy danh sách danh mục (dùng cho dropdown)
+export const getCategories = async () => {
+  // Lấy tất cả (hoặc số lượng lớn) để hiển thị trong dropdown
+  return apiClient.get("/api/collections", { params: { limit: 100 } });
+};
+
+// Lấy danh sách đơn vị tính
+export const getUnits = async () => {
+  return apiClient.get("/api/units");
 };

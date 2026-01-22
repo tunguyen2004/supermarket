@@ -86,9 +86,9 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted, onBeforeUnmount } from "vue";
 import { ElMessage } from "element-plus";
-import { useBreakpoints } from "@vueuse/core"; // ✨ Cải tiến: Dùng VueUse
+
 
 const props = defineProps({
   visible: { type: Boolean, required: true },
@@ -110,9 +110,20 @@ const isSubmitting = ref(false);
 
 const isEdit = computed(() => !!props.product);
 
-// ✨ Cải tiến: Dùng useBreakpoints để xử lý responsive một cách hiện đại
-const breakpoints = useBreakpoints({ mobile: 768 });
-const isMobile = breakpoints.smaller("mobile");
+// Responsive check thủ công thay vì dùng @vueuse/core
+const isMobile = ref(false);
+const checkScreenSize = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkScreenSize);
+});
 
 // ✨ Cải tiến: Thêm rule xác thực cho imageUrl
 const formRules = {
@@ -174,7 +185,7 @@ watch(
       // Xóa validation cũ khi mở lại dialog
       formRef.value?.clearValidate();
     }
-  }
+  },
 );
 
 const onClose = () => {
@@ -190,7 +201,7 @@ const onSubmit = async () => {
   } catch (error) {
     // Validation error is handled by el-form, which highlights fields.
     // We can log the error for debugging but avoid showing a generic message.
-    console.log('Validation failed:', error);
+    console.log("Validation failed:", error);
   } finally {
     isSubmitting.value = false;
   }

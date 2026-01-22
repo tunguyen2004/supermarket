@@ -19,14 +19,14 @@
 
       <el-table
         v-if="!isMobile"
-        :data="pagedCollections"
+        :data="collections"
         v-loading="isLoading"
         style="width: 100%"
       >
         <el-table-column prop="code" label="Mã danh mục" width="180" />
         <el-table-column prop="name" label="Tên danh mục" min-width="300" />
         <el-table-column
-          prop="productCount"
+          prop="product_count"
           label="Số sản phẩm"
           width="150"
           align="center"
@@ -53,11 +53,7 @@
       </el-table>
 
       <div v-else class="mobile-card-list">
-        <div
-          v-for="item in pagedCollections"
-          :key="item.code"
-          class="mobile-card"
-        >
+        <div v-for="item in collections" :key="item.code" class="mobile-card">
           <div class="card-header">
             <span class="card-title">{{ item.name }}</span>
           </div>
@@ -68,7 +64,7 @@
             </div>
             <div class="card-row">
               <span class="card-label">Số sản phẩm</span>
-              <span class="card-value">{{ item.productCount }}</span>
+              <span class="card-value">{{ item.product_count }}</span>
             </div>
           </div>
           <div class="card-footer">
@@ -95,9 +91,10 @@
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredCollections.length"
+        :total="total"
         :page-size="pageSize"
         v-model:current-page="currentPage"
+        @current-change="handlePageChange"
       />
     </div>
 
@@ -111,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Search, Plus, Edit, Delete } from "@element-plus/icons-vue";
 import { ElMessageBox, ElMessage } from "element-plus";
 import CollectionForm from "@/components/CollectionForm.vue";
@@ -130,17 +127,28 @@ const checkScreenSize = () => {
 const search = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
+const total = ref(0);
 const collections = ref([]);
 const isLoading = ref(true);
 
 const dialogVisible = ref(false);
 const currentCollection = ref(null);
 
+let searchTimeout;
+
 const fetchCollections = async () => {
   isLoading.value = true;
   try {
-    const response = await getCollections();
-    collections.value = response.data;
+    const params = {
+      page: currentPage.value,
+      limit: pageSize,
+      search: search.value,
+    };
+    const response = await getCollections(params);
+    if (response.data.success) {
+      collections.value = response.data.data.collections;
+      total.value = response.data.data.pagination.total;
+    }
   } catch (error) {
     console.error(error);
     ElMessage.error("Không thể tải danh sách danh mục.");
@@ -155,22 +163,21 @@ onMounted(() => {
   fetchCollections();
 });
 
+const handlePageChange = (val) => {
+  currentPage.value = val;
+  fetchCollections();
+};
+
+watch(search, () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1;
+    fetchCollections();
+  }, 300);
+});
+
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);
-});
-
-const filteredCollections = computed(() => {
-  if (!search.value) return collections.value;
-  return collections.value.filter(
-    (item) =>
-      item.name.toLowerCase().includes(search.value.toLowerCase()) ||
-      item.code.toLowerCase().includes(search.value.toLowerCase())
-  );
-});
-
-const pagedCollections = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredCollections.value.slice(start, start + pageSize);
 });
 
 const openForm = (collection = null) => {
@@ -207,7 +214,7 @@ const handleDelete = (collection) => {
       confirmButtonText: "Xóa",
       cancelButtonText: "Hủy",
       type: "warning",
-    }
+    },
   )
     .then(async () => {
       try {
