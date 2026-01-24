@@ -4,6 +4,7 @@ const profileService = require('../services/profileService');
 const staffService = require('../services/staffService');
 const productService = require('../services/productService');
 const collectionService = require('../services/collectionService');
+const dashboardService = require('../services/dashboardService');
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin, requireManagerOrAdmin, requireRole } = require('../middleware/authorize');
 const { uploadCSV, uploadAvatar, handleMulterError } = require('../middleware/upload');
@@ -350,6 +351,82 @@ router.put('/collections/:id', verifyToken, requireManagerOrAdmin, collectionSer
  * @note Không thể xóa danh mục nếu có sản phẩm hoặc danh mục con
  */
 router.delete('/collections/:id', verifyToken, requireManagerOrAdmin, collectionService.deleteCollection);
+
+/**
+ * ============================================================================
+ *                    MODULE 6: DASHBOARD / REPORTS ROUTES
+ * ============================================================================
+ * APIs cho trang Dashboard và Reports
+ */
+
+/**
+ * @GET /api/dashboard/overview
+ * @description Lấy số liệu tổng quan cho trang Home Dashboard
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @returns { totalOrders, totalProducts, totalCustomers, totalRevenue, recentOrders }
+ */
+router.get('/dashboard/overview', verifyToken, dashboardService.getOverview);
+
+/**
+ * @GET /api/dashboard/stats
+ * @description Lấy số liệu thống kê với so sánh kỳ trước (cho trang Reports)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { from: YYYY-MM-DD, to: YYYY-MM-DD }
+ * @returns { totalRevenue, revenueChange, totalOrders, ordersChange, avgOrderValue, avgOrderChange, newCustomers, customersChange }
+ */
+router.get('/dashboard/stats', verifyToken, dashboardService.getStats);
+
+/**
+ * @GET /api/dashboard/revenue-chart
+ * @description Lấy dữ liệu cho biểu đồ doanh thu
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { from, to, groupBy: day|week|month }
+ * @returns { labels, datasets }
+ */
+router.get('/dashboard/revenue-chart', verifyToken, dashboardService.getRevenueChart);
+
+/**
+ * @GET /api/dashboard/top-products
+ * @description Lấy top sản phẩm bán chạy
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { limit, from, to }
+ * @returns [{ id, name, quantity }]
+ */
+router.get('/dashboard/top-products', verifyToken, dashboardService.getTopProducts);
+
+/**
+ * @GET /api/dashboard/sales-channels
+ * @description Phân loại doanh thu theo kênh bán hàng
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { from, to }
+ * @returns [{ channel, revenue, percentage }]
+ */
+router.get('/dashboard/sales-channels', verifyToken, dashboardService.getSalesChannels);
+
+/**
+ * @GET /api/dashboard/top-customers
+ * @description Top khách hàng chi tiêu nhiều nhất
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { limit, from, to }
+ * @returns [{ id, name, totalSpent, avatarUrl }]
+ */
+router.get('/dashboard/top-customers', verifyToken, dashboardService.getTopCustomers);
+
+/**
+ * @GET /api/dashboard/low-stock
+ * @description Danh sách sản phẩm sắp hết hàng
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { threshold, limit }
+ * @returns [{ id, name, stock, imageUrl }]
+ */
+router.get('/dashboard/low-stock', verifyToken, dashboardService.getLowStock);
 
 /**
  * ============================================================================

@@ -3,7 +3,7 @@
     "_postman_id": "2d8f7e2a-8b7a-4d27-9a8a-5e1e2d9d3c11",
     "name": "Supermarket API Complete",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Supermarket Management System API - Version 1.1.0 (Updated: 21/01/2026)"
+    "description": "Supermarket Management System API - Version 1.2.0 (Updated: 24/01/2026)"
   },
   "variable": [
     {
@@ -620,6 +620,123 @@
         }
       ],
       "description": "Module Collections: Quản lý danh mục sản phẩm"
+    },
+    {
+      "name": "Module 6 - Dashboard",
+      "item": [
+        {
+          "name": "6.1 Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/overview",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "overview"]
+            },
+            "description": "Tổng quan Dashboard: Tổng đơn hàng, sản phẩm, khách hàng, 5 đơn hàng gần nhất"
+          }
+        },
+        {
+          "name": "6.2 Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats?from=2026-01-01&to=2026-01-24",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"],
+              "query": [
+                { "key": "from", "value": "2026-01-01", "description": "Ngày bắt đầu (YYYY-MM-DD)" },
+                { "key": "to", "value": "2026-01-24", "description": "Ngày kết thúc (YYYY-MM-DD)" }
+              ]
+            },
+            "description": "Thống kê doanh thu, đơn hàng, khách hàng mới với so sánh kỳ trước"
+          }
+        },
+        {
+          "name": "6.3 Revenue Chart",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/revenue-chart?from=2026-01-01&to=2026-01-24&groupBy=day",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "revenue-chart"],
+              "query": [
+                { "key": "from", "value": "2026-01-01", "description": "Ngày bắt đầu" },
+                { "key": "to", "value": "2026-01-24", "description": "Ngày kết thúc" },
+                { "key": "groupBy", "value": "day", "description": "Nhóm theo: day, week, month" }
+              ]
+            },
+            "description": "Dữ liệu biểu đồ doanh thu theo thời gian"
+          }
+        },
+        {
+          "name": "6.4 Top Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/top-products?limit=5&from=2026-01-01&to=2026-01-24",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "top-products"],
+              "query": [
+                { "key": "limit", "value": "5", "description": "Số lượng sản phẩm (default: 5)" },
+                { "key": "from", "value": "2026-01-01", "description": "Ngày bắt đầu" },
+                { "key": "to", "value": "2026-01-24", "description": "Ngày kết thúc" }
+              ]
+            },
+            "description": "Top sản phẩm bán chạy nhất"
+          }
+        },
+        {
+          "name": "6.5 Sales Channels",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/sales-channels?from=2026-01-01&to=2026-01-24",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "sales-channels"],
+              "query": [
+                { "key": "from", "value": "2026-01-01", "description": "Ngày bắt đầu" },
+                { "key": "to", "value": "2026-01-24", "description": "Ngày kết thúc" }
+              ]
+            },
+            "description": "Phân loại doanh thu theo kênh bán hàng"
+          }
+        },
+        {
+          "name": "6.6 Top Customers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/top-customers?limit=5&from=2026-01-01&to=2026-01-24",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "top-customers"],
+              "query": [
+                { "key": "limit", "value": "5", "description": "Số lượng khách hàng (default: 5)" },
+                { "key": "from", "value": "2026-01-01", "description": "Ngày bắt đầu" },
+                { "key": "to", "value": "2026-01-24", "description": "Ngày kết thúc" }
+              ]
+            },
+            "description": "Top khách hàng chi tiêu nhiều nhất"
+          }
+        },
+        {
+          "name": "6.7 Low Stock Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/low-stock?threshold=20&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "low-stock"],
+              "query": [
+                { "key": "threshold", "value": "20", "description": "Ngưỡng tồn kho thấp (default: 20)" },
+                { "key": "limit", "value": "10", "description": "Số lượng sản phẩm (default: 10)" }
+              ]
+            },
+            "description": "Danh sách sản phẩm sắp hết hàng"
+          }
+        }
+      ],
+      "description": "Module Dashboard: Thống kê, báo cáo, biểu đồ cho trang Dashboard/Reports"
     }
   ]
 }

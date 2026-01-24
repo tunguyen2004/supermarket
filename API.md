@@ -1,7 +1,7 @@
 # 📚 API Documentation - Supermarket Management System
 
-**Cập nhật:** 21/01/2026  
-**Version:** 1.1.0
+**Cập nhật:** 24/01/2026  
+**Version:** 1.2.0
 
 ---
 
@@ -68,6 +68,7 @@ http://localhost:5000/api
 3. [Module 3: Profile Management](#module-3-profile-management) - 5 APIs
 4. [Module 4: Products](#module-4-products) - 10 APIs
 5. [Module 5: Collections](#module-5-collections) - 6 APIs
+6. [Module 6: Dashboard](#module-6-dashboard) - 7 APIs
 
 ---
 
@@ -1015,6 +1016,275 @@ SNACK001,Bánh Oreo,FOOD,MONDELEZ,PCS,Bánh quy Oreo 133g,SNACK001-SKU,893456789
 
 ---
 
+## Module 6: Dashboard
+
+### 6.1 Dashboard Overview
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/overview`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalOrders": 156,
+    "totalProducts": 42,
+    "totalCustomers": 89,
+    "recentOrders": [
+      {
+        "id": 10,
+        "order_code": "ORD-2026-010",
+        "customer_name": "Lê Thị Hương",
+        "total_amount": 280000,
+        "status": "completed",
+        "created_at": "2026-01-23T16:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 6.2 Dashboard Stats
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/stats?from=2026-01-01&to=2026-01-24`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| from | date | Ngày bắt đầu (YYYY-MM-DD) | `?from=2026-01-01` |
+| to | date | Ngày kết thúc (YYYY-MM-DD) | `?to=2026-01-24` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "revenue": {
+      "current": 15680000,
+      "previous": 12500000,
+      "change": 25.44
+    },
+    "orders": {
+      "current": 156,
+      "previous": 132,
+      "change": 18.18
+    },
+    "newCustomers": {
+      "current": 23,
+      "previous": 18,
+      "change": 27.78
+    },
+    "avgOrderValue": {
+      "current": 100512,
+      "previous": 94696,
+      "change": 6.14
+    }
+  }
+}
+```
+
+---
+
+### 6.3 Revenue Chart
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/revenue-chart?from=2026-01-01&to=2026-01-24&groupBy=day`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| from | date | Ngày bắt đầu (YYYY-MM-DD) | `?from=2026-01-01` |
+| to | date | Ngày kết thúc (YYYY-MM-DD) | `?to=2026-01-24` |
+| groupBy | string | Nhóm theo: day, week, month | `?groupBy=day` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "labels": ["01/01", "02/01", "03/01", "04/01", "05/01"],
+    "datasets": [
+      {
+        "label": "Doanh thu",
+        "data": [850000, 1200000, 980000, 1500000, 1100000]
+      },
+      {
+        "label": "Đơn hàng",
+        "data": [12, 18, 15, 22, 17]
+      }
+    ],
+    "summary": {
+      "totalRevenue": 5630000,
+      "totalOrders": 84,
+      "avgDaily": 1126000
+    }
+  }
+}
+```
+
+---
+
+### 6.4 Top Products
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/top-products?limit=5&from=2026-01-01&to=2026-01-24`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| limit | number | Số lượng sản phẩm (default: 5) | `?limit=10` |
+| from | date | Ngày bắt đầu (YYYY-MM-DD) | `?from=2026-01-01` |
+| to | date | Ngày kết thúc (YYYY-MM-DD) | `?to=2026-01-24` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Sữa tươi Vinamilk 1L",
+      "code": "MILK001",
+      "totalSold": 245,
+      "revenue": 7350000,
+      "image_url": null
+    },
+    {
+      "id": 3,
+      "name": "Nước ngọt Coca Cola 330ml",
+      "code": "DRINK001",
+      "totalSold": 189,
+      "revenue": 1890000,
+      "image_url": null
+    }
+  ]
+}
+```
+
+---
+
+### 6.5 Sales Channels
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/sales-channels?from=2026-01-01&to=2026-01-24`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| from | date | Ngày bắt đầu (YYYY-MM-DD) | `?from=2026-01-01` |
+| to | date | Ngày kết thúc (YYYY-MM-DD) | `?to=2026-01-24` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "channel": "POS",
+      "orders": 98,
+      "revenue": 9800000,
+      "percentage": 62.5
+    },
+    {
+      "channel": "Online",
+      "orders": 58,
+      "revenue": 5880000,
+      "percentage": 37.5
+    }
+  ]
+}
+```
+
+---
+
+### 6.6 Top Customers
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/top-customers?limit=5&from=2026-01-01&to=2026-01-24`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| limit | number | Số lượng khách hàng (default: 5) | `?limit=10` |
+| from | date | Ngày bắt đầu (YYYY-MM-DD) | `?from=2026-01-01` |
+| to | date | Ngày kết thúc (YYYY-MM-DD) | `?to=2026-01-24` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Nguyễn Văn An",
+      "phone": "0901234567",
+      "totalOrders": 12,
+      "totalSpent": 2580000,
+      "lastOrder": "2026-01-23T14:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Trần Thị Bình",
+      "phone": "0912345678",
+      "totalOrders": 9,
+      "totalSpent": 1950000,
+      "lastOrder": "2026-01-22T10:15:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+### 6.7 Low Stock Products
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/dashboard/low-stock?threshold=20&limit=10`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| threshold | number | Ngưỡng tồn kho thấp (default: 20) | `?threshold=15` |
+| limit | number | Số lượng sản phẩm (default: 10) | `?limit=20` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 5,
+      "name": "Dầu ăn Neptune 1L",
+      "code": "OIL001",
+      "currentStock": 8,
+      "threshold": 20,
+      "status": "critical"
+    },
+    {
+      "id": 8,
+      "name": "Gạo ST25 5kg",
+      "code": "RICE001",
+      "currentStock": 15,
+      "threshold": 20,
+      "status": "warning"
+    }
+  ]
+}
+```
+
+---
+
 ## 📊 Tổng kết API
 
 | STT | Module | API | Method | Endpoint |
@@ -1032,22 +1302,31 @@ SNACK001,Bánh Oreo,FOOD,MONDELEZ,PCS,Bánh quy Oreo 133g,SNACK001-SKU,893456789
 | 11 | Profile | Xem profile | GET | `/api/users/profile` |
 | 12 | Profile | Cập nhật profile | PUT | `/api/users/profile` |
 | 13 | Profile | Đổi mật khẩu | PUT | `/api/users/change-password` |
-| 14 | Products | Danh sách | GET | `/api/products` |
-| 15 | Products | Thêm mới | POST | `/api/products` |
-| 16 | Products | Chi tiết | GET | `/api/products/:id` |
-| 17 | Products | Sửa | PUT | `/api/products/:id` |
-| 18 | Products | Xóa | DELETE | `/api/products/:id` |
-| 19 | Products | Bulk status | PATCH | `/api/products/bulk-status` |
-| 20 | Products | Export CSV | GET | `/api/products/export` |
-| 21 | Products | Import CSV | POST | `/api/products/import` |
-| 22 | Products | DS Thương hiệu | GET | `/api/brands` |
-| 23 | Products | DS Đơn vị | GET | `/api/units` |
-| 24 | Collections | Danh sách | GET | `/api/collections` |
-| 25 | Collections | Cây danh mục | GET | `/api/collections/tree` |
-| 26 | Collections | Thêm mới | POST | `/api/collections` |
-| 27 | Collections | Chi tiết | GET | `/api/collections/:id` |
-| 28 | Collections | Sửa | PUT | `/api/collections/:id` |
-| 29 | Collections | Xóa | DELETE | `/api/collections/:id` |
+| 14 | Profile | Upload avatar | POST | `/api/users/avatar` |
+| 15 | Profile | Xóa avatar | DELETE | `/api/users/avatar` |
+| 16 | Products | Danh sách | GET | `/api/products` |
+| 17 | Products | Thêm mới | POST | `/api/products` |
+| 18 | Products | Chi tiết | GET | `/api/products/:id` |
+| 19 | Products | Sửa | PUT | `/api/products/:id` |
+| 20 | Products | Xóa | DELETE | `/api/products/:id` |
+| 21 | Products | Bulk status | PATCH | `/api/products/bulk-status` |
+| 22 | Products | Export CSV | GET | `/api/products/export` |
+| 23 | Products | Import CSV | POST | `/api/products/import` |
+| 24 | Products | DS Thương hiệu | GET | `/api/brands` |
+| 25 | Products | DS Đơn vị | GET | `/api/units` |
+| 26 | Collections | Danh sách | GET | `/api/collections` |
+| 27 | Collections | Cây danh mục | GET | `/api/collections/tree` |
+| 28 | Collections | Thêm mới | POST | `/api/collections` |
+| 29 | Collections | Chi tiết | GET | `/api/collections/:id` |
+| 30 | Collections | Sửa | PUT | `/api/collections/:id` |
+| 31 | Collections | Xóa | DELETE | `/api/collections/:id` |
+| 32 | Dashboard | Overview | GET | `/api/dashboard/overview` |
+| 33 | Dashboard | Stats | GET | `/api/dashboard/stats` |
+| 34 | Dashboard | Revenue Chart | GET | `/api/dashboard/revenue-chart` |
+| 35 | Dashboard | Top Products | GET | `/api/dashboard/top-products` |
+| 36 | Dashboard | Sales Channels | GET | `/api/dashboard/sales-channels` |
+| 37 | Dashboard | Top Customers | GET | `/api/dashboard/top-customers` |
+| 38 | Dashboard | Low Stock | GET | `/api/dashboard/low-stock` |
 
 ---
 
@@ -1097,6 +1376,17 @@ SNACK001,Bánh Oreo,FOOD,MONDELEZ,PCS,Bánh quy Oreo 133g,SNACK001-SKU,893456789
 4. GET /api/collections/1 → Chi tiết
 5. PUT /api/collections/1 → Sửa
 6. DELETE /api/collections/1 → Xóa
+```
+
+### Flow 6: Dashboard & Reports
+```
+1. GET /api/dashboard/overview → Tổng quan
+2. GET /api/dashboard/stats?from=2026-01-01&to=2026-01-24 → Thống kê
+3. GET /api/dashboard/revenue-chart?from=2026-01-01&to=2026-01-24&groupBy=day → Biểu đồ doanh thu
+4. GET /api/dashboard/top-products?limit=5 → Top sản phẩm bán chạy
+5. GET /api/dashboard/sales-channels → Kênh bán hàng
+6. GET /api/dashboard/top-customers?limit=5 → Top khách hàng
+7. GET /api/dashboard/low-stock?threshold=20 → Sản phẩm sắp hết hàng
 ```
 
 ---
