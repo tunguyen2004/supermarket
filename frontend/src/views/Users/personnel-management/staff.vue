@@ -606,6 +606,7 @@ const handleDelete = (staff) => {
 .advanced-filters {
   display: flex;
   gap: 12px;
+  width: 400px;
 }
 .pagination-container {
   display: flex;

@@ -159,7 +159,13 @@
       @blur="closeDropdown"
       tabindex="0"
     >
-      <div class="user-avatar">{{ userInitials }}</div>
+      <img
+        v-if="avatarUrl"
+        :src="fullAvatarUrl"
+        class="user-avatar-img"
+        alt="User Avatar"
+      />
+      <div v-else class="user-avatar">{{ userInitials }}</div>
       <span class="user-name">{{ userDisplayName }}</span>
       <i class="fa fa-chevron-down dropdown-icon"></i>
       <div v-if="dropdownOpen" class="dropdown-menu" @mousedown.prevent>
@@ -184,10 +190,12 @@
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { ElPopover, ElTabs, ElTabPane } from "element-plus";
+import { useAuth } from "@/composables/useAuth";
 import authService from "@/services/authService";
 import apiClient from "@/services/apiClient";
+import { getProfile } from "@/services/userService";
 
 export default {
   name: "AppHeader",
@@ -228,10 +236,35 @@ export default {
     const unreadCount = computed(() => notifications.value.length);
 
     // User dropdown
+    const { user, logout } = useAuth();
     const dropdownOpen = ref(false);
-    const userDisplayName = "Admin TUNA Spa";
+    const avatarUrl = ref("");
+
+    const fullAvatarUrl = computed(() => {
+      if (!avatarUrl.value) return "";
+      if (avatarUrl.value.startsWith("http")) return avatarUrl.value;
+      return `http://localhost:5000${avatarUrl.value}`;
+    });
+
+    onMounted(async () => {
+      try {
+        const res = await getProfile();
+        if (res.data && res.data.data && res.data.data.avatar_url) {
+          avatarUrl.value = res.data.data.avatar_url;
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+      }
+    });
+
+    const userDisplayName = computed(() => {
+      return (
+        user.value?.full_name || user.value?.username || "Admin Supermarket"
+      );
+    });
+
     const userInitials = computed(() => {
-      return userDisplayName
+      return (userDisplayName.value || "")
         .split(" ")
         .map((w) => w[0])
         .join("")
@@ -250,11 +283,6 @@ export default {
     // Utils
     const goTo = (path) => {
       window.location.href = path;
-    };
-    const logout = () => {
-      authService.logout().then(() => {
-        window.location.href = "/login";
-      });
     };
 
     return {
@@ -277,6 +305,8 @@ export default {
       userDisplayName,
       userInitials,
       logout,
+      avatarUrl,
+      fullAvatarUrl,
       // utils
       goTo,
     };
@@ -544,6 +574,14 @@ export default {
   margin-right: 10px;
   box-shadow: 0 2px 8px rgba(241, 196, 15, 0.12);
 }
+.user-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
 .user-name {
   font-weight: 600;
   color: #222;
@@ -637,7 +675,8 @@ export default {
     font-size: 0.92rem;
     display: none;
   }
-  .user-avatar {
+  .user-avatar,
+  .user-avatar-img {
     width: 28px;
     height: 28px;
     font-size: 0.95rem;
@@ -689,7 +728,8 @@ export default {
     padding: 7px 8px;
     font-size: 1.5rem;
   }
-  .user-avatar {
+  .user-avatar,
+  .user-avatar-img {
     width: 35px;
     height: 35px;
     font-size: 1.3rem;

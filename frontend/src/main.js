@@ -5,7 +5,7 @@ import router from "./router";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import "./style/main.css";
-
+import "./style/tailwind.css";
 
 const app = createApp(App);
 const pinia = createPinia(); // 2. Tạo một instance của Pinia
