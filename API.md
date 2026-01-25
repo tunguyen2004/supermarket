@@ -1,7 +1,7 @@
 # 📚 API Documentation - Supermarket Management System
 
-**Cập nhật:** 24/01/2026  
-**Version:** 1.2.0
+**Cập nhật:** 25/01/2026  
+**Version:** 1.3.0
 
 ---
 
@@ -1610,13 +1610,12 @@ SNACK001,Bánh Oreo,FOOD,MONDELEZ,PCS,Bánh quy Oreo 133g,SNACK001-SKU,893456789
   "success": true,
   "data": [
     {"id": 1, "code": "PURCHASE", "name": "Nhập hàng từ NCC", "affects_stock": 1},
-    {"id": 2, "code": "SALE", "name": "Xuất bán hàng", "affects_stock": -1},
-    {"id": 3, "code": "ADJUSTMENT_IN", "name": "Điều chỉnh tăng", "affects_stock": 1},
-    {"id": 4, "code": "ADJUSTMENT_OUT", "name": "Điều chỉnh giảm", "affects_stock": -1},
-    {"id": 5, "code": "TRANSFER_IN", "name": "Nhận chuyển kho", "affects_stock": 1},
-    {"id": 6, "code": "TRANSFER_OUT", "name": "Chuyển kho đi", "affects_stock": -1},
-    {"id": 7, "code": "RETURN_CUSTOMER", "name": "Khách trả hàng", "affects_stock": 1},
-    {"id": 8, "code": "RETURN_SUPPLIER", "name": "Trả hàng NCC", "affects_stock": -1}
+    {"id": 2, "code": "SALE", "name": "Bán hàng", "affects_stock": -1},
+    {"id": 3, "code": "RETURN_IN", "name": "Khách trả hàng", "affects_stock": 1},
+    {"id": 4, "code": "RETURN_OUT", "name": "Trả hàng NCC", "affects_stock": -1},
+    {"id": 5, "code": "TRANSFER_IN", "name": "Chuyển kho vào", "affects_stock": 1},
+    {"id": 6, "code": "TRANSFER_OUT", "name": "Chuyển kho ra", "affects_stock": -1},
+    {"id": 7, "code": "ADJUSTMENT", "name": "Điều chỉnh tồn", "affects_stock": 0}
   ]
 }
 ```
@@ -2204,7 +2203,8 @@ Dùng tools online như: https://jsonformatter.org
 ---
 
 **Created:** 19/01/2026  
-**Version:** 1.0.0  
+**Updated:** 25/01/2026  
+**Version:** 1.3.0  
 **Status:** ✅ Ready for Testing
 
 **Ghi chú:** Tài liệu này gộp từ 2 file API_DOCS.md và API_TESTING_GUIDE.md, bao gồm đầy đủ các endpoint từ Module 1-5.
