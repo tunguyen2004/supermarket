@@ -4,10 +4,13 @@ const profileService = require('../services/profileService');
 const staffService = require('../services/staffService');
 const productService = require('../services/productService');
 const collectionService = require('../services/collectionService');
+const catalogService = require('../services/catalogService');
+const inventoryService = require('../services/inventoryService');
+const productImageService = require('../services/productImageService');
 const dashboardService = require('../services/dashboardService');
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin, requireManagerOrAdmin, requireRole } = require('../middleware/authorize');
-const { uploadCSV, uploadAvatar, handleMulterError } = require('../middleware/upload');
+const { uploadCSV, uploadAvatar, uploadProductImage, uploadProductImages, handleMulterError } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -263,6 +266,81 @@ router.put('/products/:id', verifyToken, requireManagerOrAdmin, productService.u
 router.delete('/products/:id', verifyToken, requireManagerOrAdmin, productService.deleteProduct);
 
 /**
+ * ============================================================================
+ *                    PRODUCT IMAGE ROUTES
+ * ============================================================================
+ * Quản lý ảnh sản phẩm
+ */
+
+/**
+ * @GET /api/products/:id/images
+ * @description Lấy danh sách ảnh của sản phẩm
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @param id - ID sản phẩm
+ * @returns { main_image, gallery: [...] }
+ */
+router.get('/products/:id/images', verifyToken, productImageService.getProductImages);
+
+/**
+ * @POST /api/products/:id/image
+ * @description Upload ảnh chính cho sản phẩm
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @form-data { image: File }
+ * @returns { image_url }
+ */
+router.post('/products/:id/image', verifyToken, requireManagerOrAdmin, uploadProductImage.single('image'), handleMulterError, productImageService.uploadMainImage);
+
+/**
+ * @DELETE /api/products/:id/image
+ * @description Xóa ảnh chính của sản phẩm
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @param id - ID sản phẩm
+ * @returns { message }
+ */
+router.delete('/products/:id/image', verifyToken, requireManagerOrAdmin, productImageService.deleteMainImage);
+
+/**
+ * @POST /api/products/:id/images
+ * @description Upload nhiều ảnh cho sản phẩm (gallery)
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @form-data { images: File[] } (max 5 files)
+ * @returns { images: [...] }
+ */
+router.post('/products/:id/images', verifyToken, requireManagerOrAdmin, uploadProductImages.array('images', 5), handleMulterError, productImageService.uploadGalleryImages);
+
+/**
+ * @DELETE /api/products/:id/images/:imageId
+ * @description Xóa một ảnh trong gallery
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @returns { message }
+ */
+router.delete('/products/:id/images/:imageId', verifyToken, requireManagerOrAdmin, productImageService.deleteGalleryImage);
+
+/**
+ * @PUT /api/products/:id/images/:imageId/primary
+ * @description Đặt một ảnh làm ảnh chính trong gallery
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @returns { message }
+ */
+router.put('/products/:id/images/:imageId/primary', verifyToken, requireManagerOrAdmin, productImageService.setPrimaryImage);
+
+/**
+ * @PUT /api/products/:id/images/reorder
+ * @description Sắp xếp lại thứ tự ảnh
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @body { image_ids: [1, 3, 2] }
+ * @returns { message }
+ */
+router.put('/products/:id/images/reorder', verifyToken, requireManagerOrAdmin, productImageService.reorderImages);
+
+/**
  * @GET /api/brands
  * @description Danh sách tất cả thương hiệu
  * @auth All authenticated users
@@ -427,6 +505,185 @@ router.get('/dashboard/top-customers', verifyToken, dashboardService.getTopCusto
  * @returns [{ id, name, stock, imageUrl }]
  */
 router.get('/dashboard/low-stock', verifyToken, dashboardService.getLowStock);
+
+/**
+ * ============================================================================
+ *                    MODULE 7: CATALOG (PRICE LIST) ROUTES
+ * ============================================================================
+ * Quản lý bảng giá sản phẩm
+ * Sử dụng bảng: dim_product_variants
+ * 
+ * Quyền truy cập:
+ * - Xem danh sách, chi tiết, xuất: Tất cả role (verifyToken)
+ * - Cập nhật giá: Chỉ Manager hoặc Admin (requireManagerOrAdmin)
+ */
+
+/**
+ * @GET /api/catalogs
+ * @description Danh sách bảng giá sản phẩm
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { search, page, limit }
+ * @returns { data: [{ id, code, name, sku, price, unit }], pagination }
+ */
+router.get('/catalogs', verifyToken, catalogService.getCatalogs);
+
+/**
+ * @GET /api/catalogs/export
+ * @description Xuất bảng giá ra file CSV
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @returns File CSV
+ */
+router.get('/catalogs/export', verifyToken, catalogService.exportCatalogs);
+
+/**
+ * @PATCH /api/catalogs/bulk-update
+ * @description Cập nhật giá hàng loạt
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @body { variant_ids: [number], price_change_type: 'fixed'|'percent', price_change_value: number }
+ * @returns { updated_count, message }
+ */
+router.patch('/catalogs/bulk-update', verifyToken, requireManagerOrAdmin, catalogService.bulkUpdateCatalogs);
+
+/**
+ * @GET /api/catalogs/:id
+ * @description Chi tiết bảng giá sản phẩm
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @param id - ID variant sản phẩm
+ * @returns { id, code, name, sku, cost_price, price, unit }
+ */
+router.get('/catalogs/:id', verifyToken, catalogService.getCatalogById);
+
+/**
+ * @PUT /api/catalogs/:id
+ * @description Cập nhật giá sản phẩm
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @param id - ID variant sản phẩm
+ * @body { cost_price, selling_price, is_active }
+ * @returns { message, data }
+ */
+router.put('/catalogs/:id', verifyToken, requireManagerOrAdmin, catalogService.updateCatalog);
+
+/**
+ * ============================================================================
+ *                    MODULE 8: INVENTORY MANAGEMENT ROUTES
+ * ============================================================================
+ * Quản lý tồn kho, nhập kho, chuyển kho, trả hàng
+ * Sử dụng bảng: fact_inventory_stocks, fact_inventory_transactions
+ * 
+ * Quyền truy cập:
+ * - Xem: Tất cả role (verifyToken)
+ * - Thao tác kho: Manager hoặc Admin (requireManagerOrAdmin)
+ */
+
+/**
+ * @GET /api/stores
+ * @description Danh sách cửa hàng/kho
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @returns { data: [{ id, code, name, store_type, address }] }
+ */
+router.get('/stores', verifyToken, inventoryService.getStores);
+
+/**
+ * @GET /api/transaction-types
+ * @description Danh sách loại giao dịch kho
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @returns { data: [{ id, code, name, affects_stock }] }
+ */
+router.get('/transaction-types', verifyToken, inventoryService.getTransactionTypes);
+
+/**
+ * @GET /api/inventories
+ * @description Danh sách tồn kho sản phẩm
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { search, store_id, status, page, limit }
+ * @returns { data: [{ id, code, name, stock, location, stock_status }], pagination }
+ */
+router.get('/inventories', verifyToken, inventoryService.getInventories);
+
+/**
+ * @POST /api/inventories/receive
+ * @description Nhập kho sản phẩm
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @body { store_id, items: [{ variant_id, quantity, unit_cost }], notes }
+ * @returns { message, transaction_codes }
+ */
+router.post('/inventories/receive', verifyToken, requireManagerOrAdmin, inventoryService.receiveInventory);
+
+/**
+ * @POST /api/inventories/transfer
+ * @description Chuyển kho giữa các cửa hàng
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @body { from_store_id, to_store_id, items: [{ variant_id, quantity }], notes }
+ * @returns { message, transaction_codes }
+ */
+router.post('/inventories/transfer', verifyToken, requireManagerOrAdmin, inventoryService.transferStock);
+
+/**
+ * @POST /api/inventories/return
+ * @description Trả hàng nhà cung cấp
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @body { store_id, items: [{ variant_id, quantity }], notes }
+ * @returns { message, transaction_codes }
+ */
+router.post('/inventories/return', verifyToken, requireManagerOrAdmin, inventoryService.returnToSupplier);
+
+/**
+ * @GET /api/inventories/:variantId
+ * @description Chi tiết tồn kho của sản phẩm
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @param variantId - ID variant sản phẩm
+ * @query { store_id }
+ * @returns { variant_info, stock_by_store: [...] }
+ */
+router.get('/inventories/:variantId', verifyToken, inventoryService.getInventoryById);
+
+/**
+ * @PUT /api/inventories/:variantId
+ * @description Điều chỉnh số lượng tồn kho
+ * @auth Manager or Admin only
+ * @headers Authorization: Bearer <token>
+ * @param variantId - ID variant sản phẩm
+ * @body { store_id, quantity, adjustment_type: 'set'|'add'|'subtract', notes }
+ * @returns { message, new_stock }
+ */
+router.put('/inventories/:variantId', verifyToken, requireManagerOrAdmin, inventoryService.updateInventory);
+
+/**
+ * @GET /api/inventories/:variantId/history
+ * @description Lịch sử xuất nhập kho của sản phẩm
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @param variantId - ID variant sản phẩm
+ * @query { store_id, from, to, page, limit }
+ * @returns { data: [...], pagination }
+ */
+router.get('/inventories/:variantId/history', verifyToken, inventoryService.getInventoryHistory);
+
+/**
+ * @route   GET /api/stores
+ * @desc    Lấy danh sách cửa hàng
+ * @access  Private
+ */
+router.get('/stores', verifyToken, inventoryService.getStores);
+
+/**
+ * @route   GET /api/transaction-types
+ * @desc    Lấy danh sách loại giao dịch kho
+ * @access  Private
+ */
+router.get('/transaction-types', verifyToken, inventoryService.getTransactionTypes);
 
 /**
  * ============================================================================

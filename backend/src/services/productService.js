@@ -80,6 +80,7 @@ const getProducts = async (req, res) => {
         p.unit_id,
         u.name as unit_name,
         p.description,
+        p.image_url,
         p.is_active,
         p.has_variants,
         p.created_at,
@@ -135,6 +136,7 @@ const createProduct = async (req, res) => {
       brand_id,
       unit_id,
       description,
+      image_url,
       is_active = true,
       has_variants = false,
       // Variant info (for simple product)
@@ -167,12 +169,12 @@ const createProduct = async (req, res) => {
 
     // Insert product
     const productQuery = `
-      INSERT INTO dim_products (code, name, category_id, brand_id, unit_id, description, is_active, has_variants)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO dim_products (code, name, category_id, brand_id, unit_id, description, image_url, is_active, has_variants)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
     const productResult = await db.query(productQuery, [
-      code, name, category_id, brand_id || null, unit_id, description || null, is_active, has_variants
+      code, name, category_id, brand_id || null, unit_id, description || null, image_url || null, is_active, has_variants
     ]);
 
     const product = productResult.rows[0];
@@ -245,9 +247,16 @@ const getProductById = async (req, res) => {
     `;
     const variantsResult = await db.query(variantsQuery, [id]);
 
+    // Get gallery images
+    const imagesQuery = `
+      SELECT * FROM product_images WHERE product_id = $1 ORDER BY sort_order, id
+    `;
+    const imagesResult = await db.query(imagesQuery, [id]);
+
     const product = {
       ...result.rows[0],
-      variants: variantsResult.rows
+      variants: variantsResult.rows,
+      images: imagesResult.rows
     };
 
     res.json({
@@ -278,6 +287,7 @@ const updateProduct = async (req, res) => {
       brand_id,
       unit_id,
       description,
+      image_url,
       is_active,
       has_variants
     } = req.body;
@@ -318,10 +328,11 @@ const updateProduct = async (req, res) => {
         brand_id = $4,
         unit_id = COALESCE($5, unit_id),
         description = $6,
-        is_active = COALESCE($7, is_active),
-        has_variants = COALESCE($8, has_variants),
+        image_url = COALESCE($7, image_url),
+        is_active = COALESCE($8, is_active),
+        has_variants = COALESCE($9, has_variants),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9
+      WHERE id = $10
       RETURNING *
     `;
 
@@ -332,6 +343,7 @@ const updateProduct = async (req, res) => {
       brand_id || null,
       unit_id,
       description,
+      image_url,
       is_active,
       has_variants,
       id

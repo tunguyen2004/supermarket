@@ -14,6 +14,12 @@ if (!fs.existsSync(avatarDir)) {
   fs.mkdirSync(avatarDir, { recursive: true });
 }
 
+// Ensure products directory exists
+const productDir = path.join(uploadDir, 'products');
+if (!fs.existsSync(productDir)) {
+  fs.mkdirSync(productDir, { recursive: true });
+}
+
 // Configure storage for general uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -87,6 +93,38 @@ const uploadAvatar = multer({
   }
 });
 
+// Configure storage for product images
+const productStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, productDir);
+  },
+  filename: function (req, file, cb) {
+    const productId = req.params.id || 'new';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `product-${productId}-${uniqueSuffix}${ext}`);
+  }
+});
+
+// Upload middleware for Product Images
+const uploadProductImage = multer({
+  storage: productStorage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit for product images
+  }
+});
+
+// Upload multiple product images (max 5)
+const uploadProductImages = multer({
+  storage: productStorage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 5 // Max 5 files
+  }
+});
+
 // Error handler middleware
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -112,7 +150,10 @@ const handleMulterError = (err, req, res, next) => {
 module.exports = {
   uploadCSV,
   uploadAvatar,
+  uploadProductImage,
+  uploadProductImages,
   handleMulterError,
   avatarDir,
-  uploadDir
+  uploadDir,
+  productDir
 };

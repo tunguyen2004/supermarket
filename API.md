@@ -1,7 +1,7 @@
 # 📚 API Documentation - Supermarket Management System
 
-**Cập nhật:** 24/01/2026  
-**Version:** 1.2.0
+**Cập nhật:** 25/01/2026  
+**Version:** 1.3.0
 
 ---
 
@@ -69,6 +69,9 @@ http://localhost:5000/api
 4. [Module 4: Products](#module-4-products) - 10 APIs
 5. [Module 5: Collections](#module-5-collections) - 6 APIs
 6. [Module 6: Dashboard](#module-6-dashboard) - 7 APIs
+7. [Module 7: Catalog (Bảng giá)](#module-7-catalog-bảng-giá) - 5 APIs
+8. [Module 8: Inventory (Tồn kho)](#module-8-inventory-quản-lý-tồn-kho) - 9 APIs
+9. [Module 9: Product Images (Ảnh sản phẩm)](#module-9-product-images-ảnh-sản-phẩm) - 7 APIs
 
 ---
 
@@ -1389,6 +1392,506 @@ SNACK001,Bánh Oreo,FOOD,MONDELEZ,PCS,Bánh quy Oreo 133g,SNACK001-SKU,893456789
 7. GET /api/dashboard/low-stock?threshold=20 → Sản phẩm sắp hết hàng
 ```
 
+### Flow 7: Catalog (Bảng giá)
+```
+1. GET /api/catalogs → Danh sách bảng giá
+2. GET /api/catalogs/1 → Chi tiết giá sản phẩm
+3. PUT /api/catalogs/1 → Cập nhật giá
+4. PATCH /api/catalogs/bulk-update → Cập nhật giá hàng loạt
+5. GET /api/catalogs/export → Xuất CSV bảng giá
+```
+
+### Flow 8: Inventory (Quản lý tồn kho)
+```
+1. GET /api/stores → Danh sách cửa hàng/kho
+2. GET /api/transaction-types → Danh sách loại giao dịch kho
+3. GET /api/inventories → Danh sách tồn kho
+4. GET /api/inventories/1 → Chi tiết tồn kho theo variant
+5. PUT /api/inventories/1 → Điều chỉnh tồn kho
+6. GET /api/inventories/1/history → Lịch sử xuất nhập kho
+7. POST /api/inventories/receive → Nhập kho
+8. POST /api/inventories/transfer → Chuyển kho
+9. POST /api/inventories/return → Trả hàng nhà cung cấp
+```
+
+---
+
+## 📦 Module 7: Catalog (Bảng giá)
+
+### 7.1 Danh sách bảng giá
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/catalogs?search=&page=1&limit=10`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| search | string | Tìm theo mã, tên sản phẩm, SKU |
+| page | number | Trang hiện tại (mặc định: 1) |
+| limit | number | Số record/trang (mặc định: 10) |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "code": "MILK001",
+      "name": "Sữa tươi Vinamilk",
+      "sku": "MILK001-SKU",
+      "barcode": "8934567890123",
+      "cost_price": "10000.00",
+      "price": "16000.00",
+      "unit": "Cái",
+      "is_active": true,
+      "product_id": 1
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 6,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### 7.2 Chi tiết bảng giá
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/catalogs/1`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "code": "MILK001",
+    "name": "Sữa tươi Vinamilk",
+    "sku": "MILK001-SKU",
+    "barcode": "8934567890123",
+    "cost_price": "10000.00",
+    "price": "16000.00",
+    "unit": "Cái",
+    "unit_id": 1,
+    "is_active": true,
+    "product_id": 1,
+    "description": null
+  }
+}
+```
+
+---
+
+### 7.3 Cập nhật giá sản phẩm
+**Postman Setup:**
+- **Method:** `PUT`
+- **URL:** `http://localhost:5000/api/catalogs/1`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "cost_price": 10000,
+  "selling_price": 16000,
+  "is_active": true
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Cập nhật giá thành công",
+  "data": {
+    "id": 1,
+    "sku": "MILK001-SKU",
+    "cost_price": "10000.00",
+    "price": "16000.00",
+    "is_active": true
+  }
+}
+```
+
+---
+
+### 7.4 Cập nhật giá hàng loạt
+**Postman Setup:**
+- **Method:** `PATCH`
+- **URL:** `http://localhost:5000/api/catalogs/bulk-update`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "variant_ids": [1, 2, 3],
+  "price_change_type": "percent",
+  "price_change_value": 10
+}
+```
+
+**Lưu ý:**
+- `price_change_type`: `"fixed"` (đặt giá cố định) hoặc `"percent"` (tăng/giảm %)
+- `price_change_value`: Giá trị (số dương = tăng, số âm = giảm khi type=percent)
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Cập nhật giá hàng loạt thành công",
+  "updated_count": 3
+}
+```
+
+---
+
+### 7.5 Xuất bảng giá CSV
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/catalogs/export`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response:** File CSV download
+
+---
+
+## 📦 Module 8: Inventory (Quản lý tồn kho)
+
+### 8.1 Danh sách cửa hàng/kho
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/stores`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "code": "STORE_HN",
+      "name": "MiniMart Hà Nội",
+      "store_type": "Retail Store",
+      "address": "123 Trần Duy Hưng",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "code": "STORE_HCM",
+      "name": "MiniMart Hồ Chí Minh",
+      "store_type": "Retail Store",
+      "address": "456 Nguyễn Huệ",
+      "is_active": true
+    }
+  ]
+}
+```
+
+---
+
+### 8.2 Danh sách loại giao dịch kho
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/transaction-types`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {"id": 1, "code": "PURCHASE", "name": "Nhập hàng từ NCC", "affects_stock": 1},
+    {"id": 2, "code": "SALE", "name": "Bán hàng", "affects_stock": -1},
+    {"id": 3, "code": "RETURN_IN", "name": "Khách trả hàng", "affects_stock": 1},
+    {"id": 4, "code": "RETURN_OUT", "name": "Trả hàng NCC", "affects_stock": -1},
+    {"id": 5, "code": "TRANSFER_IN", "name": "Chuyển kho vào", "affects_stock": 1},
+    {"id": 6, "code": "TRANSFER_OUT", "name": "Chuyển kho ra", "affects_stock": -1},
+    {"id": 7, "code": "ADJUSTMENT", "name": "Điều chỉnh tồn", "affects_stock": 0}
+  ]
+}
+```
+
+---
+
+### 8.3 Danh sách tồn kho
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/inventories?search=&store_id=1&status=&page=1&limit=10`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| search | string | Tìm theo mã, tên sản phẩm, SKU |
+| store_id | number | Lọc theo cửa hàng |
+| status | string | `out`, `low`, `normal`, `high` |
+| page | number | Trang hiện tại (mặc định: 1) |
+| limit | number | Số record/trang (mặc định: 10) |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "store_id": 1,
+      "id": 1,
+      "code": "MILK001",
+      "name": "Sữa tươi Vinamilk",
+      "sku": "MILK001-SKU",
+      "barcode": "8934567890123",
+      "unit": "Cái",
+      "location": "MiniMart Hà Nội",
+      "store_code": "STORE_HN",
+      "stock": "100.000",
+      "quantity_reserved": "0.000",
+      "quantity_available": "100.000",
+      "min_stock_level": "20.000",
+      "max_stock_level": "0.000",
+      "stock_status": "normal"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 3,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### 8.4 Chi tiết tồn kho theo variant
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/inventories/1?store_id=`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "variant_info": {
+      "id": 1,
+      "code": "MILK001",
+      "name": "Sữa tươi Vinamilk",
+      "sku": "MILK001-SKU",
+      "barcode": "8934567890123",
+      "cost_price": "10000.00",
+      "selling_price": "16000.00",
+      "unit": "Cái"
+    },
+    "stock_by_store": [
+      {
+        "store_id": 1,
+        "store_name": "MiniMart Hà Nội",
+        "store_code": "STORE_HN",
+        "stock": "100.000",
+        "quantity_reserved": "0.000",
+        "quantity_available": "100.000",
+        "min_stock_level": "20.000",
+        "max_stock_level": "0.000"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 8.5 Điều chỉnh tồn kho
+**Postman Setup:**
+- **Method:** `PUT`
+- **URL:** `http://localhost:5000/api/inventories/1`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "store_id": 1,
+  "quantity": 100,
+  "adjustment_type": "set",
+  "notes": "Kiểm kê điều chỉnh"
+}
+```
+
+**Lưu ý:**
+- `adjustment_type`: `"set"` (đặt số lượng), `"add"` (cộng thêm), `"subtract"` (trừ đi)
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Điều chỉnh tồn kho thành công",
+  "data": {
+    "previous_stock": 50,
+    "new_stock": 100,
+    "quantity_change": 50,
+    "transaction_code": "ADJ-1769331237802"
+  }
+}
+```
+
+---
+
+### 8.6 Lịch sử xuất nhập kho
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/inventories/1/history?store_id=&from=&to=&page=1&limit=20`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| store_id | number | Lọc theo cửa hàng |
+| from | string | Từ ngày (YYYY-MM-DD) |
+| to | string | Đến ngày (YYYY-MM-DD) |
+| page | number | Trang (mặc định: 1) |
+| limit | number | Số record/trang (mặc định: 20) |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "1",
+      "transaction_code": "RCV-1769331207885-3",
+      "date_key": "2026-01-25T00:00:00.000Z",
+      "created_at": "2026-01-25T08:53:27.860Z",
+      "transaction_type": "Nhập hàng từ NCC",
+      "transaction_type_code": "PURCHASE",
+      "store_name": "MiniMart Hà Nội",
+      "quantity_change": "50.000",
+      "balance_before": "0.000",
+      "balance_after": "50.000",
+      "reference_type": "RECEIVE",
+      "unit_cost": "8000.00",
+      "total_value": "400000.00",
+      "notes": "Nhập hàng Pepsi",
+      "created_by_name": "Admin System"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 4,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### 8.7 Nhập kho
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/inventories/receive`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "store_id": 1,
+  "items": [
+    {"variant_id": 3, "quantity": 50, "unit_cost": 8000},
+    {"variant_id": 4, "quantity": 100, "unit_cost": 7500}
+  ],
+  "notes": "Nhập hàng đợt 1 tháng 1/2026"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Nhập kho thành công 2 sản phẩm",
+  "data": {
+    "transaction_codes": ["RCV-1769331207885-3", "RCV-1769331207886-4"],
+    "items_count": 2
+  }
+}
+```
+
+---
+
+### 8.8 Chuyển kho
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/inventories/transfer`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "from_store_id": 1,
+  "to_store_id": 2,
+  "items": [
+    {"variant_id": 3, "quantity": 20},
+    {"variant_id": 4, "quantity": 30}
+  ],
+  "notes": "Chuyển hàng sang kho HCM"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Chuyển kho thành công 2 sản phẩm",
+  "data": {
+    "transaction_codes": ["TRF-1769331223258-3", "TRF-1769331223259-4"],
+    "items_count": 2
+  }
+}
+```
+
+---
+
+### 8.9 Trả hàng nhà cung cấp
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/inventories/return`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "store_id": 1,
+  "items": [
+    {"variant_id": 3, "quantity": 10}
+  ],
+  "notes": "Trả hàng hư hỏng"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Trả hàng thành công 1 sản phẩm",
+  "data": {
+    "transaction_codes": ["RTN-1769331243875-3"],
+    "items_count": 1
+  }
+}
+```
+
 ---
 
 ## 🐳 Chạy dự án
@@ -1460,6 +1963,219 @@ Dùng tools online như: https://jsonformatter.org
 
 ---
 
+## Module 9: Product Images (Ảnh sản phẩm)
+
+> Module quản lý ảnh sản phẩm bao gồm ảnh chính và gallery ảnh phụ.
+
+### 9.1 Lấy danh sách ảnh của sản phẩm
+
+**Endpoint:** `GET /api/products/:id/images`
+
+**Request:**
+- **Headers:** `Authorization: Bearer <token>`
+- **Params:** `id` - ID sản phẩm
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "main_image": "/uploads/products/product-1-main.jpg",
+    "gallery": [
+      {
+        "id": 1,
+        "product_id": 1,
+        "image_url": "/uploads/products/product-1-1.jpg",
+        "alt_text": "Mô tả ảnh",
+        "sort_order": 1,
+        "is_primary": true,
+        "created_at": "2026-01-25T10:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 9.2 Upload ảnh chính sản phẩm
+
+**Endpoint:** `POST /api/products/:id/image`
+
+**Request:**
+- **Headers:** 
+  - `Authorization: Bearer <token>`
+  - `Content-Type: multipart/form-data`
+- **Params:** `id` - ID sản phẩm
+- **Body (form-data):** `image` - File ảnh (jpg, png, webp, max 5MB)
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "image_url": "/uploads/products/product-1-main-1706172900000.jpg"
+  },
+  "message": "Upload ảnh sản phẩm thành công"
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+  "success": false,
+  "message": "Vui lòng chọn file ảnh"
+}
+```
+
+---
+
+### 9.3 Xóa ảnh chính sản phẩm
+
+**Endpoint:** `DELETE /api/products/:id/image`
+
+**Request:**
+- **Headers:** `Authorization: Bearer <token>`
+- **Params:** `id` - ID sản phẩm
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Xóa ảnh sản phẩm thành công"
+}
+```
+
+---
+
+### 9.4 Upload gallery ảnh (tối đa 5 ảnh)
+
+**Endpoint:** `POST /api/products/:id/images`
+
+**Request:**
+- **Headers:** 
+  - `Authorization: Bearer <token>`
+  - `Content-Type: multipart/form-data`
+- **Params:** `id` - ID sản phẩm
+- **Body (form-data):** `images` - Mảng file ảnh (tối đa 5 files)
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "product_id": 1,
+      "image_url": "/uploads/products/product-1-1706172900001.jpg",
+      "alt_text": null,
+      "sort_order": 1,
+      "is_primary": false
+    },
+    {
+      "id": 2,
+      "product_id": 1,
+      "image_url": "/uploads/products/product-1-1706172900002.jpg",
+      "alt_text": null,
+      "sort_order": 2,
+      "is_primary": false
+    }
+  ],
+  "message": "Upload 2 ảnh thành công"
+}
+```
+
+---
+
+### 9.5 Xóa ảnh trong gallery
+
+**Endpoint:** `DELETE /api/products/:id/images/:imageId`
+
+**Request:**
+- **Headers:** `Authorization: Bearer <token>`
+- **Params:** 
+  - `id` - ID sản phẩm
+  - `imageId` - ID ảnh trong gallery
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Xóa ảnh thành công"
+}
+```
+
+**Response (Error - 404):**
+```json
+{
+  "success": false,
+  "message": "Không tìm thấy ảnh"
+}
+```
+
+---
+
+### 9.6 Đặt ảnh làm ảnh chính
+
+**Endpoint:** `PUT /api/products/:id/images/:imageId/primary`
+
+**Request:**
+- **Headers:** `Authorization: Bearer <token>`
+- **Params:** 
+  - `id` - ID sản phẩm
+  - `imageId` - ID ảnh trong gallery
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "product_id": 1,
+    "image_url": "/uploads/products/product-1-1706172900002.jpg",
+    "is_primary": true
+  },
+  "message": "Đặt ảnh chính thành công"
+}
+```
+
+---
+
+### 9.7 Sắp xếp lại thứ tự ảnh
+
+**Endpoint:** `PUT /api/products/:id/images/reorder`
+
+**Request:**
+- **Headers:** 
+  - `Authorization: Bearer <token>`
+  - `Content-Type: application/json`
+- **Params:** `id` - ID sản phẩm
+- **Body:**
+```json
+{
+  "imageIds": [3, 1, 2]
+}
+```
+> Mảng `imageIds` chứa ID của các ảnh theo thứ tự mong muốn
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Sắp xếp ảnh thành công"
+}
+```
+
+**Response (Error - 400):**
+```json
+{
+  "success": false,
+  "message": "Danh sách ID ảnh không hợp lệ"
+}
+```
+
+---
+
 ## 📚 Tài liệu tham khảo
 
 - Express.js: https://expressjs.com
@@ -1487,7 +2203,8 @@ Dùng tools online như: https://jsonformatter.org
 ---
 
 **Created:** 19/01/2026  
-**Version:** 1.0.0  
+**Updated:** 25/01/2026  
+**Version:** 1.3.0  
 **Status:** ✅ Ready for Testing
 
 **Ghi chú:** Tài liệu này gộp từ 2 file API_DOCS.md và API_TESTING_GUIDE.md, bao gồm đầy đủ các endpoint từ Module 1-5.
