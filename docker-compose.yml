@@ -13,8 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
-      - ./database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
-      - ./database/insert_dim_time_only.sql:/docker-entrypoint-initdb.d/3_insert_dim_time.sql
+      - ./database/seed_full.sql:/docker-entrypoint-initdb.d/2_seed_full.sql
     networks:
       - minimart_network
     healthcheck:
