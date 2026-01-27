@@ -1,0 +1,308 @@
+{
+  "info": {
+    "_postman_id": "supermarket-orders-complete",
+    "name": "Supermarket - Complete Orders API",
+    "description": "Comprehensive test collection for Orders API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().status).to.equal('OK');",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set('token', jsonData.data.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"username\": \"admin\", \"password\": \"1\"}"},
+            "url": {"raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create Orders",
+      "item": [
+        {
+          "name": "Create Order - Basic (1 item)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Order created successfully\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().status).to.equal('OK');",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set('order_id', jsonData.data.id);",
+                  "pm.environment.set('order_code', jsonData.data.order_code);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"store_id\": 1, \"customer_id\": 1, \"items\": [{\"variant_id\": 1, \"quantity\": 2, \"unit_price\": 50000}], \"subtotal\": 100000, \"discount_amount\": 0, \"tax_amount\": 10000, \"shipping_fee\": 0, \"payment_method\": \"cash\"}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "Create Order - Multiple Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Order with multiple items created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.items_count).to.equal(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"store_id\": 1, \"customer_id\": 1, \"items\": [{\"variant_id\": 1, \"quantity\": 5, \"unit_price\": 50000, \"discount_per_item\": 5000}, {\"variant_id\": 2, \"quantity\": 3, \"unit_price\": 75000}], \"subtotal\": 475000, \"discount_amount\": 25000, \"tax_amount\": 45000, \"shipping_fee\": 25000, \"payment_method\": \"card\", \"shipping_address\": \"123 Nguyễn Huệ, TP HCM\", \"customer_note\": \"Giao sáng\", \"internal_note\": \"VIP\"}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "Create Order - Guest (No customer_id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"store_id\": 1, \"items\": [{\"variant_id\": 1, \"quantity\": 1, \"unit_price\": 50000}], \"subtotal\": 50000, \"discount_amount\": 0, \"tax_amount\": 5000, \"shipping_fee\": 0, \"payment_method\": \"cash\"}"
+            },
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get Orders",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Get orders list\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData.pagination).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "Get Order Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Get order detail\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.items).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders/{{order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}"]}
+          }
+        },
+        {
+          "name": "Get Order Stats - Summary",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders/stats/summary", "host": ["{{baseUrl}}"], "path": ["api", "orders", "stats", "summary"]}
+          }
+        },
+        {
+          "name": "Get Order Stats - Detailed",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders/stats/detailed", "host": ["{{baseUrl}}"], "path": ["api", "orders", "stats", "detailed"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Filter & Search",
+      "item": [
+        {
+          "name": "Filter by Status",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders?status=pending", "host": ["{{baseUrl}}"], "path": ["api", "orders"], "query": [{"key": "status", "value": "pending"}]}
+          }
+        },
+        {
+          "name": "Filter by Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders?payment_status=unpaid", "host": ["{{baseUrl}}"], "path": ["api", "orders"], "query": [{"key": "payment_status", "value": "unpaid"}]}
+          }
+        },
+        {
+          "name": "Search Order Code",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders?search=ORD", "host": ["{{baseUrl}}"], "path": ["api", "orders"], "query": [{"key": "search", "value": "ORD"}]}
+          }
+        },
+        {
+          "name": "Pagination",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {"raw": "{{baseUrl}}/api/orders?limit=5&offset=0", "host": ["{{baseUrl}}"], "path": ["api", "orders"], "query": [{"key": "limit", "value": "5"}, {"key": "offset", "value": "0"}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Update & Cancel Orders",
+      "item": [
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"status\": \"processing\", \"payment_status\": \"paid\"}"},
+            "url": {"raw": "{{baseUrl}}/api/orders/{{order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}"]}
+          }
+        },
+        {
+          "name": "Mark Order as Delivered",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"status\": \"delivered\"}"},
+            "url": {"raw": "{{baseUrl}}/api/orders/{{order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}"]}
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"reason\": \"Customer requested\"}"},
+            "url": {"raw": "{{baseUrl}}/api/orders/{{order_id}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{order_id}}"]}
+          }
+        }
+      ]
+    },
+      "item": [
+        {
+          "name": "Error - Missing store_id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"customer_id\": 1, \"items\": [], \"subtotal\": 0}"},
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "Error - Empty items",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"store_id\": 1, \"customer_id\": 1, \"items\": [], \"subtotal\": 0}"},
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        },
+        {
+          "name": "Error - Invalid store_id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {"mode": "raw", "raw": "{\"store_id\": 999, \"customer_id\": 1, \"items\": [{\"variant_id\": 1, \"quantity\": 1, \"unit_price\": 50000}], \"subtotal\": 50000}"},
+            "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:5000"},
+    {"key": "token", "value": ""}
+  ]
+}

@@ -8,6 +8,7 @@ const catalogService = require('../services/catalogService');
 const inventoryService = require('../services/inventoryService');
 const productImageService = require('../services/productImageService');
 const dashboardService = require('../services/dashboardService');
+const orderService = require('../services/orderService');
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin, requireManagerOrAdmin, requireRole } = require('../middleware/authorize');
 const { uploadCSV, uploadAvatar, uploadProductImage, uploadProductImages, handleMulterError } = require('../middleware/upload');
@@ -432,6 +433,7 @@ router.delete('/collections/:id', verifyToken, requireManagerOrAdmin, collection
 
 /**
  * ============================================================================
+
  *                    MODULE 6: DASHBOARD / REPORTS ROUTES
  * ============================================================================
  * APIs cho trang Dashboard và Reports
@@ -579,25 +581,6 @@ router.put('/catalogs/:id', verifyToken, requireManagerOrAdmin, catalogService.u
  * - Xem: Tất cả role (verifyToken)
  * - Thao tác kho: Manager hoặc Admin (requireManagerOrAdmin)
  */
-
-/**
- * @GET /api/stores
- * @description Danh sách cửa hàng/kho
- * @auth All authenticated users
- * @headers Authorization: Bearer <token>
- * @returns { data: [{ id, code, name, store_type, address }] }
- */
-router.get('/stores', verifyToken, inventoryService.getStores);
-
-/**
- * @GET /api/transaction-types
- * @description Danh sách loại giao dịch kho
- * @auth All authenticated users
- * @headers Authorization: Bearer <token>
- * @returns { data: [{ id, code, name, affects_stock }] }
- */
-router.get('/transaction-types', verifyToken, inventoryService.getTransactionTypes);
-
 /**
  * @GET /api/inventories
  * @description Danh sách tồn kho sản phẩm
@@ -684,6 +667,121 @@ router.get('/stores', verifyToken, inventoryService.getStores);
  * @access  Private
  */
 router.get('/transaction-types', verifyToken, inventoryService.getTransactionTypes);
+
+/**
+ * @GET /api/orders
+ * @description Danh sách tất cả đơn hàng (có phân trang, lọc, tìm kiếm, sắp xếp)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @query { 
+ *   limit: number (default: 10, max: 100),
+ *   offset: number (default: 0),
+ *   status: string (pending, completed, cancelled),
+ *   payment_status: string (paid, unpaid),
+ *   search: string (tìm kiếm theo order_code hoặc customer name),
+ *   sort: string (order_code, final_amount, status, created_at),
+ *   order: string (ASC, DESC)
+ * }
+ * @returns { 
+ *   data: [{
+ *     id, order_code, date, customer, store, status, payment_status,
+ *     payment_method, amount, items, notes, created_by, created_at
+ *   }],
+ *   pagination
+ * }
+ * @example GET /api/orders?limit=20&offset=0&status=completed&sort=created_at&order=DESC
+ */
+router.get('/orders', verifyToken, orderService.getOrderList);
+
+/**
+ * @POST /api/orders
+ * @description Tạo đơn hàng mới
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @body {
+ *   store_id: number (required),
+ *   customer_id: number (optional),
+ *   items: [{ variant_id, quantity, unit_price, discount_per_item }, ...] (required),
+ *   subtotal: number (required),
+ *   discount_amount: number (default: 0),
+ *   tax_amount: number (default: 0),
+ *   shipping_fee: number (default: 0),
+ *   payment_method: string (cash, card, bank transfer),
+ *   shipping_address: string,
+ *   customer_note: string,
+ *   internal_note: string
+ * }
+ * @returns {
+ *   id, order_code, date, customer_name, store_name, status, payment_status,
+ *   amount, items_count, created_at
+ * }
+ * @example POST /api/orders
+ */
+router.post('/orders', verifyToken, orderService.createOrder);
+
+/**
+ * @GET /api/orders/stats/summary
+ * @description Thống kê đơn hàng (tổng, theo trạng thái, doanh thu, etc)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @returns {
+ *   total_orders, by_status, by_payment, revenue
+ * }
+ */
+router.get('/orders/stats/summary', verifyToken, orderService.getOrderStats);
+
+/**
+ * @GET /api/orders/:id
+ * @description Chi tiết đơn hàng (bao gồm danh sách items)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @param id - ID đơn hàng
+ * @returns {
+ *   id, order_code, date, customer, store, status, payment_status,
+ *   amount, shipping_address, items, notes, created_by, created_at
+ * }
+ */
+router.get('/orders/:id', verifyToken, orderService.getOrderDetail);
+
+/**
+ * @GET /api/orders/stats/detailed
+ * @description Chi tiết thống kê (completion rate, payment rate, etc)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @returns {
+ *   orders (total, by_status, completion_rate),
+ *   payment (by_status, payment_rate),
+ *   revenue (total, by_status, avg),
+ *   financials (discount, tax, items)
+ * }
+ */
+router.get('/orders/stats/detailed', verifyToken, orderService.getDetailedStats);
+
+/**
+ * @PUT /api/orders/:id
+ * @description Cập nhật trạng thái đơn hàng hoặc phương thức thanh toán
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>, Content-Type: application/json
+ * @body { status?, payment_status?, payment_method? }
+ * @param id - ID đơn hàng
+ * @returns {
+ *   id, order_code, status, payment_status, payment_method, updated_at
+ * }
+ */
+router.put('/orders/:id', verifyToken, orderService.updateOrderStatus);
+
+/**
+ * @DELETE /api/orders/:id
+ * @description Hủy đơn hàng (soft delete - set status = cancelled)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>, Content-Type: application/json
+ * @body { reason? }
+ * @param id - ID đơn hàng
+ * @returns {
+ *   id, order_code, status, payment_status, cancelled_at, note
+ * }
+ */
+router.delete('/orders/:id', verifyToken, orderService.cancelOrder);
 
 /**
  * ============================================================================

@@ -1,5 +1,5 @@
-import apiClient from "./apiClient";
 
+import apiClient from "./apiClient";
 // --- Collection API ---
 
 // Lấy danh sách danh mục (có phân trang & tìm kiếm)
@@ -32,32 +32,25 @@ export const updateCollection = async (id, collectionData) => {
 export const deleteCollection = async (id) => {
   return apiClient.delete(`/api/collections/${id}`);
 };
-
 // --- Catalog (Price List) API ---
-export const getCatalogs = async () => {
-  return Promise.resolve({ data: sampleCatalogs });
+
+export const getCatalogs = async (params) => {
+  return apiClient.get("/api/catalogs", { params });
 };
 
-export const createCatalog = async (catalogData) => {
-  const newCatalog = { ...catalogData, id: new Date().getTime() };
-  sampleCatalogs.push(newCatalog);
-  return Promise.resolve({ data: newCatalog });
+export const getCatalogById = async (id) => {
+  return apiClient.get(`/api/catalogs/${id}`);
 };
 
-export const updateCatalog = async (id, catalogData) => {
-  const index = sampleCatalogs.findIndex((c) => c.id === id);
-  if (index !== -1) {
-    sampleCatalogs[index] = { ...sampleCatalogs[index], ...catalogData };
-    return Promise.resolve({ data: sampleCatalogs[index] });
-  }
-  return Promise.reject(new Error("Catalog not found"));
+export const updateCatalog = async (id, data) => {
+  return apiClient.put(`/api/catalogs/${id}`, data);
 };
 
-export const deleteCatalog = async (id) => {
-  const index = sampleCatalogs.findIndex((c) => c.id === id);
-  if (index !== -1) {
-    sampleCatalogs.splice(index, 1);
-    return Promise.resolve();
-  }
-  return Promise.reject(new Error("Catalog not found"));
+export const bulkUpdateCatalogs = async (data) => {
+  return apiClient.patch("/api/catalogs/bulk-update", data);
 };
+
+export const exportCatalogs = async () => {
+  return apiClient.get("/api/catalogs/export", { responseType: "blob" });
+};
+
