@@ -3,7 +3,7 @@
  *                    PRODUCT IMAGE SERVICE
  * ============================================================================
  * Quản lý ảnh sản phẩm (Product Images)
- * Sử dụng bảng: dim_products (image_url), product_images
+ * Sử dụng bảng: dim_products (image_url), dim_product_images
  * 
  * Chức năng:
  * - Upload ảnh chính cho sản phẩm
@@ -172,7 +172,7 @@ const uploadGalleryImages = async (req, res) => {
 
         // Get current max sort_order
         const sortResult = await client.query(
-            'SELECT COALESCE(MAX(sort_order), 0) as max_sort FROM product_images WHERE product_id = $1',
+            'SELECT COALESCE(MAX(sort_order), 0) as max_sort FROM dim_product_images WHERE product_id = $1',
             [id]
         );
         let sortOrder = sortResult.rows[0].max_sort;
@@ -183,7 +183,7 @@ const uploadGalleryImages = async (req, res) => {
             const imageUrl = `/uploads/products/${file.filename}`;
             
             const insertResult = await client.query(`
-                INSERT INTO product_images (product_id, image_url, sort_order)
+                INSERT INTO dim_product_images (product_id, image_url, sort_order)
                 VALUES ($1, $2, $3)
                 RETURNING id, image_url, sort_order, is_primary
             `, [id, imageUrl, sortOrder]);
@@ -193,12 +193,12 @@ const uploadGalleryImages = async (req, res) => {
 
         // If no primary image, set first one as primary
         const primaryCheck = await client.query(
-            'SELECT id FROM product_images WHERE product_id = $1 AND is_primary = true',
+            'SELECT id FROM dim_product_images WHERE product_id = $1 AND is_primary = true',
             [id]
         );
         if (primaryCheck.rows.length === 0 && insertedImages.length > 0) {
             await client.query(
-                'UPDATE product_images SET is_primary = true WHERE id = $1',
+                'UPDATE dim_product_images SET is_primary = true WHERE id = $1',
                 [insertedImages[0].id]
             );
             insertedImages[0].is_primary = true;
@@ -260,7 +260,7 @@ const getProductImages = async (req, res) => {
         // Get gallery images
         const galleryResult = await query(`
             SELECT id, image_url, alt_text, sort_order, is_primary, created_at
-            FROM product_images
+            FROM dim_product_images
             WHERE product_id = $1
             ORDER BY is_primary DESC, sort_order ASC
         `, [id]);
@@ -295,7 +295,7 @@ const deleteGalleryImage = async (req, res) => {
 
         // Get image info
         const result = await query(
-            'SELECT id, image_url, is_primary FROM product_images WHERE id = $1 AND product_id = $2',
+            'SELECT id, image_url, is_primary FROM dim_product_images WHERE id = $1 AND product_id = $2',
             [imageId, id]
         );
 
@@ -315,15 +315,15 @@ const deleteGalleryImage = async (req, res) => {
         }
 
         // Delete from database
-        await query('DELETE FROM product_images WHERE id = $1', [imageId]);
+        await query('DELETE FROM dim_product_images WHERE id = $1', [imageId]);
 
         // If was primary, set next image as primary
         if (image.is_primary) {
             await query(`
-                UPDATE product_images 
+                UPDATE dim_product_images 
                 SET is_primary = true 
                 WHERE product_id = $1 AND id = (
-                    SELECT id FROM product_images WHERE product_id = $1 ORDER BY sort_order LIMIT 1
+                    SELECT id FROM dim_product_images WHERE product_id = $1 ORDER BY sort_order LIMIT 1
                 )
             `, [id]);
         }
@@ -356,7 +356,7 @@ const setPrimaryImage = async (req, res) => {
 
         // Check image exists
         const result = await client.query(
-            'SELECT id FROM product_images WHERE id = $1 AND product_id = $2',
+            'SELECT id FROM dim_product_images WHERE id = $1 AND product_id = $2',
             [imageId, id]
         );
 
@@ -371,13 +371,13 @@ const setPrimaryImage = async (req, res) => {
 
         // Remove primary from all images of this product
         await client.query(
-            'UPDATE product_images SET is_primary = false WHERE product_id = $1',
+            'UPDATE dim_product_images SET is_primary = false WHERE product_id = $1',
             [id]
         );
 
         // Set new primary
         await client.query(
-            'UPDATE product_images SET is_primary = true WHERE id = $1',
+            'UPDATE dim_product_images SET is_primary = true WHERE id = $1',
             [imageId]
         );
 
@@ -424,7 +424,7 @@ const reorderImages = async (req, res) => {
 
         for (let i = 0; i < image_ids.length; i++) {
             await client.query(
-                'UPDATE product_images SET sort_order = $1 WHERE id = $2 AND product_id = $3',
+                'UPDATE dim_product_images SET sort_order = $1 WHERE id = $2 AND product_id = $3',
                 [i + 1, image_ids[i], id]
             );
         }

@@ -249,7 +249,7 @@ const getProductById = async (req, res) => {
 
     // Get gallery images
     const imagesQuery = `
-      SELECT * FROM product_images WHERE product_id = $1 ORDER BY sort_order, id
+      SELECT * FROM dim_product_images WHERE product_id = $1 ORDER BY sort_order, id
     `;
     const imagesResult = await db.query(imagesQuery, [id]);
 

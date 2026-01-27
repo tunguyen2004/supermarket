@@ -1,7 +1,7 @@
 # 📚 API Documentation - Supermarket Management System
 
-**Cập nhật:** 25/01/2026  
-**Version:** 1.3.0
+**Cập nhật:** 27/01/2026  
+**Version:** 2.0.0
 
 ---
 
@@ -2203,8 +2203,8 @@ Dùng tools online như: https://jsonformatter.org
 ---
 
 **Created:** 19/01/2026  
-**Updated:** 25/01/2026  
-**Version:** 1.3.0  
+**Updated:** 27/01/2026  
+**Version:** 2.0.0  
 **Status:** ✅ Ready for Testing
 
-**Ghi chú:** Tài liệu này gộp từ 2 file API_DOCS.md và API_TESTING_GUIDE.md, bao gồm đầy đủ các endpoint từ Module 1-5.
+**Ghi chú:** Tài liệu này bao gồm đầy đủ các endpoint từ Module 1-9.

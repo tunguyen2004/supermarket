@@ -195,6 +195,7 @@ CREATE TABLE dim_products (
     brand_id INT,
     unit_id INT NOT NULL,
     description TEXT,
+    image_url VARCHAR(500),
     is_active BOOLEAN DEFAULT TRUE,
     has_variants BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -225,6 +226,23 @@ CREATE TABLE dim_product_variants (
         FOREIGN KEY (product_id) REFERENCES dim_products(id)
         ON DELETE CASCADE
 );
+
+-- Product Images (Gallery) - Dimension table for product gallery
+CREATE TABLE dim_product_images (
+    id SERIAL PRIMARY KEY,
+    product_id INT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    alt_text VARCHAR(255),
+    sort_order INT DEFAULT 0,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_product_image_product
+        FOREIGN KEY (product_id) REFERENCES dim_products(id)
+        ON DELETE CASCADE
+);
+
+-- Index for dim_product_images
+CREATE INDEX idx_product_images_product ON dim_product_images(product_id);
 
 -- Users
 CREATE TABLE dim_users (
