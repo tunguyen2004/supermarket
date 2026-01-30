@@ -1,4 +1,5 @@
 import apiClient from "./apiClient";
+
 // --- Collection API ---
 
 // Lấy danh sách danh mục (có phân trang & tìm kiếm)
@@ -31,31 +32,35 @@ export const updateCollection = async (id, collectionData) => {
 export const deleteCollection = async (id) => {
   return apiClient.delete(`/api/collections/${id}`);
 };
+
 // --- Catalog (Price List) API ---
-export const getCatalogs = async () => {
-  return Promise.resolve({ data: sampleCatalogs });
+
+// Lấy danh sách bảng giá (có phân trang & tìm kiếm)
+export const getCatalogs = async (params) => {
+  // params: { page, limit, search }
+  return apiClient.get("/api/catalogs", { params });
 };
 
-export const createCatalog = async (catalogData) => {
-  const newCatalog = { ...catalogData, id: new Date().getTime() };
-  sampleCatalogs.push(newCatalog);
-  return Promise.resolve({ data: newCatalog });
+// Lấy chi tiết bảng giá
+export const getCatalogById = async (id) => {
+  return apiClient.get(`/api/catalogs/${id}`);
 };
 
+// Cập nhật giá sản phẩm
 export const updateCatalog = async (id, catalogData) => {
-  const index = sampleCatalogs.findIndex((c) => c.id === id);
-  if (index !== -1) {
-    sampleCatalogs[index] = { ...sampleCatalogs[index], ...catalogData };
-    return Promise.resolve({ data: sampleCatalogs[index] });
-  }
-  return Promise.reject(new Error("Catalog not found"));
+  // catalogData: { cost_price, selling_price, is_active }
+  return apiClient.put(`/api/catalogs/${id}`, catalogData);
 };
 
-export const deleteCatalog = async (id) => {
-  const index = sampleCatalogs.findIndex((c) => c.id === id);
-  if (index !== -1) {
-    sampleCatalogs.splice(index, 1);
-    return Promise.resolve();
-  }
-  return Promise.reject(new Error("Catalog not found"));
+// Cập nhật giá hàng loạt
+export const bulkUpdateCatalog = async (data) => {
+  // data: { variant_ids, price_change_type, price_change_value }
+  return apiClient.patch("/api/catalogs/bulk-update", data);
+};
+
+// Xuất bảng giá CSV
+export const exportCatalog = async () => {
+  return apiClient.get("/api/catalogs/export", {
+    responseType: "blob",
+  });
 };
