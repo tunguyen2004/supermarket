@@ -362,7 +362,9 @@ const fetchStaffList = async () => {
       joinDate: item.created_at
         ? dayjs(item.created_at).format("DD/MM/YYYY")
         : "",
-      avatarUrl: "", // API chưa có avatar
+      avatarUrl: item.avatar_url
+        ? `http://localhost:5000${item.avatar_url}`
+        : "",
       notes: "",
     }));
   } catch (error) {

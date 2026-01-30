@@ -171,7 +171,7 @@ const filteredCatalogs = computed(() => {
   return catalogs.value.filter(
     (item) =>
       item.name.toLowerCase().includes(search.value.toLowerCase()) ||
-      item.code.toLowerCase().includes(search.value.toLowerCase())
+      item.code.toLowerCase().includes(search.value.toLowerCase()),
   );
 });
 
@@ -218,7 +218,7 @@ const handleDelete = (catalog) => {
       confirmButtonText: "Xóa",
       cancelButtonText: "Hủy",
       type: "warning",
-    }
+    },
   )
     .then(async () => {
       try {
@@ -234,7 +234,6 @@ const handleDelete = (catalog) => {
 </script>
 
 <style scoped>
-@import "./responsive-style.css";
 .price {
   color: #d9534f;
   font-weight: 600;
