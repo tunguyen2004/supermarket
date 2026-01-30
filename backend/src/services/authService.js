@@ -3,6 +3,56 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const TOKEN_EXPIRY_DAYS = 7; // Token hết hạn sau 7 ngày
+
+// ============================================================================
+// TOKEN BLACKLIST (In-Memory)
+// ============================================================================
+// Lưu các token đã bị vô hiệu hóa (logout)
+// Key: token, Value: thời gian hết hạn của token
+const tokenBlacklist = new Map();
+
+/**
+ * Thêm token vào blacklist khi logout
+ * @param {string} token - JWT token cần vô hiệu hóa
+ */
+const addToBlacklist = (token) => {
+  try {
+    // Decode token để lấy thời gian hết hạn
+    const decoded = jwt.decode(token);
+    if (decoded && decoded.exp) {
+      // Lưu token với thời gian hết hạn (exp là timestamp tính bằng giây)
+      tokenBlacklist.set(token, decoded.exp * 1000);
+    }
+  } catch (error) {
+    console.error('Error adding token to blacklist:', error);
+  }
+};
+
+/**
+ * Kiểm tra token có bị blacklist không
+ * @param {string} token - JWT token cần kiểm tra
+ * @returns {boolean} true nếu token bị blacklist
+ */
+const isTokenBlacklisted = (token) => {
+  return tokenBlacklist.has(token);
+};
+
+/**
+ * Dọn dẹp các token hết hạn khỏi blacklist (tiết kiệm memory)
+ * Nên chạy định kỳ
+ */
+const cleanupBlacklist = () => {
+  const now = Date.now();
+  for (const [token, expiry] of tokenBlacklist.entries()) {
+    if (expiry < now) {
+      tokenBlacklist.delete(token);
+    }
+  }
+};
+
+// Tự động cleanup mỗi 1 giờ
+setInterval(cleanupBlacklist, 60 * 60 * 1000);
 
 // ============================================================================
 // CONSTANTS
@@ -19,7 +69,7 @@ const generateToken = (userId, email, roleId) => {
   return jwt.sign(
     { id: userId, email: email, role_id: roleId },
     JWT_SECRET,
-    { expiresIn: '7d' } // Token hết hạn sau 7 ngày
+    { expiresIn: `${TOKEN_EXPIRY_DAYS}d` } // Token hết hạn sau 7 ngày
   );
 };
 
@@ -228,12 +278,21 @@ const login = async (req, res) => {
  * Đăng xuất - POST /api/auth/logout
  * 
  * Tính năng:
+ * - Thêm token hiện tại vào blacklist (vô hiệu hóa)
  * - Cập nhật is_active thành false (người dùng đang offline)
- * - Phía client xóa token
  */
 const logout = async (req, res) => {
   try {
     const userId = req.user.id;
+    
+    // Lấy token từ header
+    const authHeader = req.headers.authorization;
+    const token = authHeader ? authHeader.substring(7) : null;
+
+    // Thêm token vào blacklist (vô hiệu hóa token)
+    if (token) {
+      addToBlacklist(token);
+    }
 
     // Cập nhật is_active = false (người dùng đang offline)
     await db.query(
@@ -246,7 +305,7 @@ const logout = async (req, res) => {
     res.json({
       status: 'OK',
       message: 'Logout successful',
-      note: 'User status has been set to offline',
+      note: 'Token has been invalidated and user status has been set to offline',
     });
   } catch (error) {
     console.error('Logout error:', error);
@@ -450,4 +509,5 @@ module.exports = {
   logout,
   refreshToken,
   getRoles,
+  isTokenBlacklisted,
 };

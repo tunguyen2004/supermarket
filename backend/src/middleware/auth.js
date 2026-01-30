@@ -1,9 +1,11 @@
 const jwt = require('jsonwebtoken');
+const { isTokenBlacklisted } = require('../services/authService');
 
 /**
  * Middleware xác thực JWT token
  * Kiểm tra token trong header Authorization: Bearer <token>
  * Token phải chứa: { id, email, role_id, iat, exp }
+ * Token không được nằm trong blacklist (đã logout)
  */
 const verifyToken = (req, res, next) => {
   try {
@@ -19,6 +21,14 @@ const verifyToken = (req, res, next) => {
 
     // Tách token từ "Bearer <token>"
     const token = authHeader.substring(7);
+
+    // Kiểm tra token có bị blacklist không (đã logout)
+    if (isTokenBlacklisted(token)) {
+      return res.status(401).json({
+        status: 'ERROR',
+        message: 'Token has been invalidated. Please login again.',
+      });
+    }
 
     // Xác minh token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');

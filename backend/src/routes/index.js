@@ -731,19 +731,6 @@ router.post('/orders', verifyToken, orderService.createOrder);
 router.get('/orders/stats/summary', verifyToken, orderService.getOrderStats);
 
 /**
- * @GET /api/orders/:id
- * @description Chi tiết đơn hàng (bao gồm danh sách items)
- * @auth All authenticated users
- * @headers Authorization: Bearer <token>
- * @param id - ID đơn hàng
- * @returns {
- *   id, order_code, date, customer, store, status, payment_status,
- *   amount, shipping_address, items, notes, created_by, created_at
- * }
- */
-router.get('/orders/:id', verifyToken, orderService.getOrderDetail);
-
-/**
  * @GET /api/orders/stats/detailed
  * @description Chi tiết thống kê (completion rate, payment rate, etc)
  * @auth All authenticated users
@@ -756,6 +743,19 @@ router.get('/orders/:id', verifyToken, orderService.getOrderDetail);
  * }
  */
 router.get('/orders/stats/detailed', verifyToken, orderService.getDetailedStats);
+
+/**
+ * @GET /api/orders/:id
+ * @description Chi tiết đơn hàng (bao gồm danh sách items)
+ * @auth All authenticated users
+ * @headers Authorization: Bearer <token>
+ * @param id - ID đơn hàng
+ * @returns {
+ *   id, order_code, date, customer, store, status, payment_status,
+ *   amount, shipping_address, items, notes, created_by, created_at
+ * }
+ */
+router.get('/orders/:id', verifyToken, orderService.getOrderDetail);
 
 /**
  * @PUT /api/orders/:id

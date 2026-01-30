@@ -2176,7 +2176,566 @@ Dùng tools online như: https://jsonformatter.org
 
 ---
 
-## 📚 Tài liệu tham khảo
+## Module 10: Orders (Quản lý đơn hàng)
+
+### 10.1 Danh sách đơn hàng
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/orders`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| limit | number | Số lượng/trang (max: 100) | `?limit=20` |
+| offset | number | Vị trí bắt đầu | `?offset=0` |
+| status | string | Lọc theo trạng thái | `?status=completed` |
+| payment_status | string | Lọc theo thanh toán | `?payment_status=paid` |
+| search | string | Tìm theo mã đơn/tên KH | `?search=ORD001` |
+| sort | string | Sắp xếp theo trường | `?sort=created_at` |
+| order | string | Thứ tự sắp xếp | `?order=DESC` |
+
+**Giá trị status:** `pending`, `completed`, `cancelled`
+**Giá trị payment_status:** `paid`, `unpaid`
+**Giá trị sort:** `order_code`, `final_amount`, `status`, `created_at`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "order_code": "ORD-20260128-001",
+      "date": "2026-01-28T10:30:00.000Z",
+      "customer": {
+        "id": 1,
+        "name": "Nguyễn Văn An",
+        "phone": "0901234567"
+      },
+      "store": {
+        "id": 1,
+        "name": "MiniMart Hà Nội"
+      },
+      "status": "completed",
+      "payment_status": "paid",
+      "payment_method": "cash",
+      "amount": {
+        "subtotal": 150000,
+        "discount": 10000,
+        "tax": 0,
+        "shipping": 0,
+        "final": 140000
+      },
+      "items": 3,
+      "notes": {
+        "customer": "Giao trước 5h",
+        "internal": "Khách VIP"
+      },
+      "created_by": "Admin System",
+      "created_at": "2026-01-28T10:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "limit": 10,
+    "offset": 0,
+    "total": 156,
+    "totalPages": 16
+  }
+}
+```
+
+---
+
+### 10.2 Tạo đơn hàng mới
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/orders`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "store_id": 1,
+  "customer_id": 1,
+  "items": [
+    {
+      "variant_id": 1,
+      "quantity": 2,
+      "unit_price": 16000,
+      "discount_per_item": 0
+    },
+    {
+      "variant_id": 2,
+      "quantity": 1,
+      "unit_price": 25000,
+      "discount_per_item": 5000
+    }
+  ],
+  "subtotal": 57000,
+  "discount_amount": 5000,
+  "tax_amount": 0,
+  "shipping_fee": 0,
+  "payment_method": "cash",
+  "shipping_address": "123 Trần Duy Hưng, Hà Nội",
+  "customer_note": "Giao hàng trước 5h chiều",
+  "internal_note": "Khách VIP"
+}
+```
+
+**Các trường bắt buộc:**
+- `store_id`: ID cửa hàng
+- `items`: Danh sách sản phẩm
+- `subtotal`: Tổng tiền trước giảm giá
+
+**Các trường tùy chọn:**
+- `customer_id`: ID khách hàng (nếu có)
+- `discount_amount`: Số tiền giảm giá (default: 0)
+- `tax_amount`: Thuế (default: 0)
+- `shipping_fee`: Phí ship (default: 0)
+- `payment_method`: `cash`, `card`, `bank transfer`
+- `shipping_address`: Địa chỉ giao hàng
+- `customer_note`: Ghi chú của khách
+- `internal_note`: Ghi chú nội bộ
+
+**Response (Success - 201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 157,
+    "order_code": "ORD-20260128-157",
+    "date": "2026-01-28T14:30:00.000Z",
+    "customer_name": "Nguyễn Văn An",
+    "store_name": "MiniMart Hà Nội",
+    "status": "pending",
+    "payment_status": "unpaid",
+    "amount": {
+      "subtotal": 57000,
+      "discount": 5000,
+      "tax": 0,
+      "shipping": 0,
+      "final": 52000
+    },
+    "items_count": 2,
+    "created_at": "2026-01-28T14:30:00.000Z"
+  },
+  "message": "Tạo đơn hàng thành công"
+}
+```
+
+---
+
+### 10.3 Chi tiết đơn hàng
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/orders/1` (thay `1` bằng ID)
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "order_code": "ORD-20260128-001",
+    "date": "2026-01-28T10:30:00.000Z",
+    "customer": {
+      "id": 1,
+      "name": "Nguyễn Văn An",
+      "phone": "0901234567",
+      "email": "an@email.com"
+    },
+    "store": {
+      "id": 1,
+      "name": "MiniMart Hà Nội",
+      "address": "123 Trần Duy Hưng"
+    },
+    "status": "completed",
+    "payment_status": "paid",
+    "payment_method": "cash",
+    "amount": {
+      "subtotal": 150000,
+      "discount": 10000,
+      "tax": 0,
+      "shipping": 0,
+      "final": 140000
+    },
+    "shipping_address": "456 Nguyễn Trãi, Hà Nội",
+    "items": [
+      {
+        "id": 1,
+        "variant_id": 1,
+        "product_name": "Sữa tươi Vinamilk",
+        "sku": "MILK001-SKU",
+        "quantity": 3,
+        "unit_price": 16000,
+        "discount_per_item": 0,
+        "total": 48000
+      },
+      {
+        "id": 2,
+        "variant_id": 2,
+        "product_name": "Mì Hảo Hảo",
+        "sku": "NOODLE001-SKU",
+        "quantity": 5,
+        "unit_price": 5000,
+        "discount_per_item": 500,
+        "total": 22500
+      }
+    ],
+    "notes": {
+      "customer": "Giao trước 5h chiều",
+      "internal": "Khách VIP"
+    },
+    "created_by": {
+      "id": 1,
+      "name": "Admin System"
+    },
+    "created_at": "2026-01-28T10:30:00.000Z",
+    "updated_at": "2026-01-28T11:00:00.000Z"
+  }
+}
+```
+
+---
+
+### 10.4 Cập nhật trạng thái đơn hàng
+**Postman Setup:**
+- **Method:** `PUT`
+- **URL:** `http://localhost:5000/api/orders/1` (thay `1` bằng ID)
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "status": "completed",
+  "payment_status": "paid",
+  "payment_method": "cash"
+}
+```
+
+**Các trường có thể cập nhật:**
+- `status`: `pending`, `completed`, `cancelled`
+- `payment_status`: `paid`, `unpaid`
+- `payment_method`: `cash`, `card`, `bank transfer`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "order_code": "ORD-20260128-001",
+    "status": "completed",
+    "payment_status": "paid",
+    "payment_method": "cash",
+    "updated_at": "2026-01-28T15:00:00.000Z"
+  },
+  "message": "Cập nhật đơn hàng thành công"
+}
+```
+
+---
+
+### 10.5 Hủy đơn hàng
+**Postman Setup:**
+- **Method:** `DELETE`
+- **URL:** `http://localhost:5000/api/orders/1` (thay `1` bằng ID)
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "reason": "Khách hàng yêu cầu hủy đơn"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "order_code": "ORD-20260128-001",
+    "status": "cancelled",
+    "payment_status": "unpaid",
+    "cancelled_at": "2026-01-28T15:30:00.000Z",
+    "note": "Khách hàng yêu cầu hủy đơn"
+  },
+  "message": "Hủy đơn hàng thành công"
+}
+```
+
+> ⚠️ **Lưu ý:** Hủy đơn hàng là soft delete (đặt status = cancelled), không xóa vĩnh viễn dữ liệu.
+
+---
+
+### 10.6 Thống kê đơn hàng (Summary)
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/orders/stats/summary`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "total_orders": 156,
+    "by_status": {
+      "pending": 23,
+      "completed": 120,
+      "cancelled": 13
+    },
+    "by_payment": {
+      "paid": 118,
+      "unpaid": 38
+    },
+    "revenue": {
+      "total": 15680000,
+      "average": 100512
+    }
+  }
+}
+```
+
+---
+
+### 10.7 Thống kê chi tiết (Detailed Stats)
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/orders/stats/detailed`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "orders": {
+      "total": 156,
+      "by_status": {
+        "pending": 23,
+        "completed": 120,
+        "cancelled": 13
+      },
+      "completion_rate": 76.92
+    },
+    "payment": {
+      "by_status": {
+        "paid": 118,
+        "unpaid": 38
+      },
+      "payment_rate": 75.64
+    },
+    "revenue": {
+      "total": 15680000,
+      "by_status": {
+        "pending": 2300000,
+        "completed": 12800000,
+        "cancelled": 580000
+      },
+      "average": 100512
+    },
+    "financials": {
+      "total_discount": 890000,
+      "total_tax": 0,
+      "total_shipping": 250000,
+      "total_items": 523
+    }
+  }
+}
+```
+
+---
+
+## � Tổng kết API
+
+| STT | Module | API | Method | Endpoint |
+|-----|--------|-----|--------|----------|
+| 1 | Auth | Đăng nhập | POST | `/api/auth/login` |
+| 2 | Auth | Lấy thông tin user | GET | `/api/auth/me` |
+| 3 | Auth | Đăng xuất | POST | `/api/auth/logout` |
+| 4 | Auth | Refresh token | POST | `/api/auth/refresh` |
+| 5 | Auth | Danh sách roles | GET | `/api/auth/roles` |
+| 6 | Staff | Danh sách | GET | `/api/staff` |
+| 7 | Staff | Thêm mới | POST | `/api/staff` |
+| 8 | Staff | Chi tiết | GET | `/api/staff/:id` |
+| 9 | Staff | Cập nhật | PUT | `/api/staff/:id` |
+| 10 | Staff | Xóa | DELETE | `/api/staff/:id` |
+| 11 | Staff | Phân quyền | PUT | `/api/staff/:id/role` |
+| 12 | Profile | Xem profile | GET | `/api/users/profile` |
+| 13 | Profile | Cập nhật profile | PUT | `/api/users/profile` |
+| 14 | Profile | Đổi mật khẩu | PUT | `/api/users/change-password` |
+| 15 | Profile | Upload avatar | POST | `/api/users/avatar` |
+| 16 | Profile | Xóa avatar | DELETE | `/api/users/avatar` |
+| 17 | Products | Danh sách | GET | `/api/products` |
+| 18 | Products | Thêm mới | POST | `/api/products` |
+| 19 | Products | Chi tiết | GET | `/api/products/:id` |
+| 20 | Products | Sửa | PUT | `/api/products/:id` |
+| 21 | Products | Xóa | DELETE | `/api/products/:id` |
+| 22 | Products | Bulk status | PATCH | `/api/products/bulk-status` |
+| 23 | Products | Export CSV | GET | `/api/products/export` |
+| 24 | Products | Import CSV | POST | `/api/products/import` |
+| 25 | Products | DS Thương hiệu | GET | `/api/brands` |
+| 26 | Products | DS Đơn vị | GET | `/api/units` |
+| 27 | Collections | Danh sách | GET | `/api/collections` |
+| 28 | Collections | Cây danh mục | GET | `/api/collections/tree` |
+| 29 | Collections | Thêm mới | POST | `/api/collections` |
+| 30 | Collections | Chi tiết | GET | `/api/collections/:id` |
+| 31 | Collections | Sửa | PUT | `/api/collections/:id` |
+| 32 | Collections | Xóa | DELETE | `/api/collections/:id` |
+| 33 | Dashboard | Overview | GET | `/api/dashboard/overview` |
+| 34 | Dashboard | Stats | GET | `/api/dashboard/stats` |
+| 35 | Dashboard | Revenue Chart | GET | `/api/dashboard/revenue-chart` |
+| 36 | Dashboard | Top Products | GET | `/api/dashboard/top-products` |
+| 37 | Dashboard | Sales Channels | GET | `/api/dashboard/sales-channels` |
+| 38 | Dashboard | Top Customers | GET | `/api/dashboard/top-customers` |
+| 39 | Dashboard | Low Stock | GET | `/api/dashboard/low-stock` |
+| 40 | Catalog | Danh sách | GET | `/api/catalogs` |
+| 41 | Catalog | Chi tiết | GET | `/api/catalogs/:id` |
+| 42 | Catalog | Cập nhật giá | PUT | `/api/catalogs/:id` |
+| 43 | Catalog | Bulk update | PATCH | `/api/catalogs/bulk-update` |
+| 44 | Catalog | Export CSV | GET | `/api/catalogs/export` |
+| 45 | Inventory | DS cửa hàng | GET | `/api/stores` |
+| 46 | Inventory | DS loại giao dịch | GET | `/api/transaction-types` |
+| 47 | Inventory | Danh sách | GET | `/api/inventories` |
+| 48 | Inventory | Chi tiết | GET | `/api/inventories/:variantId` |
+| 49 | Inventory | Điều chỉnh | PUT | `/api/inventories/:variantId` |
+| 50 | Inventory | Lịch sử | GET | `/api/inventories/:variantId/history` |
+| 51 | Inventory | Nhập kho | POST | `/api/inventories/receive` |
+| 52 | Inventory | Chuyển kho | POST | `/api/inventories/transfer` |
+| 53 | Inventory | Trả hàng NCC | POST | `/api/inventories/return` |
+| 54 | Product Images | Danh sách ảnh | GET | `/api/products/:id/images` |
+| 55 | Product Images | Upload ảnh chính | POST | `/api/products/:id/image` |
+| 56 | Product Images | Xóa ảnh chính | DELETE | `/api/products/:id/image` |
+| 57 | Product Images | Upload gallery | POST | `/api/products/:id/images` |
+| 58 | Product Images | Xóa ảnh gallery | DELETE | `/api/products/:id/images/:imageId` |
+| 59 | Product Images | Set ảnh chính | PUT | `/api/products/:id/images/:imageId/primary` |
+| 60 | Product Images | Sắp xếp ảnh | PUT | `/api/products/:id/images/reorder` |
+| 61 | Orders | Danh sách | GET | `/api/orders` |
+| 62 | Orders | Tạo mới | POST | `/api/orders` |
+| 63 | Orders | Chi tiết | GET | `/api/orders/:id` |
+| 64 | Orders | Cập nhật | PUT | `/api/orders/:id` |
+| 65 | Orders | Hủy đơn | DELETE | `/api/orders/:id` |
+| 66 | Orders | Thống kê summary | GET | `/api/orders/stats/summary` |
+| 67 | Orders | Thống kê detailed | GET | `/api/orders/stats/detailed` |
+
+---
+
+## 📖 Complete Test Flow
+
+### Flow 1: Authentication
+```
+1. POST /api/auth/login → Lấy token
+2. GET /api/auth/me → Kiểm tra login
+3. GET /api/auth/roles → Lấy danh sách roles
+4. POST /api/auth/logout → Đăng xuất
+```
+
+### Flow 2: Staff Management
+```
+1. GET /api/staff → Lấy danh sách
+2. POST /api/staff → Thêm mới
+3. GET /api/staff/2 → Chi tiết
+4. PUT /api/staff/2 → Cập nhật
+5. PUT /api/staff/2/role → Phân quyền
+6. DELETE /api/staff/2 → Xóa
+```
+
+### Flow 3: Profile Management
+```
+1. GET /api/users/profile → Xem
+2. PUT /api/users/profile → Cập nhật
+3. PUT /api/users/change-password → Đổi mật khẩu
+4. POST /api/users/avatar → Upload avatar
+5. DELETE /api/users/avatar → Xóa avatar
+```
+
+### Flow 4: Product Management
+```
+1. GET /api/products → Danh sách
+2. POST /api/products → Thêm mới
+3. GET /api/products/1 → Chi tiết
+4. PUT /api/products/1 → Sửa
+5. PATCH /api/products/bulk-status → Bulk status
+6. POST /api/products/import → Import CSV
+7. GET /api/products/export → Export CSV
+8. DELETE /api/products/1 → Xóa
+```
+
+### Flow 5: Collection Management
+```
+1. GET /api/collections → Danh sách
+2. GET /api/collections/tree → Cây danh mục
+3. POST /api/collections → Thêm mới
+4. GET /api/collections/1 → Chi tiết
+5. PUT /api/collections/1 → Sửa
+6. DELETE /api/collections/1 → Xóa
+```
+
+### Flow 6: Dashboard & Reports
+```
+1. GET /api/dashboard/overview → Tổng quan
+2. GET /api/dashboard/stats?from=2026-01-01&to=2026-01-28 → Thống kê
+3. GET /api/dashboard/revenue-chart?from=2026-01-01&to=2026-01-28&groupBy=day → Biểu đồ doanh thu
+4. GET /api/dashboard/top-products?limit=5 → Top sản phẩm bán chạy
+5. GET /api/dashboard/sales-channels → Kênh bán hàng
+6. GET /api/dashboard/top-customers?limit=5 → Top khách hàng
+7. GET /api/dashboard/low-stock?threshold=20 → Sản phẩm sắp hết hàng
+```
+
+### Flow 7: Catalog (Bảng giá)
+```
+1. GET /api/catalogs → Danh sách bảng giá
+2. GET /api/catalogs/1 → Chi tiết giá sản phẩm
+3. PUT /api/catalogs/1 → Cập nhật giá
+4. PATCH /api/catalogs/bulk-update → Cập nhật giá hàng loạt
+5. GET /api/catalogs/export → Xuất CSV bảng giá
+```
+
+### Flow 8: Inventory (Quản lý tồn kho)
+```
+1. GET /api/stores → Danh sách cửa hàng/kho
+2. GET /api/transaction-types → Danh sách loại giao dịch kho
+3. GET /api/inventories → Danh sách tồn kho
+4. GET /api/inventories/1 → Chi tiết tồn kho theo variant
+5. PUT /api/inventories/1 → Điều chỉnh tồn kho
+6. GET /api/inventories/1/history → Lịch sử xuất nhập kho
+7. POST /api/inventories/receive → Nhập kho
+8. POST /api/inventories/transfer → Chuyển kho
+9. POST /api/inventories/return → Trả hàng nhà cung cấp
+```
+
+### Flow 9: Product Images (Ảnh sản phẩm)
+```
+1. GET /api/products/1/images → Danh sách ảnh
+2. POST /api/products/1/image → Upload ảnh chính
+3. DELETE /api/products/1/image → Xóa ảnh chính
+4. POST /api/products/1/images → Upload gallery
+5. DELETE /api/products/1/images/2 → Xóa ảnh gallery
+6. PUT /api/products/1/images/2/primary → Đặt ảnh chính
+7. PUT /api/products/1/images/reorder → Sắp xếp ảnh
+```
+
+### Flow 10: Orders (Quản lý đơn hàng)
+```
+1. GET /api/orders → Danh sách đơn hàng
+2. POST /api/orders → Tạo đơn hàng mới
+3. GET /api/orders/1 → Chi tiết đơn hàng
+4. PUT /api/orders/1 → Cập nhật trạng thái
+5. DELETE /api/orders/1 → Hủy đơn hàng
+6. GET /api/orders/stats/summary → Thống kê tổng quan
+7. GET /api/orders/stats/detailed → Thống kê chi tiết
+```
+
+---
+
+## �📚 Tài liệu tham khảo
 
 - Express.js: https://expressjs.com
 - PostgreSQL: https://www.postgresql.org/docs
@@ -2199,12 +2758,13 @@ Dùng tools online như: https://jsonformatter.org
 - [ ] Test product endpoints
 - [ ] Test collection endpoints
 - [ ] Test profile endpoints
+- [ ] Test orders endpoints
 
 ---
 
 **Created:** 19/01/2026  
-**Updated:** 27/01/2026  
-**Version:** 2.0.0  
+**Updated:** 28/01/2026  
+**Version:** 2.1.0  
 **Status:** ✅ Ready for Testing
 
-**Ghi chú:** Tài liệu này bao gồm đầy đủ các endpoint từ Module 1-9.
+**Ghi chú:** Tài liệu này bao gồm đầy đủ các endpoint từ Module 1-10 (67 APIs).
