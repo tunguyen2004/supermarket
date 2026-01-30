@@ -1,4 +1,3 @@
-
 import apiClient from "./apiClient";
 // --- Collection API ---
 
@@ -53,4 +52,3 @@ export const bulkUpdateCatalogs = async (data) => {
 export const exportCatalogs = async () => {
   return apiClient.get("/api/catalogs/export", { responseType: "blob" });
 };
-
