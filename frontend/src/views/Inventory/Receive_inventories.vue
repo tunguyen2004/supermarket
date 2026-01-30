@@ -439,6 +439,7 @@ import {
   Upload,
   UploadFilled,
 } from "@element-plus/icons-vue";
+import inventoryService from "@/services/inventoryService";
 
 // Responsive
 const isMobile = ref(false);
@@ -465,6 +466,7 @@ const pageSize = 10;
 
 // Data
 const receipts = ref([]);
+const stores = ref([]);
 
 const sampleReceipts = [
   {
@@ -502,11 +504,19 @@ const sampleReceipts = [
   },
 ];
 
-function initData() {
-  setTimeout(() => {
+async function initData() {
+  try {
+    isLoading.value = true;
+    const [storesRes] = await Promise.all([inventoryService.getStores()]);
+    stores.value = storesRes.data || [];
+    // Load sample data for now - replace with actual receipt list API when available
     receipts.value = sampleReceipts;
+  } catch (error) {
+    console.error("Error loading data:", error);
+    ElMessage.error("Không thể tải dữ liệu");
+  } finally {
     isLoading.value = false;
-  }, 500);
+  }
 }
 
 // Helpers
@@ -519,12 +529,12 @@ const getStatusType = (s) => {
 const getStatusFromTab = (tab) =>
   ({ draft: "Tạm lưu", completed: "Hoàn thành" }[tab]);
 const uniqueSuppliers = computed(() =>
-  Array.from(new Set(receipts.value.map((r) => r.supplier))).sort()
+  Array.from(new Set(receipts.value.map((r) => r.supplier))).sort(),
 );
 const allSuppliers = computed(() =>
   uniqueSuppliers.value.length
     ? uniqueSuppliers.value
-    : ["Nhà cung cấp A", "Nhà cung cấp B"]
+    : ["Nhà cung cấp A", "Nhà cung cấp B"],
 );
 
 // Filters
@@ -536,7 +546,7 @@ const filteredReceipts = computed(() => {
       (i) =>
         i.receiptCode.toLowerCase().includes(q) ||
         i.poCode.toLowerCase().includes(q) ||
-        i.supplier.toLowerCase().includes(q)
+        i.supplier.toLowerCase().includes(q),
     );
   if (supplierFilter.value)
     arr = arr.filter((i) => i.supplier === supplierFilter.value);
@@ -574,7 +584,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const nextPNCode = () => {
   const ymd = today().replaceAll("-", "");
   const sameDay = receipts.value.filter((r) =>
-    r.receiptCode.startsWith("PN" + ymd)
+    r.receiptCode.startsWith("PN" + ymd),
   );
   const idx = sameDay.length + 1;
   return `PN${ymd}-${String(idx).padStart(2, "0")}`;
@@ -604,8 +614,8 @@ const formRules = {
 const formTotal = computed(() =>
   formModel.lines.reduce(
     (s, l) => s + Number(l.qty || 0) * Number(l.cost || 0),
-    0
-  )
+    0,
+  ),
 );
 const addLine = () => {
   formModel.lines.push({ sku: "", name: "", qty: 1, cost: 0 });
@@ -638,24 +648,40 @@ const openEditDialog = (row) => {
 };
 
 const submitForm = () => {
-  formRef.value.validate((valid) => {
+  formRef.value.validate(async (valid) => {
     if (!valid) return;
     submitting.value = true;
-    setTimeout(() => {
+    try {
       if (formMode.value === "create") {
+        // Get store_id from first store (or allow user to select)
+        const storeId = stores.value[0]?.id || 1;
+
+        const payload = {
+          store_id: storeId,
+          items: formModel.lines.map((line) => ({
+            variant_id: parseInt(line.sku) || 1, // Assuming sku is the variant_id
+            quantity: line.qty,
+            unit_cost: line.cost,
+          })),
+          notes: formModel.note || "",
+        };
+
+        const result = await inventoryService.receiveInventory(payload);
+
+        // Add to local list for display
         const newRow = { ...JSON.parse(JSON.stringify(formModel)) };
-        newRow.receiptCode = nextPNCode();
-        newRow.status = "Tạm lưu";
+        newRow.receiptCode = result.data.transaction_codes?.[0] || nextPNCode();
+        newRow.status = "Hoàn thành";
         newRow.totalValue = formTotal.value;
         receipts.value.unshift(newRow);
         ElNotification({
-          title: "Đã tạo phiếu",
-          message: newRow.receiptCode,
+          title: "Nhập kho thành công",
+          message: result.message || newRow.receiptCode,
           type: "success",
         });
       } else {
         const idx = receipts.value.findIndex(
-          (r) => r.receiptCode === formModel.receiptCode
+          (r) => r.receiptCode === formModel.receiptCode,
         );
         if (idx > -1) {
           const updated = { ...JSON.parse(JSON.stringify(formModel)) };
@@ -668,9 +694,13 @@ const submitForm = () => {
           });
         }
       }
-      submitting.value = false;
       formVisible.value = false;
-    }, 400);
+    } catch (error) {
+      console.error("Error receiving inventory:", error);
+      ElMessage.error(error.response?.data?.message || "Không thể nhập kho");
+    } finally {
+      submitting.value = false;
+    }
   });
 };
 
@@ -679,7 +709,7 @@ const markCompleted = async (row) => {
   await ElMessageBox.confirm(
     `Đánh dấu phiếu ${row.receiptCode} là "Hoàn thành"?`,
     "Xác nhận",
-    { type: "warning" }
+    { type: "warning" },
   ).catch(() => null);
   row.status = "Hoàn thành";
   ElNotification({
@@ -821,7 +851,7 @@ const handleImport = async () => {
           lines: [],
         };
         const existIdx = receipts.value.findIndex(
-          (x) => x.receiptCode === row.receiptCode
+          (x) => x.receiptCode === row.receiptCode,
         );
         if (existIdx > -1) receipts.value.splice(existIdx, 1, row);
         else receipts.value.unshift(row);

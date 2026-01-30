@@ -23,19 +23,19 @@
     <!-- Bottom actions -->
     <div class="flex flex-col items-center gap-2 pb-2">
       <!-- Green payment button -->
-      <!-- <button
+      <button
         class="w-12 h-12 rounded-xl bg-green-500 hover:bg-green-600 transition grid place-items-center shadow-sm"
         title="Nhập hàng"
       >
         <span class="text-white text-xl">💰</span>
-      </button> -->
+      </button>
 
       <!-- Settings button -->
       <button
         class="w-12 h-12 rounded-xl grid place-items-center text-slate-500 hover:bg-slate-100 transition"
         title="Cài đặt"
       >
-        <span class="text-2xl">⚙️</span>
+        <span class="text-2xl"><i class="fa-solid fa-gear"></i></span>
       </button>
     </div>
   </nav>

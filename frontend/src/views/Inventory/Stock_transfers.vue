@@ -257,6 +257,7 @@ import {
 } from "vue";
 import { Search, Plus, View, Right, Delete } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import inventoryService from "@/services/inventoryService";
 
 const isMobile = ref(false);
 const isLoading = ref(true);
@@ -266,6 +267,7 @@ const branchFilter = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
 const transfers = ref([]);
+const stores = ref([]);
 const drawerVisible = ref(false);
 const isEditMode = ref(false);
 const form = reactive({
@@ -391,7 +393,7 @@ const removeProduct = (itemIndex) => {
   form.items.splice(itemIndex, 1);
 };
 
-const handleSave = () => {
+const handleSave = async () => {
   if (!form.fromBranch || !form.toBranch) {
     ElMessage.error("Vui lòng chọn kho gửi và kho nhận.");
     return;
@@ -401,25 +403,51 @@ const handleSave = () => {
     return;
   }
 
-  const newTransfer = {
-    ...JSON.parse(JSON.stringify(form)),
-    transferCode: `CT${Date.now()}`,
-    createdDate: new Date().toISOString().slice(0, 10),
-    employee: "Admin",
-    status: "Nháp",
-    productCount: form.items.reduce(
-      (sum, item) => sum + (item.quantity || 0),
-      0
-    ),
-  };
-  transfers.value.unshift(newTransfer);
-  drawerVisible.value = false;
-  ElMessage.success("Lưu phiếu nháp thành công!");
+  try {
+    // Find store IDs from store names
+    const fromStore = stores.value.find((s) => s.name === form.fromBranch);
+    const toStore = stores.value.find((s) => s.name === form.toBranch);
+
+    if (!fromStore || !toStore) {
+      ElMessage.error("Không tìm thấy thông tin kho");
+      return;
+    }
+
+    const payload = {
+      from_store_id: fromStore.id,
+      to_store_id: toStore.id,
+      items: form.items.map((item) => ({
+        variant_id: parseInt(item.name) || 1, // Assuming name contains variant_id
+        quantity: item.quantity,
+      })),
+      notes: form.notes || "",
+    };
+
+    const result = await inventoryService.transferInventory(payload);
+
+    const newTransfer = {
+      ...JSON.parse(JSON.stringify(form)),
+      transferCode: result.data.transaction_codes?.[0] || `CT${Date.now()}`,
+      createdDate: new Date().toISOString().slice(0, 10),
+      employee: "Admin",
+      status: "Hoàn thành",
+      productCount: form.items.reduce(
+        (sum, item) => sum + (item.quantity || 0),
+        0,
+      ),
+    };
+    transfers.value.unshift(newTransfer);
+    drawerVisible.value = false;
+    ElMessage.success(result.message || "Chuyển kho thành công!");
+  } catch (error) {
+    console.error("Error transferring inventory:", error);
+    ElMessage.error(error.response?.data?.message || "Không thể chuyển kho");
+  }
 };
 
 const handleUpdateStatus = (newStatus) => {
   const transfer = transfers.value.find(
-    (t) => t.transferCode === form.transferCode
+    (t) => t.transferCode === form.transferCode,
   );
   if (transfer) {
     ElMessageBox.confirm(
@@ -429,7 +457,7 @@ const handleUpdateStatus = (newStatus) => {
         confirmButtonText: "OK",
         cancelButtonText: "Hủy",
         type: "warning",
-      }
+      },
     )
       .then(() => {
         transfer.status = newStatus;
@@ -444,13 +472,20 @@ watch([search, activeTab, branchFilter], () => {
   currentPage.value = 1;
 });
 
-onMounted(() => {
+onMounted(async () => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
+  try {
+    isLoading.value = true;
+    const storesRes = await inventoryService.getStores();
+    stores.value = storesRes.data || [];
     transfers.value = sampleTransfers;
+  } catch (error) {
+    console.error("Error loading stores:", error);
+    ElMessage.error("Không thể tải danh sách kho");
+  } finally {
     isLoading.value = false;
-  }, 500);
+  }
 });
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);

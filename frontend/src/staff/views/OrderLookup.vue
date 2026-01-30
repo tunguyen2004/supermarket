@@ -29,7 +29,9 @@
                 <span class="text-sm text-slate-700"
                   >28/12/20.. → 27/01/20..</span
                 >
-                <span class="ml-auto">📅</span>
+                <span class="ml-auto text-xl"
+                  ><i class="fa-regular fa-calendar-days"></i
+                ></span>
               </div>
 
               <div

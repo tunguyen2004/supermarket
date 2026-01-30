@@ -197,7 +197,7 @@
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredInventories.length"
+        :total="totalItems"
         :page-size="pageSize"
         v-model:current-page="currentPage"
       />
@@ -352,19 +352,13 @@ import {
   Switch as SwitchIcon,
   Picture,
 } from "@element-plus/icons-vue";
+import inventoryService from "@/services/inventoryService";
 
 // --- Responsive ---
 const isMobile = ref(false);
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
 };
-onMounted(() => {
-  checkScreenSize();
-  window.addEventListener("resize", checkScreenSize);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", checkScreenSize);
-});
 
 // --- State ---
 const isLoading = ref(false);
@@ -373,43 +367,74 @@ const locationFilter = ref("");
 const statusFilter = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
+const totalItems = ref(0);
+const stores = ref([]);
 
 const statusOptions = [
-  { value: "success", label: "Còn hàng" },
-  { value: "warning", label: "Sắp hết" },
-  { value: "danger", label: "Hết hàng" },
+  { value: "out", label: "Hết hàng" },
+  { value: "low", label: "Sắp hết" },
+  { value: "normal", label: "Bình thường" },
+  { value: "high", label: "Dư thừa" },
 ];
 
-// --- Data (mock) ---
-const inventories = ref([
-  {
-    code: "SP001",
-    name: "Sữa tươi Vinamilk 1L",
-    unit: "Hộp",
-    stock: 120,
-    location: "Kho chính",
-    imageUrl: "https://i.imgur.com/8mB3H6f.png",
-    history: [],
-  },
-  {
-    code: "SP004",
-    name: "Mì Hảo Hảo",
-    unit: "Gói",
-    stock: 15,
-    location: "Kho 1",
-    imageUrl: "https://i.imgur.com/GCRzZ3c.png",
-    history: [],
-  },
-  {
-    code: "SP006",
-    name: "Trứng gà 10 quả",
-    unit: "Vỉ",
-    stock: 0,
-    location: "Kho 2",
-    imageUrl: "https://i.imgur.com/7g2jBGY.png",
-    history: [],
-  },
-]);
+// --- Data ---
+const inventories = ref([]);
+
+// Fetch inventories from API
+const fetchInventories = async () => {
+  try {
+    isLoading.value = true;
+    const storeId = locationFilter.value
+      ? stores.value.find((s) => s.name === locationFilter.value)?.id
+      : null;
+
+    const params = {
+      search: search.value,
+      store_id: storeId,
+      status: statusFilter.value,
+      page: currentPage.value,
+      limit: pageSize,
+    };
+
+    const result = await inventoryService.getInventories(params);
+    inventories.value = result.data.map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      unit: item.unit,
+      stock: parseFloat(item.quantity_available || 0),
+      location: item.location,
+      store_id: item.store_id,
+      sku: item.sku,
+      barcode: item.barcode,
+      stock_status: item.stock_status,
+      imageUrl: item.image_url || "https://via.placeholder.com/80",
+      history: [],
+    }));
+    totalItems.value = result.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error fetching inventories:", error);
+    ElMessage.error("Không thể tải danh sách tồn kho");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(async () => {
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+  try {
+    const storesRes = await inventoryService.getStores();
+    stores.value = storesRes.data || [];
+  } catch (error) {
+    console.error("Error loading stores:", error);
+  }
+  fetchInventories();
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkScreenSize);
+});
 
 // --- Utils ---
 const now = () => new Date().toLocaleString("vi-VN");
@@ -419,36 +444,21 @@ const getStockStatus = (stock) => {
   if (stock <= 20) return { type: "warning", text: "Sắp hết" };
   return { type: "success", text: "Còn hàng" };
 };
-const uniqueLocations = computed(() =>
-  Array.from(new Set(inventories.value.map((i) => i.location))).sort()
-);
+const uniqueLocations = computed(() => stores.value.map((s) => s.name));
 
-// --- Filters & paging ---
-const filteredInventories = computed(() => {
-  let arr = inventories.value;
-  const q = search.value.trim().toLowerCase();
-  if (q)
-    arr = arr.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) || i.code.toLowerCase().includes(q)
-    );
-  if (locationFilter.value)
-    arr = arr.filter((i) => i.location === locationFilter.value);
-  if (statusFilter.value)
-    arr = arr.filter(
-      (i) => getStockStatus(i.stock).type === statusFilter.value
-    );
-  return arr;
-});
+// Use server-side data directly
+const filteredInventories = computed(() => inventories.value);
+const pagedInventories = computed(() => inventories.value);
 
-const pagedInventories = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredInventories.value.slice(start, start + pageSize);
-});
-
-// reset page khi đổi filter
+// reset page and fetch when filter changes
 watch([search, locationFilter, statusFilter], () => {
   currentPage.value = 1;
+  fetchInventories();
+});
+
+// fetch when page changes
+watch(currentPage, () => {
+  fetchInventories();
 });
 
 // --- Receive (Nhập kho) ---
@@ -525,7 +535,7 @@ const confirmTransfer = async () => {
   await ElMessageBox.confirm(
     `Chuyển "${item.name}" từ ${item.location} → ${transferForm.value.to}?`,
     "Xác nhận",
-    { type: "warning" }
+    { type: "warning" },
   ).catch(() => null);
   isLoading.value = true;
   setTimeout(() => {
@@ -577,26 +587,47 @@ const submitEdit = async () => {
   const item = selectedByCode(editForm.value.code);
   if (!item) return;
   const oldStock = item.stock;
-  isLoading.value = true;
-  setTimeout(() => {
+
+  try {
+    isLoading.value = true;
+    const storeId = item.store_id || stores.value[0]?.id || 1;
+
+    const payload = {
+      store_id: storeId,
+      quantity: editForm.value.stock,
+      adjustment_type: "set",
+      notes: editForm.value.note || "Chỉnh sửa tồn kho",
+    };
+
+    const result = await inventoryService.adjustInventory(item.id, payload);
+
+    // Update local data
     item.name = editForm.value.name;
     item.unit = editForm.value.unit;
     item.imageUrl = editForm.value.imageUrl;
     item.location = editForm.value.location;
     item.stock = Number(editForm.value.stock);
+
     const delta = item.stock - oldStock;
     const deltaStr =
       delta === 0 ? "" : delta > 0 ? `(+${delta})` : `(${delta})`;
     addHistory(item, {
       type: "edit",
-      typeText: "Chỉnh sửa",
+      typeText: "Điều chỉnh",
       detail: `Tồn kho: ${oldStock} → ${item.stock} ${deltaStr}; Vị trí: ${item.location}`,
       note: editForm.value.note || "",
     });
-    ElMessage.success("Đã lưu thay đổi");
-    isLoading.value = false;
+
+    ElMessage.success(result.message || "Đã lưu thay đổi");
     editVisible.value = false;
-  }, 400);
+  } catch (error) {
+    console.error("Error adjusting inventory:", error);
+    ElMessage.error(
+      error.response?.data?.message || "Không thể điều chỉnh tồn kho",
+    );
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 // --- History (Lịch sử) ---

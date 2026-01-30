@@ -32,11 +32,19 @@
 
 <script setup>
 import { Phone } from "@element-plus/icons-vue";
+import inventoryService from "@/services/inventoryService";
 
 const contactSupport = () => {
   // Mở trình gọi điện trên di động
   window.location.href = "tel:19006750";
 };
+
+// API sẵn sàng sử dụng khi tính năng được mở:
+// inventoryService.returnInventory({
+//   store_id: 1,
+//   items: [{ variant_id: 3, quantity: 10 }],
+//   notes: "Trả hàng hư hỏng"
+// });
 </script>
 
 <style scoped>

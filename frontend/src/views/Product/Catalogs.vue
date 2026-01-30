@@ -2,9 +2,19 @@
   <div class="page-container">
     <div class="page-header">
       <h1 class="page-title">Bảng giá sản phẩm</h1>
-      <el-button type="primary" :icon="Plus" @click="openForm()">
-        Thêm bảng giá
-      </el-button>
+      <div class="header-actions">
+        <el-button
+          type="success"
+          :icon="Download"
+          @click="handleExport"
+          :loading="isExporting"
+        >
+          Xuất file
+        </el-button>
+        <el-button type="primary" :icon="Search" @click="onSearch">
+          Làm mới
+        </el-button>
+      </div>
     </div>
 
     <div class="table-container">
@@ -99,9 +109,10 @@
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredCatalogs.length"
+        :total="totalItems"
         :page-size="pageSize"
         v-model:current-page="currentPage"
+        @current-change="fetchCatalogs"
       />
     </div>
 
@@ -116,14 +127,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
-import { Search, Plus, Edit, Delete } from "@element-plus/icons-vue";
+import { Search, Edit, Delete, Download } from "@element-plus/icons-vue";
 import { ElMessageBox, ElMessage } from "element-plus";
 import CatalogForm from "@/components/CatalogForm.vue";
 import {
   getCatalogs,
-  createCatalog,
   updateCatalog,
-  deleteCatalog,
+  exportCatalog,
 } from "@/services/catalogService";
 
 const isMobile = ref(false);
@@ -136,15 +146,24 @@ const currentPage = ref(1);
 const pageSize = 10;
 const catalogs = ref([]);
 const isLoading = ref(true);
+const isExporting = ref(false);
 
 const dialogVisible = ref(false);
 const currentCatalog = ref(null);
 
+const totalItems = ref(0);
+
 const fetchCatalogs = async () => {
   isLoading.value = true;
   try {
-    const response = await getCatalogs();
-    catalogs.value = response.data;
+    const params = {
+      search: search.value,
+      page: currentPage.value,
+      limit: pageSize,
+    };
+    const response = await getCatalogs(params);
+    catalogs.value = response.data.data || response.data;
+    totalItems.value = response.data.pagination?.total || catalogs.value.length;
   } catch (error) {
     console.error(error);
     ElMessage.error("Không thể tải danh sách bảng giá.");
@@ -166,22 +185,11 @@ onBeforeUnmount(() => {
 const formatCurrency = (value) =>
   (value || 0).toLocaleString("vi-VN", { style: "currency", currency: "VND" });
 
-const filteredCatalogs = computed(() => {
-  if (!search.value) return catalogs.value;
-  return catalogs.value.filter(
-    (item) =>
-      item.name.toLowerCase().includes(search.value.toLowerCase()) ||
-      item.code.toLowerCase().includes(search.value.toLowerCase()),
-  );
-});
-
-const pagedCatalogs = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredCatalogs.value.slice(start, start + pageSize);
-});
+const pagedCatalogs = computed(() => catalogs.value);
 
 const onSearch = () => {
   currentPage.value = 1;
+  fetchCatalogs();
 };
 
 const openForm = (catalog = null) => {
@@ -197,39 +205,59 @@ const closeForm = () => {
 const handleFormSubmit = async (formData) => {
   try {
     if (currentCatalog.value) {
-      await updateCatalog(currentCatalog.value.id, formData);
-      ElMessage.success("Cập nhật bảng giá thành công!");
+      // API chỉ cho phép cập nhật giá, không cho tạo mới
+      const updateData = {
+        cost_price: formData.cost_price,
+        selling_price: formData.price,
+        is_active: formData.is_active !== false,
+      };
+      await updateCatalog(currentCatalog.value.id, updateData);
+      ElMessage.success("Cập nhật giá thành công!");
     } else {
-      await createCatalog(formData);
-      ElMessage.success("Tạo bảng giá thành công!");
+      ElMessage.warning(
+        "Bảng giá được tạo tự động từ sản phẩm. Vui lòng chọn sản phẩm để chỉnh sửa giá.",
+      );
+      closeForm();
+      return;
     }
     fetchCatalogs();
     closeForm();
   } catch (error) {
-    ElMessage.error("Đã có lỗi xảy ra.");
+    ElMessage.error(error.response?.data?.message || "Đã có lỗi xảy ra.");
   }
 };
 
 const handleDelete = (catalog) => {
-  ElMessageBox.confirm(
-    `Bạn có chắc chắn muốn xóa bảng giá cho sản phẩm "${catalog.name}" không?`,
-    "Xác nhận xóa",
-    {
-      confirmButtonText: "Xóa",
-      cancelButtonText: "Hủy",
-      type: "warning",
-    },
-  )
-    .then(async () => {
-      try {
-        await deleteCatalog(catalog.id);
-        ElMessage.success("Đã xóa bảng giá thành công!");
-        fetchCatalogs();
-      } catch (error) {
-        ElMessage.error("Xóa bảng giá thất bại.");
-      }
-    })
-    .catch(() => {});
+  ElMessage.warning(
+    "Không thể xóa bảng giá. Bạn chỉ có thể vô hiệu hóa sản phẩm từ trang Sản phẩm.",
+  );
+};
+
+const handleExport = async () => {
+  isExporting.value = true;
+  try {
+    const response = await exportCatalog();
+
+    // Create blob and download
+    const blob = new Blob([response.data], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", `bang-gia-${new Date().getTime()}.csv`);
+    link.style.visibility = "hidden";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    ElMessage.success("Xuất file thành công!");
+  } catch (error) {
+    console.error(error);
+    ElMessage.error("Xuất file thất bại.");
+  } finally {
+    isExporting.value = false;
+  }
 };
 </script>
 
@@ -257,6 +285,12 @@ const handleDelete = (catalog) => {
   gap: 16px;
   margin-bottom: 24px;
 }
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .page-title {
   font-size: 1.5rem;
   font-weight: 700;

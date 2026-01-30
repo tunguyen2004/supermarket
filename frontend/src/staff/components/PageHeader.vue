@@ -92,7 +92,9 @@ defineProps({
 
 const { logout, user } = useAuth();
 
-const userDisplayName = computed(() => user.value?.name || "Admin dohuyy");
+const userDisplayName = computed(
+  () => user.value?.full_name || user.value?.username || "Admin dohuyy",
+);
 const userInitials = computed(() => {
   const name = userDisplayName.value;
   return name.charAt(0).toUpperCase();

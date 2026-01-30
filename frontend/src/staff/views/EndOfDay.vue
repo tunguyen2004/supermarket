@@ -28,7 +28,7 @@
             class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 flex items-center gap-2"
             @click="activeTab = 'custom'"
           >
-            Tùy chọn <span>📅</span>
+            Tùy chọn <span><i class="fa-regular fa-calendar-days"></i></span>
           </button>
         </div>
 
@@ -59,9 +59,14 @@
           </div>
 
           <div
-            class="h-[280px] mt-4 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-400"
+            class="h-[280px] mt-4 rounded-xl border border-slate-200 bg-white flex flex-col items-center justify-center gap-3"
           >
-            (Chart doanh thu)
+            <div class="text-5xl opacity-40 text-2xl">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="text-slate-600 font-medium">
+              Chưa có dữ liệu báo cáo
+            </div>
           </div>
         </div>
 
@@ -75,7 +80,9 @@
           <div
             class="h-[280px] mt-4 rounded-xl border border-slate-200 bg-white flex flex-col items-center justify-center gap-3"
           >
-            <div class="text-5xl opacity-40">📊</div>
+            <div class="text-5xl opacity-40 text-2xl">
+              <i class="fa-solid fa-chart-column"></i>
+            </div>
             <div class="text-slate-600 font-medium">
               Chưa có dữ liệu báo cáo
             </div>
