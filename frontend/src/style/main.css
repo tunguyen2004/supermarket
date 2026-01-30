@@ -1,3 +1,87 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* src/style/main.css */
+/* Reset nhẹ + nền app sạch, tránh "viền đen" từ CSS global cũ */
+
+:root {
+  --app-bg: #f6f7fb;
+  --text: #0f172a; /* slate-900 */
+  --muted: #64748b; /* slate-500 */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--text);
+  background: var(--app-bg);
+}
+
+/* Root container full height */
+#app {
+  min-height: 100vh;
+}
+
+/* Link mặc định */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Image responsive */
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Form elements inherit font */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Loại bỏ outline xấu nhưng vẫn giữ focus rõ ràng */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.6); /* blue-600 */
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Tránh bảng/viền đen nếu CSS cũ từng set border global */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* Scrollbar nhẹ (tuỳ thích) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.7); /* slate-400 */
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Tailwind v4: default border-color = currentColor (đen). Override cho đẹp */
+*,
+::before,
+::after {
+  border-color: rgb(226 232 240); /* slate-200 */
+}

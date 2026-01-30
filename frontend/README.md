@@ -1,4 +1,11 @@
 # frontend
+## git luoi pull va push 
+git stash
+git pull origin main
+git stash pop
+# tiếp tục code FE
+
+
 
 ## Project setup
 ```

@@ -21,7 +21,8 @@
           <i v-else class="fa-solid fa-bars"></i>
         </button>
         <span v-if="(!isCollapsed && !isMobile) || (isMobile && mobileOpen)">
-          MiniMarket
+          <!-- <img src="/logotext.PNG" alt="LOGO" class="sidebar-brand-logo" /> -->
+          MiniMart
         </span>
       </div>
 
@@ -298,7 +299,7 @@ export default {
       () => {
         hoverParent.value = null;
         setInitialOpenParent();
-      }
+      },
     );
 
     return {
@@ -384,6 +385,13 @@ li {
 .sidebar-toggle:hover {
   background: #f3f4f6;
 }
+/* .sidebar-brand-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  max-width: 150px;
+  display: block;
+} */
 
 /* Items */
 .sidebar-menu {

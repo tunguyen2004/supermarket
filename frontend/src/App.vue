@@ -1,6 +1,5 @@
 <!-- src/App.vue -->
 <template>
-  <!-- Render các view và layout thông qua router -->
   <router-view />
 </template>
 
