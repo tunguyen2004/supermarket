@@ -151,11 +151,11 @@
 
     <div class="pagination-container">
       <el-pagination
-        v-if="filteredOrders.length > 0"
+        v-if="totalItems > 0"
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredOrders.length"
+        :total="totalItems"
         :page-size="pageSize"
         v-model:current-page="currentPage"
       />
@@ -172,7 +172,9 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Search, Plus, View } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import OrderDetailModal from "@/components/OrderDetailModal.vue";
+import orderService from "@/services/orderService";
 
 const router = useRouter();
 
@@ -184,61 +186,82 @@ const activeTab = ref("all");
 const dateRange = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
+const totalItems = ref(0);
 const orders = ref([]);
 const isModalVisible = ref(false);
 const selectedOrder = ref(null);
-
-// --- DỮ LIỆU MẪU ---
-const sampleOrders = [
-  {
-    orderCode: "DH1235",
-    customerName: "Phạm Mỹ Duyên",
-    orderDate: "2025-08-08 10:30",
-    totalAmount: 1250000,
-    paymentStatus: "Đã thanh toán",
-    fulfillmentStatus: "Hoàn thành",
-  },
-  {
-    orderCode: "DH1234",
-    customerName: "Trần Văn An",
-    orderDate: "2025-08-07 15:45",
-    totalAmount: 850000,
-    paymentStatus: "Đã thanh toán",
-    fulfillmentStatus: "Đang giao",
-  },
-  {
-    orderCode: "DH1233",
-    customerName: "Nguyễn Thị Bình",
-    orderDate: "2025-08-07 11:20",
-    totalAmount: 320000,
-    paymentStatus: "Chưa thanh toán",
-    fulfillmentStatus: "Chờ xử lý",
-  },
-  {
-    orderCode: "DH1232",
-    customerName: "Lê Hoàng Cường",
-    orderDate: "2025-08-06 09:00",
-    totalAmount: 2100000,
-    paymentStatus: "Đã thanh toán",
-    fulfillmentStatus: "Hoàn thành",
-  },
-  {
-    orderCode: "DH1231",
-    customerName: "Võ Thành Danh",
-    orderDate: "2025-08-05 18:00",
-    totalAmount: 50000,
-    paymentStatus: "Đã thanh toán",
-    fulfillmentStatus: "Đã hủy",
-  },
-];
 
 // --- LOGIC ---
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
 };
+
+// Fetch orders from API
+const fetchOrders = async () => {
+  try {
+    isLoading.value = true;
+
+    // Map tab name to API status values
+    const statusMap = {
+      pending: "pending",
+      shipping: "shipping",
+      completed: "completed",
+      cancelled: "cancelled",
+    };
+
+    const params = {
+      limit: pageSize,
+      offset: (currentPage.value - 1) * pageSize,
+      search: search.value || undefined,
+      status:
+        activeTab.value !== "all" ? statusMap[activeTab.value] : undefined,
+      sort: "created_at",
+      order: "DESC",
+    };
+
+    const result = await orderService.getOrders(params);
+
+    // Map API response to display format
+    orders.value = result.data.map((order) => ({
+      id: order.id,
+      orderCode: order.order_code,
+      customerName: order.customer?.name || "Khách lẻ",
+      customerPhone: order.customer?.phone || "",
+      orderDate: new Date(order.created_at).toLocaleString("vi-VN"),
+      totalAmount: order.amount?.final || 0,
+      paymentStatus:
+        order.payment_status === "paid" ? "Đã thanh toán" : "Chưa thanh toán",
+      fulfillmentStatus: mapStatusToVietnamese(order.status),
+      paymentMethod: order.payment_method,
+      items: order.items,
+      notes: order.notes,
+      store: order.store,
+    }));
+
+    totalItems.value = result.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    ElMessage.error("Không thể tải danh sách đơn hàng");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Map API status to Vietnamese
+const mapStatusToVietnamese = (status) => {
+  const statusMap = {
+    pending: "Chờ xử lý",
+    shipping: "Đang giao",
+    completed: "Hoàn thành",
+    cancelled: "Đã hủy",
+  };
+  return statusMap[status] || "Chờ xử lý";
+};
+
 const formatCurrency = (value) => value.toLocaleString("vi-VN") + "đ";
 const getPaymentStatusType = (status) =>
   status === "Đã thanh toán" ? "success" : "warning";
+
 const getFulfillmentStatusType = (status) => {
   if (status === "Hoàn thành") return "success";
   if (status === "Đang giao") return "primary";
@@ -247,55 +270,19 @@ const getFulfillmentStatusType = (status) => {
   return "info";
 };
 
-// === SỬA ĐỔI: Thêm hàm chuyển đổi từ tab name sang status text ===
-const getStatusFromTab = (tabName) => {
-  const statusMap = {
-    pending: "Chờ xử lý",
-    shipping: "Đang giao",
-    completed: "Hoàn thành",
-    cancelled: "Đã hủy",
-  };
-  return statusMap[tabName];
-};
+// Use server-side data directly (no client-side filtering)
+const filteredOrders = computed(() => orders.value);
+const pagedOrders = computed(() => orders.value);
 
-// === SỬA ĐỔI: Cập nhật lại toàn bộ logic lọc trong computed ===
-const filteredOrders = computed(() => {
-  return orders.value.filter((item) => {
-    // 1. Lọc theo ô tìm kiếm
-    const searchMatch = search.value
-      ? item.orderCode.toLowerCase().includes(search.value.toLowerCase()) ||
-        item.customerName.toLowerCase().includes(search.value.toLowerCase())
-      : true;
-
-    // 2. Lọc theo Tab trạng thái
-    const tabMatch =
-      activeTab.value === "all"
-        ? true
-        : item.fulfillmentStatus === getStatusFromTab(activeTab.value);
-
-    // 3. Lọc theo khoảng ngày
-    const dateMatch = (() => {
-      if (!dateRange.value || dateRange.value.length !== 2) return true;
-      const orderDate = new Date(item.orderDate.split(" ")[0]); // Lấy phần ngày của đơn hàng
-      const startDate = new Date(dateRange.value[0]);
-      const endDate = new Date(dateRange.value[1]);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-      return orderDate >= startDate && orderDate <= endDate;
-    })();
-
-    return searchMatch && tabMatch && dateMatch;
-  });
-});
-
-const pagedOrders = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredOrders.value.slice(start, start + pageSize);
-});
-
-// === SỬA ĐỔI: Theo dõi TẤT CẢ các bộ lọc để reset trang về 1 ===
-watch([activeTab, search, dateRange], () => {
+// Watch filters and refetch from server
+watch([activeTab, search], () => {
   currentPage.value = 1;
+  fetchOrders();
+});
+
+// Watch page change
+watch(currentPage, () => {
+  fetchOrders();
 });
 
 const createOrder = () => {
@@ -311,11 +298,9 @@ const viewOrder = (order) => {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    orders.value = sampleOrders;
-    isLoading.value = false;
-  }, 1000);
+  fetchOrders();
 });
+
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);
 });

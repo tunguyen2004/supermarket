@@ -57,7 +57,7 @@ const items = [
     iconClass: "fa-solid fa-comments",
   },
   {
-    to: "/staff/inventories",
+    to: "/staff/inventory-lookup",
     label: "Tra cứu tồn kho",
     iconClass: "fa-solid fa-boxes-stacked",
   },

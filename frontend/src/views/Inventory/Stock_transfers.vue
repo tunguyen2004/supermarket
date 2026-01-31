@@ -255,9 +255,17 @@ import {
   onBeforeUnmount,
   watch,
 } from "vue";
-import { Search, Plus, View, Right, Delete } from "@element-plus/icons-vue";
+import {
+  Search,
+  Plus,
+  View,
+  Right,
+  Delete,
+  Picture,
+} from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import inventoryService from "@/services/inventoryService";
+import { getProductImages } from "@/services/productService";
 
 const isMobile = ref(false);
 const isLoading = ref(true);
@@ -268,8 +276,31 @@ const currentPage = ref(1);
 const pageSize = 10;
 const transfers = ref([]);
 const stores = ref([]);
+const productImages = ref({}); // Cache ảnh sản phẩm
 const drawerVisible = ref(false);
 const isEditMode = ref(false);
+
+// Fetch product image
+const fetchProductImage = async (productId) => {
+  if (!productId) return null;
+  if (productImages.value[productId]) {
+    return productImages.value[productId];
+  }
+  try {
+    const response = await getProductImages(productId);
+    const imageUrl =
+      response.data.data?.main_image ||
+      response.data.data?.gallery?.[0]?.image_url;
+    if (imageUrl) {
+      productImages.value[productId] = imageUrl.startsWith("http")
+        ? imageUrl
+        : `http://localhost:5000${imageUrl}`;
+    }
+    return productImages.value[productId];
+  } catch (error) {
+    return null;
+  }
+};
 const form = reactive({
   transferCode: null,
   fromBranch: "",

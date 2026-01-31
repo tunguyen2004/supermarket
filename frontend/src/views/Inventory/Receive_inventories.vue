@@ -325,6 +325,44 @@
         <el-table-column label="#" width="54" align="center">
           <template #default="s">{{ s.$index + 1 }}</template>
         </el-table-column>
+        <el-table-column label="Ảnh" width="70" align="center">
+          <template #default="s">
+            <el-image
+              v-if="s.row.imageUrl"
+              :src="s.row.imageUrl"
+              fit="cover"
+              style="width: 50px; height: 50px; border-radius: 4px"
+            >
+              <template #error>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 50px;
+                    height: 50px;
+                    background: #f5f7fa;
+                  "
+                >
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+            <div
+              v-else
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 50px;
+                height: 50px;
+                background: #f5f7fa;
+              "
+            >
+              <el-icon><Picture /></el-icon>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="Mã hàng" width="160">
           <template #default="s"
             ><el-input v-model="s.row.sku" placeholder="SKU"
@@ -438,8 +476,10 @@ import {
   View,
   Upload,
   UploadFilled,
+  Picture,
 } from "@element-plus/icons-vue";
 import inventoryService from "@/services/inventoryService";
+import { getProductImages } from "@/services/productService";
 
 // Responsive
 const isMobile = ref(false);
@@ -467,6 +507,29 @@ const pageSize = 10;
 // Data
 const receipts = ref([]);
 const stores = ref([]);
+const productImages = ref({}); // Cache ảnh sản phẩm
+
+// Fetch product image
+const fetchProductImage = async (productId) => {
+  if (!productId) return null;
+  if (productImages.value[productId]) {
+    return productImages.value[productId];
+  }
+  try {
+    const response = await getProductImages(productId);
+    const imageUrl =
+      response.data.data?.main_image ||
+      response.data.data?.gallery?.[0]?.image_url;
+    if (imageUrl) {
+      productImages.value[productId] = imageUrl.startsWith("http")
+        ? imageUrl
+        : `http://localhost:5000${imageUrl}`;
+    }
+    return productImages.value[productId];
+  } catch (error) {
+    return null;
+  }
+};
 
 const sampleReceipts = [
   {

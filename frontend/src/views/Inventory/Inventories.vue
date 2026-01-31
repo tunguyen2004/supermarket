@@ -353,6 +353,7 @@ import {
   Picture,
 } from "@element-plus/icons-vue";
 import inventoryService from "@/services/inventoryService";
+import { getProductImages } from "@/services/productService";
 
 // --- Responsive ---
 const isMobile = ref(false);
@@ -369,6 +370,7 @@ const currentPage = ref(1);
 const pageSize = 10;
 const totalItems = ref(0);
 const stores = ref([]);
+const productImages = ref({}); // Cache ảnh sản phẩm theo product_id
 
 const statusOptions = [
   { value: "out", label: "Hết hàng" },
@@ -379,6 +381,24 @@ const statusOptions = [
 
 // --- Data ---
 const inventories = ref([]);
+
+// Fetch product images
+const fetchProductImage = async (productId) => {
+  if (productImages.value[productId]) {
+    return productImages.value[productId];
+  }
+  try {
+    const response = await getProductImages(productId);
+    const imageUrl =
+      response.data.data?.main_image ||
+      response.data.data?.gallery?.[0]?.image_url;
+    productImages.value[productId] = imageUrl;
+    return imageUrl;
+  } catch (error) {
+    console.error(`Error fetching image for product ${productId}:`, error);
+    return null;
+  }
+};
 
 // Fetch inventories from API
 const fetchInventories = async () => {
@@ -397,8 +417,11 @@ const fetchInventories = async () => {
     };
 
     const result = await inventoryService.getInventories(params);
-    inventories.value = result.data.map((item) => ({
+
+    // Map inventory data
+    const inventoryList = result.data.map((item) => ({
       id: item.id,
+      product_id: item.product_id || item.id, // API có thể trả product_id hoặc dùng id
       code: item.code,
       name: item.name,
       unit: item.unit,
@@ -408,10 +431,27 @@ const fetchInventories = async () => {
       sku: item.sku,
       barcode: item.barcode,
       stock_status: item.stock_status,
-      imageUrl: item.image_url || "https://via.placeholder.com/80",
+      imageUrl: "https://via.placeholder.com/80", // Placeholder tạm thời
       history: [],
     }));
+
+    // Set inventories first to display data quickly
+    inventories.value = inventoryList;
     totalItems.value = result.pagination?.total || 0;
+
+    // Fetch images for each product in background (async, not blocking)
+    inventoryList.forEach(async (item, index) => {
+      if (item.product_id) {
+        const imageUrl = await fetchProductImage(item.product_id);
+        if (imageUrl) {
+          const fullUrl = imageUrl.startsWith("http")
+            ? imageUrl
+            : `http://localhost:5000${imageUrl}`;
+          // Update reactive data directly
+          inventories.value[index].imageUrl = fullUrl;
+        }
+      }
+    });
   } catch (error) {
     console.error("Error fetching inventories:", error);
     ElMessage.error("Không thể tải danh sách tồn kho");

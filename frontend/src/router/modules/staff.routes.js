@@ -24,9 +24,14 @@ export default [
         component: () => import("@/staff/views/OrderLookup.vue"),
       },
       {
-        path: "inventories",
+        path: "inventory-lookup",
         name: "InventoryLookup",
         component: () => import("@/staff/views/InventoryLookup.vue"),
+      },
+      {
+        path: "inventory-lookup/:productId",
+        name: "InventoryLookupDetail",
+        component: () => import("@/staff/views/InventoryLookupDetail.vue"),
       },
     ],
   },

@@ -1,31 +1,56 @@
-import apiClient from './apiClient';
+import apiClient from "./apiClient";
 
-export const getOrders = async () => {
-  // return apiClient.get('/orders');
-  return []; // Return empty for now
+const orderService = {
+  // 10.1 Danh sách đơn hàng
+  async getOrders(params = {}) {
+    const response = await apiClient.get("/api/orders", { params });
+    return response.data;
+  },
+
+  // 10.2 Tạo đơn hàng mới
+  async createOrder(orderData) {
+    const response = await apiClient.post("/api/orders", orderData);
+    return response.data;
+  },
+
+  // 10.3 Chi tiết đơn hàng
+  async getOrderById(id) {
+    const response = await apiClient.get(`/api/orders/${id}`);
+    return response.data;
+  },
+
+  // 10.4 Cập nhật trạng thái đơn hàng
+  async updateOrder(id, data) {
+    const response = await apiClient.put(`/api/orders/${id}`, data);
+    return response.data;
+  },
+
+  // 10.5 Hủy đơn hàng
+  async cancelOrder(id, reason) {
+    const response = await apiClient.delete(`/api/orders/${id}`, {
+      data: { reason },
+    });
+    return response.data;
+  },
+
+  // 10.6 Thống kê đơn hàng (Summary)
+  async getOrdersSummary() {
+    const response = await apiClient.get("/api/orders/stats/summary");
+    return response.data;
+  },
+
+  // 10.7 Thống kê chi tiết
+  async getOrdersDetailedStats() {
+    const response = await apiClient.get("/api/orders/stats/detailed");
+    return response.data;
+  },
 };
 
-export const getOrderById = async (id) => {
-  // return apiClient.get(`/orders/${id}`);
-  return {}; // Return empty for now
-};
+export default orderService;
 
-export const addOrder = async (orderData) => {
-  console.log('Adding order:', orderData);
-  // For now, we just simulate a successful response
-  return Promise.resolve({ data: { ...orderData, id: new Date().getTime() } });
-  // Uncomment the line below to use a real API endpoint
-  // return apiClient.post('/orders', orderData);
-};
-
-export const updateOrder = async (id, orderData) => {
-  console.log(`Updating order ${id}:`, orderData);
-  return Promise.resolve({ data: orderData });
-  // return apiClient.put(`/orders/${id}`, orderData);
-};
-
-export const deleteOrder = async (id) => {
-  console.log(`Deleting order ${id}`);
-  return Promise.resolve();
-  // return apiClient.delete(`/orders/${id}`);
-};
+// Legacy exports for backward compatibility
+export const getOrders = orderService.getOrders;
+export const getOrderById = orderService.getOrderById;
+export const addOrder = orderService.createOrder;
+export const updateOrder = orderService.updateOrder;
+export const deleteOrder = orderService.cancelOrder;

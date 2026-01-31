@@ -15,7 +15,9 @@
             <div
               class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2"
             >
-              <span class="opacity-70">🔎</span>
+              <span class="opacity-70"
+                ><i class="fa-solid fa-magnifying-glass text-xl"></i
+              ></span>
               <input
                 class="bg-transparent outline-none w-full text-sm"
                 placeholder="Tìm kiếm đơn hàng (tên, khách hàng, mã ...)"
@@ -113,16 +115,23 @@
 
               <div class="mt-3 space-y-2 text-sm text-slate-700">
                 <div class="flex items-center gap-2">
-                  <span class="opacity-70">✏️</span> Tạo bởi
-                  <b>Admin dohuyy</b> lúc 25/01/2026 20:53
+                  <span class="opacity-70"
+                    ><i class="fa-solid fa-pencil text-xl"></i
+                  ></span>
+                  Tạo bởi <b>Admin dohuyy</b> lúc 25/01/2026 20:53
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="opacity-70">🧰</span> Phụ trách bởi
+                  <span class="opacity-70"
+                    ><i class="fa-solid fa-bag-shopping text-xl"></i
+                  ></span>
+                  Phụ trách bởi
                   <b>Admin dohuyy</b>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="opacity-70">👤</span> Khách hàng: <b>huy do</b> -
-                  0562456488
+                  <span class="opacity-70"
+                    ><i class="fa-solid fa-user text-xl"></i
+                  ></span>
+                  Khách hàng: <b>huy do</b> - 0562456488
                 </div>
               </div>
             </div>

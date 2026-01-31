@@ -68,3 +68,56 @@ export const getCategories = async () => {
 export const getUnits = async () => {
   return apiClient.get("/api/units");
 };
+
+// ========== PRODUCT IMAGES ==========
+
+// Lấy danh sách ảnh của sản phẩm
+export const getProductImages = async (productId) => {
+  return apiClient.get(`/api/products/${productId}/images`);
+};
+
+// Upload ảnh chính sản phẩm
+export const uploadProductImage = async (productId, file) => {
+  const formData = new FormData();
+  formData.append("image", file);
+  return apiClient.post(`/api/products/${productId}/image`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+// Xóa ảnh chính sản phẩm
+export const deleteProductImage = async (productId) => {
+  return apiClient.delete(`/api/products/${productId}/image`);
+};
+
+// Upload gallery ảnh (tối đa 5 ảnh)
+export const uploadProductGallery = async (productId, files) => {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append("images", file);
+  });
+  return apiClient.post(`/api/products/${productId}/images`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+// Xóa ảnh trong gallery
+export const deleteGalleryImage = async (productId, imageId) => {
+  return apiClient.delete(`/api/products/${productId}/images/${imageId}`);
+};
+
+// Đặt ảnh làm ảnh chính
+export const setPrimaryImage = async (productId, imageId) => {
+  return apiClient.put(`/api/products/${productId}/images/${imageId}/primary`);
+};
+
+// Sắp xếp lại thứ tự ảnh
+export const reorderImages = async (productId, imageIds) => {
+  return apiClient.put(`/api/products/${productId}/images/reorder`, {
+    imageIds,
+  });
+};
