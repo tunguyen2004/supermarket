@@ -359,12 +359,16 @@ const getOrderStats = async (req, res) => {
 
 /**
  * Tạo đơn hàng mới - POST /api/orders
+ * Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu
  * 
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Thông tin đơn hàng vừa tạo
  */
 const createOrder = async (req, res) => {
+  // Lấy client từ pool để sử dụng transaction
+  const client = await db.pool.connect();
+  
   try {
     const {
       customer_id,
@@ -424,7 +428,7 @@ const createOrder = async (req, res) => {
     const dateKey = today.toISOString().split('T')[0];
 
     // Kiểm tra store tồn tại
-    const storeCheck = await db.query(
+    const storeCheck = await client.query(
       'SELECT id FROM dim_stores WHERE id = $1',
       [store_id]
     );
@@ -439,7 +443,7 @@ const createOrder = async (req, res) => {
 
     // Kiểm tra customer nếu có
     if (customer_id) {
-      const customerCheck = await db.query(
+      const customerCheck = await client.query(
         'SELECT id FROM dim_customers WHERE id = $1',
         [customer_id]
       );
@@ -455,7 +459,7 @@ const createOrder = async (req, res) => {
 
     // Kiểm tra tất cả variants tồn tại
     const variantIds = items.map(item => item.variant_id);
-    const variantsCheck = await db.query(
+    const variantsCheck = await client.query(
       `SELECT id FROM dim_product_variants WHERE id = ANY($1)`,
       [variantIds]
     );
@@ -468,20 +472,24 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // ========== BẮT ĐẦU TRANSACTION ==========
+    await client.query('BEGIN');
+
     // Tạo order code (ORD-YYYYMMDD-XXXXX)
     const datePart = dateKey.replace(/-/g, '').substring(2);
     const orderCodePrefix = `ORD-${datePart}`;
     
-    // Lấy max sequence của ngày hôm nay 
+    // Lấy max sequence của ngày hôm nay (trong transaction để tránh race condition)
     // order_code format: ORD-260120-00001, ta cần lấy số 00001
-    const sequenceResult = await db.query(
+    const sequenceResult = await client.query(
       `SELECT 
         COALESCE(
           MAX(CAST(RIGHT(order_code, 5) AS INTEGER)), 
           0
         ) as max_sequence
        FROM fact_orders 
-       WHERE order_code LIKE $1`,
+       WHERE order_code LIKE $1
+       FOR UPDATE`,
       [`${orderCodePrefix}-%`]
     );
 
@@ -489,7 +497,7 @@ const createOrder = async (req, res) => {
     const orderCode = `${orderCodePrefix}-${nextSequence}`;
 
     // Tạo đơn hàng
-    const orderResult = await db.query(
+    const orderResult = await client.query(
       `INSERT INTO fact_orders (
         order_code, date_key, customer_id, store_id, status, payment_status,
         subtotal, discount_amount, tax_amount, shipping_fee, final_amount,
@@ -506,23 +514,33 @@ const createOrder = async (req, res) => {
 
     const orderId = orderResult.rows[0].id;
 
-    // Thêm order items
-    for (let item of items) {
-      const lineSubtotal = item.quantity * item.unit_price;
-      const lineTotal = lineSubtotal - (item.discount_per_item || 0);
+    // Thêm order items (batch insert để tối ưu)
+    const itemValues = [];
+    const itemParams = [];
+    let paramIndex = 1;
 
-      await db.query(
-        `INSERT INTO fact_order_items (
-          order_id, variant_id, quantity, unit_price, discount_per_item
-        ) VALUES ($1, $2, $3, $4, $5)`,
-        [
-          orderId, item.variant_id, item.quantity, item.unit_price,
-          item.discount_per_item || 0
-        ]
+    for (let item of items) {
+      itemValues.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+      itemParams.push(
+        orderId, 
+        item.variant_id, 
+        item.quantity, 
+        item.unit_price,
+        item.discount_per_item || 0
       );
     }
 
-    // Lấy order detail để trả về
+    await client.query(
+      `INSERT INTO fact_order_items (
+        order_id, variant_id, quantity, unit_price, discount_per_item
+      ) VALUES ${itemValues.join(', ')}`,
+      itemParams
+    );
+
+    // ========== COMMIT TRANSACTION ==========
+    await client.query('COMMIT');
+
+    // Lấy order detail để trả về (sau khi commit)
     const detailResult = await db.query(
       `SELECT 
         fo.id, fo.order_code, fo.date_key, 
@@ -563,12 +581,17 @@ const createOrder = async (req, res) => {
     });
 
   } catch (error) {
+    // ========== ROLLBACK NẾU CÓ LỖI ==========
+    await client.query('ROLLBACK');
     console.error('Create order error:', error);
     res.status(500).json({
       status: 'ERROR',
       message: 'Failed to create order',
       error: error.message
     });
+  } finally {
+    // ========== LUÔN RELEASE CLIENT ==========
+    client.release();
   }
 };
 
@@ -843,6 +866,418 @@ const getDetailedStats = async (req, res) => {
   }
 };
 
+/**
+ * Hoàn trả đơn hàng - POST /api/orders/:id/return
+ * Body: { items: [{ variant_id, quantity, reason }], reason, refund_method }
+ */
+const returnOrder = async (req, res) => {
+  const client = await db.pool.connect();
+  
+  try {
+    const { id } = req.params;
+    const { items, reason, refund_method = 'cash' } = req.body;
+
+    // Check order exists and is delivered
+    const orderCheck = await client.query(
+      `SELECT fo.*, ds.name as store_name 
+       FROM fact_orders fo 
+       JOIN dim_stores ds ON fo.store_id = ds.id
+       WHERE fo.id = $1`,
+      [id]
+    );
+
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn hàng'
+      });
+    }
+
+    const order = orderCheck.rows[0];
+
+    if (order.status !== 'delivered' && order.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Chỉ có thể hoàn trả đơn hàng đã giao'
+      });
+    }
+
+    // Validate items
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Danh sách sản phẩm hoàn trả không hợp lệ'
+      });
+    }
+
+    // Get order items
+    const orderItemsResult = await client.query(
+      `SELECT foi.*, dpv.sku, dp.name as product_name
+       FROM fact_order_items foi
+       JOIN dim_product_variants dpv ON foi.variant_id = dpv.id
+       JOIN dim_products dp ON dpv.product_id = dp.id
+       WHERE foi.order_id = $1`,
+      [id]
+    );
+
+    const orderItems = orderItemsResult.rows;
+
+    // Validate return items
+    let totalRefund = 0;
+    const returnItems = [];
+
+    for (const item of items) {
+      const orderItem = orderItems.find(oi => oi.variant_id === item.variant_id);
+      
+      if (!orderItem) {
+        return res.status(400).json({
+          success: false,
+          message: `Sản phẩm variant_id=${item.variant_id} không có trong đơn hàng`
+        });
+      }
+
+      if (item.quantity > orderItem.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Số lượng hoàn trả (${item.quantity}) vượt quá số lượng đã mua (${orderItem.quantity})`
+        });
+      }
+
+      const itemRefund = item.quantity * orderItem.unit_price;
+      totalRefund += itemRefund;
+      returnItems.push({
+        ...item,
+        unit_price: orderItem.unit_price,
+        refund_amount: itemRefund,
+        sku: orderItem.sku,
+        product_name: orderItem.product_name
+      });
+    }
+
+    // ========== BẮT ĐẦU TRANSACTION ==========
+    await client.query('BEGIN');
+
+    // Generate return code
+    const today = new Date();
+    const dateKey = today.toISOString().split('T')[0];
+    const datePart = dateKey.replace(/-/g, '').substring(2);
+    const returnCodePrefix = `RTN-${datePart}`;
+    
+    const seqResult = await client.query(
+      `SELECT COALESCE(MAX(CAST(RIGHT(order_code, 5) AS INTEGER)), 0) as max_seq
+       FROM fact_orders 
+       WHERE order_code LIKE $1
+       FOR UPDATE`,
+      [`${returnCodePrefix}-%`]
+    );
+    
+    const nextSeq = String((seqResult.rows[0].max_seq || 0) + 1).padStart(5, '0');
+    const returnCode = `${returnCodePrefix}-${nextSeq}`;
+
+    // Create return order record
+    const returnOrderResult = await client.query(
+      `INSERT INTO fact_orders (
+        order_code, date_key, customer_id, store_id, status, payment_status,
+        subtotal, discount_amount, final_amount, payment_method,
+        internal_note, created_by, created_at
+      ) VALUES ($1, $2, $3, $4, 'returned', 'refunded', $5, 0, $5, $6, $7, $8, NOW())
+      RETURNING id`,
+      [
+        returnCode, dateKey, order.customer_id, order.store_id,
+        -totalRefund, refund_method,
+        `Hoàn trả từ đơn ${order.order_code}. Lý do: ${reason || 'Không có'}`,
+        req.user.id
+      ]
+    );
+
+    const returnOrderId = returnOrderResult.rows[0].id;
+
+    // Insert return items & update inventory
+    for (const item of returnItems) {
+      // Insert return item (negative quantity)
+      await client.query(
+        `INSERT INTO fact_order_items (order_id, variant_id, quantity, unit_price, discount_per_item)
+         VALUES ($1, $2, $3, $4, 0)`,
+        [returnOrderId, item.variant_id, -item.quantity, item.unit_price]
+      );
+
+      // Update inventory (add back to stock)
+      await client.query(
+        `UPDATE fact_inventory_stocks 
+         SET quantity_on_hand = quantity_on_hand + $1, last_updated = NOW()
+         WHERE store_id = $2 AND variant_id = $3`,
+        [item.quantity, order.store_id, item.variant_id]
+      );
+
+      // Create inventory transaction
+      const transactionCode = `RTN-INV-${Date.now()}-${item.variant_id}`;
+      await client.query(
+        `INSERT INTO fact_inventory_transactions 
+         (transaction_code, date_key, transaction_type_id, store_id, variant_id,
+          quantity_change, balance_before, balance_after, reference_type, reference_id,
+          created_by, notes)
+         SELECT $1, $2, 
+           (SELECT id FROM subdim_transaction_types WHERE code = 'RETURN'),
+           $3, $4, $5, 
+           COALESCE((SELECT quantity_on_hand FROM fact_inventory_stocks WHERE store_id = $3 AND variant_id = $4), 0) - $5,
+           COALESCE((SELECT quantity_on_hand FROM fact_inventory_stocks WHERE store_id = $3 AND variant_id = $4), 0),
+           'ORDER_RETURN', $6, $7, $8`,
+        [
+          transactionCode, dateKey, order.store_id, item.variant_id,
+          item.quantity, returnOrderId, req.user.id,
+          `Hoàn trả từ đơn ${order.order_code}: ${item.reason || reason || ''}`
+        ]
+      );
+    }
+
+    // Update original order status if full return
+    const originalTotal = orderItems.reduce((sum, oi) => sum + parseFloat(oi.quantity), 0);
+    const returnTotal = returnItems.reduce((sum, ri) => sum + ri.quantity, 0);
+    
+    if (returnTotal >= originalTotal) {
+      await client.query(
+        `UPDATE fact_orders SET status = 'returned', payment_status = 'refunded' WHERE id = $1`,
+        [id]
+      );
+    }
+
+    // ========== COMMIT TRANSACTION ==========
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      success: true,
+      data: {
+        return_code: returnCode,
+        original_order_code: order.order_code,
+        return_items: returnItems,
+        total_refund: totalRefund,
+        refund_method,
+        reason
+      },
+      message: 'Hoàn trả đơn hàng thành công'
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Return order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi hoàn trả đơn hàng',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Lấy thông tin in hóa đơn - GET /api/orders/:id/invoice
+ */
+const getOrderInvoice = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get order with full details
+    const orderQuery = `
+      SELECT 
+        fo.*,
+        dc.full_name as customer_name,
+        dc.phone as customer_phone,
+        dc.address as customer_address,
+        ds.name as store_name,
+        ds.address as store_address,
+        ds.phone as store_phone,
+        u.full_name as staff_name
+      FROM fact_orders fo
+      LEFT JOIN dim_customers dc ON fo.customer_id = dc.id
+      JOIN dim_stores ds ON fo.store_id = ds.id
+      JOIN dim_users u ON fo.created_by = u.id
+      WHERE fo.id = $1
+    `;
+    const orderResult = await db.query(orderQuery, [id]);
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn hàng'
+      });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Get order items
+    const itemsQuery = `
+      SELECT 
+        foi.quantity,
+        foi.unit_price,
+        foi.discount_per_item,
+        foi.line_subtotal,
+        foi.line_total,
+        dpv.sku,
+        dpv.barcode,
+        dp.name as product_name,
+        dp.code as product_code,
+        su.name as unit_name
+      FROM fact_order_items foi
+      JOIN dim_product_variants dpv ON foi.variant_id = dpv.id
+      JOIN dim_products dp ON dpv.product_id = dp.id
+      LEFT JOIN subdim_units su ON dp.unit_id = su.id
+      WHERE foi.order_id = $1
+      ORDER BY dp.name
+    `;
+    const itemsResult = await db.query(itemsQuery, [id]);
+
+    // Format invoice data
+    const invoice = {
+      invoice_number: order.order_code,
+      date: order.date_key,
+      created_at: order.created_at,
+      
+      store: {
+        name: order.store_name,
+        address: order.store_address,
+        phone: order.store_phone
+      },
+      
+      customer: {
+        name: order.customer_name || 'Khách lẻ',
+        phone: order.customer_phone || '',
+        address: order.customer_address || order.shipping_address || ''
+      },
+      
+      staff: order.staff_name,
+      
+      items: itemsResult.rows.map(item => ({
+        sku: item.sku,
+        barcode: item.barcode,
+        name: item.product_name,
+        unit: item.unit_name,
+        quantity: parseFloat(item.quantity),
+        unit_price: parseFloat(item.unit_price),
+        discount: parseFloat(item.discount_per_item),
+        subtotal: parseFloat(item.line_subtotal),
+        total: parseFloat(item.line_total)
+      })),
+      
+      summary: {
+        subtotal: parseFloat(order.subtotal),
+        discount: parseFloat(order.discount_amount),
+        tax: parseFloat(order.tax_amount),
+        shipping: parseFloat(order.shipping_fee),
+        total: parseFloat(order.final_amount)
+      },
+      
+      payment: {
+        method: order.payment_method,
+        status: order.payment_status
+      },
+      
+      notes: {
+        customer: order.customer_note,
+        internal: order.internal_note
+      }
+    };
+
+    res.json({
+      success: true,
+      data: invoice,
+      message: 'Lấy thông tin hóa đơn thành công'
+    });
+
+  } catch (error) {
+    console.error('Get order invoice error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy thông tin hóa đơn',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Danh sách đơn hoàn trả - GET /api/orders/returns
+ */
+const getReturnOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, from, to, store_id } = req.query;
+    const offset = (page - 1) * limit;
+    const params = [];
+    let paramIndex = 1;
+
+    let whereClause = `WHERE fo.status = 'returned' OR fo.order_code LIKE 'RTN-%'`;
+
+    if (from) {
+      whereClause += ` AND fo.date_key >= $${paramIndex}`;
+      params.push(from);
+      paramIndex++;
+    }
+
+    if (to) {
+      whereClause += ` AND fo.date_key <= $${paramIndex}`;
+      params.push(to);
+      paramIndex++;
+    }
+
+    if (store_id) {
+      whereClause += ` AND fo.store_id = $${paramIndex}`;
+      params.push(store_id);
+      paramIndex++;
+    }
+
+    // Count
+    const countResult = await db.query(
+      `SELECT COUNT(*) as total FROM fact_orders fo ${whereClause}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    // Get returns
+    const query = `
+      SELECT 
+        fo.id,
+        fo.order_code,
+        fo.date_key,
+        fo.final_amount,
+        fo.payment_method,
+        fo.internal_note,
+        fo.created_at,
+        dc.full_name as customer_name,
+        ds.name as store_name,
+        u.full_name as staff_name
+      FROM fact_orders fo
+      LEFT JOIN dim_customers dc ON fo.customer_id = dc.id
+      JOIN dim_stores ds ON fo.store_id = ds.id
+      JOIN dim_users u ON fo.created_by = u.id
+      ${whereClause}
+      ORDER BY fo.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    params.push(limit, offset);
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      },
+      message: 'Lấy danh sách đơn hoàn trả thành công'
+    });
+
+  } catch (error) {
+    console.error('Get return orders error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy danh sách đơn hoàn trả',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getOrderList,
   getOrderDetail,
@@ -850,5 +1285,8 @@ module.exports = {
   createOrder,
   updateOrderStatus,
   cancelOrder,
-  getDetailedStats
+  getDetailedStats,
+  returnOrder,
+  getOrderInvoice,
+  getReturnOrders
 };

@@ -979,5 +979,271 @@ module.exports = {
     transferStock,
     returnToSupplier,
     getStores,
-    getTransactionTypes
+    getTransactionTypes,
+    // Inventory Lookup
+    searchProductsForLookup,
+    getProductInventoryDetail
 };
+
+/**
+ * GET /api/inventory/lookup/search
+ * Tìm kiếm sản phẩm để tra cứu tồn kho
+ * 
+ * Query params:
+ * - query: Tìm theo tên, SKU
+ * - sort: Sắp xếp (name, price, stock)
+ * - order: ASC/DESC
+ * - limit: Số lượng (default: 50)
+ * - offset: Vị trí bắt đầu
+ * - store_id: Lọc theo cửa hàng
+ */
+async function searchProductsForLookup(req, res) {
+    try {
+        const { 
+            query = '', 
+            sort = 'name', 
+            order = 'ASC',
+            limit = 50, 
+            offset = 0,
+            store_id
+        } = req.query;
+
+        // Validate sort column
+        const validSorts = ['name', 'price', 'stock', 'sku', 'created_at'];
+        const sortColumn = validSorts.includes(sort) ? sort : 'name';
+        const sortDir = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+        // Build sort mapping
+        const sortMap = {
+            name: 'p.name',
+            price: 'v.sale_price',
+            stock: 'total_stock',
+            sku: 'p.sku',
+            created_at: 'p.created_at'
+        };
+
+        // Build search condition
+        let searchCondition = '';
+        const params = [];
+        let paramIndex = 0;
+
+        if (query && query.trim()) {
+            paramIndex++;
+            const searchTerm = `%${query.trim().toLowerCase()}%`;
+            searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(p.sku) LIKE $${paramIndex} OR LOWER(p.barcode) LIKE $${paramIndex})`;
+            params.push(searchTerm);
+        }
+
+        // Store filter
+        let storeCondition = '';
+        if (store_id) {
+            paramIndex++;
+            storeCondition = `AND fi.store_id = $${paramIndex}`;
+            params.push(parseInt(store_id));
+        }
+
+        // Get products with inventory totals
+        const productsQuery = `
+            SELECT 
+                p.id as product_id,
+                p.name,
+                p.sku,
+                p.barcode,
+                p.is_active,
+                v.id as variant_id,
+                v.name as variant_name,
+                v.sale_price as price,
+                COALESCE(SUM(fi.quantity_available), 0) as total_stock,
+                COUNT(DISTINCT fi.store_id) as store_count,
+                (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+            FROM dim_products p
+            INNER JOIN dim_product_variants v ON p.id = v.product_id
+            LEFT JOIN fact_inventory fi ON v.id = fi.variant_id ${storeCondition}
+            WHERE p.is_active = true
+            ${searchCondition}
+            GROUP BY p.id, p.name, p.sku, p.barcode, p.is_active, v.id, v.name, v.sale_price
+            ORDER BY ${sortMap[sortColumn]} ${sortDir}
+            LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
+        `;
+
+        params.push(parseInt(limit), parseInt(offset));
+
+        const result = await db.query(productsQuery, params);
+
+        // Get total count for pagination
+        const countParams = params.slice(0, paramIndex); // Exclude limit/offset
+        const countQuery = `
+            SELECT COUNT(DISTINCT (p.id, v.id)) as total
+            FROM dim_products p
+            INNER JOIN dim_product_variants v ON p.id = v.product_id
+            LEFT JOIN fact_inventory fi ON v.id = fi.variant_id ${storeCondition}
+            WHERE p.is_active = true
+            ${searchCondition}
+        `;
+
+        const countResult = await db.query(countQuery, countParams);
+        const total = parseInt(countResult.rows[0]?.total || 0);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Tìm kiếm sản phẩm thành công',
+            data: result.rows.map(row => ({
+                product_id: row.product_id,
+                variant_id: row.variant_id,
+                name: row.name,
+                variant_name: row.variant_name,
+                sku: row.sku,
+                barcode: row.barcode,
+                price: parseFloat(row.price || 0),
+                total_stock: parseInt(row.total_stock || 0),
+                store_count: parseInt(row.store_count || 0),
+                image_url: row.image_url,
+                is_active: row.is_active
+            })),
+            pagination: {
+                total,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                hasMore: parseInt(offset) + result.rows.length < total
+            }
+        });
+
+    } catch (error) {
+        console.error('Search products for lookup error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tìm kiếm sản phẩm',
+            error: error.message
+        });
+    }
+}
+
+/**
+ * GET /api/inventory/lookup/:productId
+ * Chi tiết tồn kho sản phẩm theo từng chi nhánh/cửa hàng
+ */
+async function getProductInventoryDetail(req, res) {
+    try {
+        const { productId } = req.params;
+
+        // Get product info
+        const productResult = await db.query(`
+            SELECT 
+                p.id,
+                p.name,
+                p.sku,
+                p.barcode,
+                p.description,
+                p.is_active,
+                (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+            FROM dim_products p
+            WHERE p.id = $1
+        `, [productId]);
+
+        if (productResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+
+        const product = productResult.rows[0];
+
+        // Get variants with prices
+        const variantsResult = await db.query(`
+            SELECT 
+                v.id,
+                v.name,
+                v.sku as variant_sku,
+                v.sale_price,
+                v.cost_price,
+                COALESCE(SUM(fi.quantity_available), 0) as total_stock
+            FROM dim_product_variants v
+            LEFT JOIN fact_inventory fi ON v.id = fi.variant_id
+            WHERE v.product_id = $1
+            GROUP BY v.id, v.name, v.sku, v.sale_price, v.cost_price
+            ORDER BY v.name ASC
+        `, [productId]);
+
+        // Get inventory by store for each variant
+        const inventoryResult = await db.query(`
+            SELECT 
+                fi.variant_id,
+                s.store_id,
+                s.store_name,
+                s.store_code,
+                s.city,
+                fi.quantity_available as stock,
+                fi.quantity_reserved,
+                fi.reorder_point,
+                fi.updated_at
+            FROM fact_inventory fi
+            INNER JOIN dim_stores s ON fi.store_id = s.store_id
+            INNER JOIN dim_product_variants v ON fi.variant_id = v.id
+            WHERE v.product_id = $1
+            ORDER BY s.store_name ASC
+        `, [productId]);
+
+        // Organize inventory by store
+        const storeInventoryMap = {};
+        inventoryResult.rows.forEach(row => {
+            const storeKey = row.store_id;
+            if (!storeInventoryMap[storeKey]) {
+                storeInventoryMap[storeKey] = {
+                    store_id: row.store_id,
+                    store_name: row.store_name,
+                    store_code: row.store_code,
+                    city: row.city,
+                    variants: []
+                };
+            }
+            storeInventoryMap[storeKey].variants.push({
+                variant_id: row.variant_id,
+                stock: parseInt(row.stock || 0),
+                reserved: parseInt(row.quantity_reserved || 0),
+                reorder_point: parseInt(row.reorder_point || 0),
+                updated_at: row.updated_at
+            });
+        });
+
+        // Calculate total stock
+        const totalStock = variantsResult.rows.reduce((sum, v) => sum + parseInt(v.total_stock || 0), 0);
+
+        // Get default price from first variant
+        const defaultPrice = variantsResult.rows[0]?.sale_price || 0;
+
+        return res.status(200).json({
+            success: true,
+            message: 'Lấy chi tiết tồn kho thành công',
+            data: {
+                product_id: product.id,
+                name: product.name,
+                sku: product.sku,
+                barcode: product.barcode,
+                description: product.description,
+                is_active: product.is_active,
+                imageUrl: product.image_url,
+                price: parseFloat(defaultPrice),
+                total_stock: totalStock,
+                productDetailUrl: `/products/${product.id}`,
+                variants: variantsResult.rows.map(v => ({
+                    id: v.id,
+                    name: v.name,
+                    sku: v.variant_sku,
+                    sale_price: parseFloat(v.sale_price || 0),
+                    cost_price: parseFloat(v.cost_price || 0),
+                    total_stock: parseInt(v.total_stock || 0)
+                })),
+                stores: Object.values(storeInventoryMap)
+            }
+        });
+
+    } catch (error) {
+        console.error('Get product inventory detail error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy chi tiết tồn kho',
+            error: error.message
+        });
+    }
+}

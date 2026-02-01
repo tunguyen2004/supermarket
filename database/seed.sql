@@ -1,16 +1,25 @@
 -- =====================================================
 -- SUPERMARKET MANAGEMENT SYSTEM - SEED DATA
--- Version: 3.1 | Date: 27/01/2026
+-- Version: 3.1 | Date: 01/02/2026
+-- Đã gộp dữ liệu từ tất cả migrations
 -- Có TRUNCATE để có thể chạy lại nhiều lần
 -- =====================================================
 
 -- =========================
 -- TRUNCATE ALL TABLES (theo thứ tự FK)
 -- =========================
+TRUNCATE TABLE fact_shipment_tracking CASCADE;
+TRUNCATE TABLE fact_shipments CASCADE;
+TRUNCATE TABLE fact_store_balances CASCADE;
+TRUNCATE TABLE fact_cashbook_transactions CASCADE;
+TRUNCATE TABLE fact_discount_usages CASCADE;
 TRUNCATE TABLE fact_order_items CASCADE;
 TRUNCATE TABLE fact_orders CASCADE;
 TRUNCATE TABLE fact_inventory_transactions CASCADE;
 TRUNCATE TABLE fact_inventory_stocks CASCADE;
+TRUNCATE TABLE dim_bank_accounts CASCADE;
+TRUNCATE TABLE dim_discounts CASCADE;
+TRUNCATE TABLE dim_carriers CASCADE;
 TRUNCATE TABLE dim_product_variants CASCADE;
 TRUNCATE TABLE dim_product_images CASCADE;
 TRUNCATE TABLE dim_products CASCADE;
@@ -22,6 +31,10 @@ TRUNCATE TABLE dim_time CASCADE;
 TRUNCATE TABLE role_permissions CASCADE;
 TRUNCATE TABLE subdim_permissions CASCADE;
 TRUNCATE TABLE subdim_roles CASCADE;
+TRUNCATE TABLE subdim_shipment_statuses CASCADE;
+TRUNCATE TABLE subdim_payment_methods CASCADE;
+TRUNCATE TABLE subdim_cashbook_types CASCADE;
+TRUNCATE TABLE subdim_discount_types CASCADE;
 TRUNCATE TABLE subdim_transaction_types CASCADE;
 TRUNCATE TABLE subdim_store_types CASCADE;
 TRUNCATE TABLE subdim_customer_groups CASCADE;
@@ -42,15 +55,26 @@ ALTER SEQUENCE subdim_store_types_id_seq RESTART WITH 1;
 ALTER SEQUENCE subdim_transaction_types_id_seq RESTART WITH 1;
 ALTER SEQUENCE subdim_roles_id_seq RESTART WITH 1;
 ALTER SEQUENCE subdim_permissions_id_seq RESTART WITH 1;
+ALTER SEQUENCE subdim_discount_types_id_seq RESTART WITH 1;
+ALTER SEQUENCE subdim_cashbook_types_id_seq RESTART WITH 1;
+ALTER SEQUENCE subdim_payment_methods_id_seq RESTART WITH 1;
+ALTER SEQUENCE subdim_shipment_statuses_id_seq RESTART WITH 1;
 ALTER SEQUENCE dim_stores_id_seq RESTART WITH 1;
 ALTER SEQUENCE dim_suppliers_id_seq RESTART WITH 1;
 ALTER SEQUENCE dim_customers_id_seq RESTART WITH 1;
 ALTER SEQUENCE dim_products_id_seq RESTART WITH 1;
 ALTER SEQUENCE dim_product_variants_id_seq RESTART WITH 1;
 ALTER SEQUENCE dim_users_id_seq RESTART WITH 1;
+ALTER SEQUENCE dim_discounts_id_seq RESTART WITH 1;
+ALTER SEQUENCE dim_carriers_id_seq RESTART WITH 1;
+ALTER SEQUENCE dim_bank_accounts_id_seq RESTART WITH 1;
 ALTER SEQUENCE fact_inventory_transactions_id_seq RESTART WITH 1;
 ALTER SEQUENCE fact_orders_id_seq RESTART WITH 1;
 ALTER SEQUENCE fact_order_items_id_seq RESTART WITH 1;
+ALTER SEQUENCE fact_discount_usages_id_seq RESTART WITH 1;
+ALTER SEQUENCE fact_cashbook_transactions_id_seq RESTART WITH 1;
+ALTER SEQUENCE fact_shipments_id_seq RESTART WITH 1;
+ALTER SEQUENCE fact_shipment_tracking_id_seq RESTART WITH 1;
 
 -- =========================
 -- LEVEL 3: REGIONS
@@ -184,11 +208,12 @@ INSERT INTO subdim_transaction_types (code, name, affects_stock) VALUES
 ('EXPIRED', 'Hàng hết hạn', -1);
 
 -- =========================
--- ROLES (Chỉ 2 role: ADMIN và STAFF)
+-- ROLES
 -- =========================
 INSERT INTO subdim_roles (code, name, description) VALUES
 ('ADMIN', 'Administrator', 'Quản trị viên hệ thống - Full quyền'),
-('STAFF', 'Sales Staff', 'Nhân viên bán hàng - Bán hàng, thu ngân, xem kho');
+('STAFF', 'Sales Staff', 'Nhân viên bán hàng - Bán hàng, thu ngân, xem kho'),
+('MANAGER', 'Manager', 'Quản lý cửa hàng');
 
 -- =========================
 -- PERMISSIONS
@@ -224,6 +249,62 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT 2, id FROM subdim_permissions 
 WHERE code IN ('PRODUCT_VIEW', 'ORDER_VIEW', 'ORDER_CREATE', 
                'CUSTOMER_VIEW', 'CUSTOMER_CREATE', 'INVENTORY_VIEW');
+
+-- Manager (role_id=3) permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT 3, id FROM subdim_permissions 
+WHERE code NOT IN ('SYSTEM_CONFIG', 'USER_MANAGE');
+
+-- =========================
+-- DISCOUNT TYPES (từ Migration 001)
+-- =========================
+INSERT INTO subdim_discount_types (code, name, description) VALUES
+    ('PERCENTAGE', 'Giảm theo %', 'Giảm giá theo phần trăm tổng đơn hàng'),
+    ('FIXED_AMOUNT', 'Giảm cố định', 'Giảm một số tiền cố định'),
+    ('BUY_X_GET_Y', 'Mua X tặng Y', 'Mua số lượng X được tặng Y'),
+    ('FREE_SHIPPING', 'Miễn phí ship', 'Miễn phí vận chuyển');
+
+-- =========================
+-- CASHBOOK TYPES (từ Migration 002)
+-- =========================
+INSERT INTO subdim_cashbook_types (code, name, transaction_direction, description) VALUES
+    ('SALES_INCOME', 'Thu từ bán hàng', 1, 'Tiền thu từ các đơn hàng'),
+    ('OTHER_INCOME', 'Thu khác', 1, 'Các khoản thu khác'),
+    ('PURCHASE_EXPENSE', 'Chi mua hàng', -1, 'Chi trả nhà cung cấp'),
+    ('SALARY_EXPENSE', 'Chi lương', -1, 'Chi trả lương nhân viên'),
+    ('RENT_EXPENSE', 'Chi thuê mặt bằng', -1, 'Chi phí thuê kho/cửa hàng'),
+    ('UTILITY_EXPENSE', 'Chi điện nước', -1, 'Chi phí điện, nước, internet'),
+    ('OTHER_EXPENSE', 'Chi khác', -1, 'Các khoản chi khác'),
+    ('REFUND', 'Hoàn tiền', -1, 'Hoàn tiền cho khách hàng'),
+    ('DEPOSIT', 'Nạp tiền', 1, 'Nạp tiền vào quỹ'),
+    ('WITHDRAWAL', 'Rút tiền', -1, 'Rút tiền từ quỹ');
+
+-- =========================
+-- PAYMENT METHODS (từ Migration 002)
+-- =========================
+INSERT INTO subdim_payment_methods (code, name) VALUES
+    ('CASH', 'Tiền mặt'),
+    ('BANK_TRANSFER', 'Chuyển khoản ngân hàng'),
+    ('CARD', 'Thẻ tín dụng/ghi nợ'),
+    ('MOMO', 'Ví MoMo'),
+    ('ZALOPAY', 'ZaloPay'),
+    ('VNPAY', 'VNPay'),
+    ('OTHER', 'Khác');
+
+-- =========================
+-- SHIPMENT STATUSES (từ Migration 003)
+-- =========================
+INSERT INTO subdim_shipment_statuses (code, name, description, sort_order) VALUES
+    ('pending', 'Chờ xử lý', 'Đơn hàng mới, chờ xác nhận', 1),
+    ('confirmed', 'Đã xác nhận', 'Đã xác nhận, chuẩn bị hàng', 2),
+    ('picking', 'Đang lấy hàng', 'Shipper đang lấy hàng từ kho', 3),
+    ('picked', 'Đã lấy hàng', 'Shipper đã lấy hàng', 4),
+    ('in_transit', 'Đang vận chuyển', 'Hàng đang trên đường giao', 5),
+    ('out_for_delivery', 'Đang giao hàng', 'Shipper đang giao cho khách', 6),
+    ('delivered', 'Đã giao hàng', 'Giao hàng thành công', 7),
+    ('failed', 'Giao thất bại', 'Không giao được hàng', 8),
+    ('returned', 'Đã hoàn hàng', 'Hàng đã hoàn về kho', 9),
+    ('cancelled', 'Đã hủy', 'Đơn vận chuyển bị hủy', 10);
 
 -- =========================
 -- STORES (5 cửa hàng)
@@ -350,7 +431,7 @@ INSERT INTO dim_products (code, name, category_id, brand_id, unit_id, descriptio
 ('CF003', 'Cà phê Nescafe 3in1 hộp 20 gói', 2, 24, 2, 'Cà phê hòa tan Nestle', FALSE);
 
 -- =========================
--- PRODUCT VARIANTS (49 variants - 1 variant/product)
+-- PRODUCT VARIANTS (49 variants)
 -- =========================
 INSERT INTO dim_product_variants (product_id, sku, barcode, cost_price, selling_price) VALUES
 (1, 'MIG001-SKU', '8934567890001', 2500, 4000),
@@ -406,7 +487,6 @@ INSERT INTO dim_product_variants (product_id, sku, barcode, cost_price, selling_
 -- =========================
 -- USERS (6 người dùng) - Password: "1"
 -- Hash: $2a$12$qolE3BnwYKfJo/m/K1qad.V6TMq4.L2v2sqtw38RkIdo7D19XiuuK
--- role_id: 1=ADMIN, 2=STAFF
 -- =========================
 INSERT INTO dim_users (username, email, password_hash, full_name, role_id, store_id, phone) VALUES
 ('admin', 'admin@minimart.com', '$2a$12$qolE3BnwYKfJo/m/K1qad.V6TMq4.L2v2sqtw38RkIdo7D19XiuuK', 'Admin Hệ Thống', 1, 1, '0900000001'),
@@ -415,6 +495,26 @@ INSERT INTO dim_users (username, email, password_hash, full_name, role_id, store
 ('staff_hcm1', 'staff.hcm1@minimart.com', '$2a$12$qolE3BnwYKfJo/m/K1qad.V6TMq4.L2v2sqtw38RkIdo7D19XiuuK', 'Lê Văn Nam', 2, 3, '0900000004'),
 ('staff_hcm2', 'staff.hcm2@minimart.com', '$2a$12$qolE3BnwYKfJo/m/K1qad.V6TMq4.L2v2sqtw38RkIdo7D19XiuuK', 'Phạm Văn Đức', 2, 4, '0900000005'),
 ('staff_wh', 'staff.wh@minimart.com', '$2a$12$qolE3BnwYKfJo/m/K1qad.V6TMq4.L2v2sqtw38RkIdo7D19XiuuK', 'Võ Hoàng Anh', 2, 5, '0900000006');
+
+-- =========================
+-- CARRIERS (từ Migration 003)
+-- =========================
+INSERT INTO dim_carriers (code, name, phone, tracking_url_template) VALUES
+    ('INTERNAL', 'Giao hàng nội bộ', NULL, NULL),
+    ('GHN', 'Giao Hàng Nhanh', '1900636336', 'https://donhang.ghn.vn/?order_code={tracking_code}'),
+    ('GHTK', 'Giao Hàng Tiết Kiệm', '1900636886', 'https://i.ghtk.vn/{tracking_code}'),
+    ('VNP', 'Viettel Post', '1900866868', 'https://viettelpost.com.vn/tra-cuu-hang-gui?tracking_code={tracking_code}'),
+    ('JT', 'J&T Express', '1900158815', 'https://jtexpress.vn/track?bills={tracking_code}'),
+    ('BEST', 'Best Express', '1900063630', 'https://bestexpress.vn/tracking/{tracking_code}');
+
+-- =========================
+-- BANK ACCOUNTS (từ Migration 004)
+-- =========================
+INSERT INTO dim_bank_accounts (account_name, account_number, bank_name, bank_code, branch, is_default, is_active, created_by)
+VALUES 
+    ('Siêu Thị Mini', '1234567890', 'Vietcombank', 'VCB', 'Chi nhánh Quận 1', TRUE, TRUE, 1),
+    ('Siêu Thị Mini', '0987654321', 'Techcombank', 'TCB', 'Chi nhánh Quận 3', FALSE, TRUE, 1),
+    ('Siêu Thị Mini', '5678901234', 'ACB', 'ACB', 'Chi nhánh Quận 7', FALSE, TRUE, 1);
 
 -- =========================
 -- DIM_TIME (2025-2027)
@@ -433,7 +533,15 @@ SELECT
 FROM generate_series('2025-01-01'::date, '2027-12-31'::date, '1 day'::interval) d;
 
 -- =========================
--- INVENTORY STOCKS (5 stores x 49 variants = 245 records)
+-- DISCOUNTS (từ Migration 001)
+-- =========================
+INSERT INTO dim_discounts (code, name, description, discount_type_id, discount_value, max_discount_amount, min_order_amount, max_uses_total, start_date, end_date, created_by) VALUES
+    ('SALE10', 'Giảm 10%', 'Giảm 10% cho đơn từ 200K', 1, 10, 50000, 200000, 1000, '2026-01-01', '2026-12-31', 1),
+    ('WELCOME50', 'Chào mừng 50K', 'Giảm 50K cho khách mới', 2, 50000, NULL, 100000, 500, '2026-01-01', '2026-06-30', 1),
+    ('FREESHIP', 'Miễn phí ship', 'Miễn phí ship đơn từ 300K', 4, 30000, NULL, 300000, NULL, '2026-01-01', '2026-12-31', 1);
+
+-- =========================
+-- INVENTORY STOCKS (5 stores x 49 variants)
 -- =========================
 INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, min_stock_level, max_stock_level)
 SELECT 1, id, FLOOR(RANDOM() * 200 + 50)::int, 20, 300 FROM dim_product_variants WHERE id <= 49;
@@ -482,19 +590,18 @@ BEGIN
             customer := NULL;
         END IF;
         
-        -- Random store (1-4, không bao gồm kho)
+        -- Random store (1-4)
         store := FLOOR(RANDOM() * 4 + 1)::int;
         
-        -- Assign staff based on store (user_id = store_id + 1)
-        -- admin=1, staff_hn1=2(store1), staff_hn2=3(store2), staff_hcm1=4(store3), staff_hcm2=5(store4)
+        -- Assign staff based on store
         CASE store
-            WHEN 1 THEN staff := 2;  -- staff_hn1
-            WHEN 2 THEN staff := 3;  -- staff_hn2
-            WHEN 3 THEN staff := 4;  -- staff_hcm1
-            WHEN 4 THEN staff := 5;  -- staff_hcm2
+            WHEN 1 THEN staff := 2;
+            WHEN 2 THEN staff := 3;
+            WHEN 3 THEN staff := 4;
+            WHEN 4 THEN staff := 5;
         END CASE;
         
-        -- Order status: 90% completed, 5% pending, 5% cancelled
+        -- Order status
         IF RANDOM() > 0.1 THEN
             order_status := 'completed';
             payment_status := 'paid';
@@ -540,7 +647,7 @@ BEGIN
             order_subtotal := order_subtotal + (qty * price);
         END LOOP;
         
-        -- Apply discount for some orders with customers
+        -- Apply discount
         IF customer IS NOT NULL AND RANDOM() > 0.7 THEN
             order_discount := FLOOR(order_subtotal * 0.05);
         ELSE
@@ -568,6 +675,29 @@ SET total_lifetime_value = COALESCE(
 );
 
 -- =========================
+-- SAMPLE CASHBOOK TRANSACTION
+-- =========================
+INSERT INTO fact_cashbook_transactions (
+    transaction_code, date_key, store_id, cashbook_type_id, payment_method_id,
+    amount, reference_type, description, created_by, status
+) 
+SELECT 
+    'CB-' || to_char(CURRENT_DATE, 'YYYYMMDD') || '-001',
+    CURRENT_DATE,
+    1,
+    (SELECT id FROM subdim_cashbook_types WHERE code = 'SALES_INCOME'),
+    (SELECT id FROM subdim_payment_methods WHERE code = 'CASH'),
+    1500000,
+    'ORDER',
+    'Thu tiền bán hàng ngày',
+    1,
+    'approved'
+WHERE EXISTS (SELECT 1 FROM dim_time WHERE date_key = CURRENT_DATE)
+  AND EXISTS (SELECT 1 FROM dim_stores WHERE id = 1)
+  AND EXISTS (SELECT 1 FROM dim_users WHERE id = 1)
+ON CONFLICT DO NOTHING;
+
+-- =========================
 -- COMPLETION MESSAGE
 -- =========================
 DO $$ 
@@ -582,7 +712,10 @@ BEGIN
     RAISE NOTICE '   - Customers: 25';
     RAISE NOTICE '   - Products: 49';
     RAISE NOTICE '   - Product Variants: 49';
-    RAISE NOTICE '   - Users: 10';
+    RAISE NOTICE '   - Users: 6';
+    RAISE NOTICE '   - Carriers: 6';
+    RAISE NOTICE '   - Bank Accounts: 3';
+    RAISE NOTICE '   - Discounts: 3';
     RAISE NOTICE '   - Inventory Stocks: 245 (5 stores x 49 variants)';
     RAISE NOTICE '   - Orders: 150';
     RAISE NOTICE '   - Time dimension: 2025-2027 (1096 days)';

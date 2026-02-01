@@ -174,7 +174,46 @@ const getRolePermissions = () => {
   };
 };
 
+/**
+ * Flexible authorize middleware
+ * Accepts array of role names: ['admin', 'manager', 'staff']
+ * @param {string[]} allowedRoles - Array of role names
+ */
+const authorize = (allowedRoles = []) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          status: 'ERROR',
+          message: 'Unauthorized: No user information found',
+        });
+      }
+
+      const userRoleName = getRoleName(req.user.role_id).toLowerCase();
+      const normalizedRoles = allowedRoles.map(r => r.toLowerCase());
+      
+      if (!normalizedRoles.includes(userRoleName)) {
+        return res.status(403).json({
+          status: 'ERROR',
+          message: `Forbidden: Requires one of these roles: ${allowedRoles.join(', ')}`,
+          requiredRoles: allowedRoles,
+          userRole: userRoleName,
+        });
+      }
+
+      next();
+    } catch (error) {
+      return res.status(500).json({
+        status: 'ERROR',
+        message: 'Authorization check failed',
+        error: error.message,
+      });
+    }
+  };
+};
+
 module.exports = {
+  authorize,
   requireAdmin,
   requireManagerOrAdmin,
   requireRole,

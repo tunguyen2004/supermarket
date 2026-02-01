@@ -12,22 +12,46 @@
  * - Module 3: Profile Management (Quản lý Profile cá nhân)
  * - Module 4: Product Management (Quản lý Sản phẩm)
  * - Module 5: Collection Management (Quản lý Danh mục)
+ * - Module 6: Dashboard & Reports
+ * - Module 7: Catalog (Price List)
+ * - Module 8: Inventory Management
+ * - Module 9: Order Management
  * ============================================================================
  */
 
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const compression = require('compression');
 require('dotenv').config();
 
 // ============ IMPORTS ============
 const db = require('./config/database');
 const router = require('./routes');
+const { setupSwagger } = require('./config/swagger');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 // ============ INITIALIZE EXPRESS APP ============
 const app = express();
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// ============ SECURITY MIDDLEWARE ============
+
+/**
+ * Helmet - Security Headers
+ * Thiết lập các HTTP headers bảo mật
+ */
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Cho phép load ảnh từ uploads
+}));
+
+/**
+ * Compression Middleware
+ * Nén response để giảm bandwidth
+ */
+app.use(compression());
 
 // ============ GLOBAL MIDDLEWARE ============
 
@@ -56,7 +80,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 /**
- * Request Logger Middleware (tuỳ chọn)
+ * Request Logger Middleware
  * Ghi lại các request đến server
  */
 app.use((req, res, next) => {
@@ -64,6 +88,19 @@ app.use((req, res, next) => {
   console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
 });
+
+/**
+ * Rate Limiter Middleware
+ * Giới hạn số lượng requests per IP
+ */
+app.use('/api/', apiLimiter);
+
+// ============ SWAGGER DOCUMENTATION ============
+
+/**
+ * Swagger UI available at /api/docs
+ */
+setupSwagger(app);
 
 // ============ HEALTH CHECK & ROOT ENDPOINTS ============
 
@@ -85,6 +122,10 @@ app.get('/', (req, res) => {
       'Module 3': 'Profile Management (/api/users)',
       'Module 4': 'Product Management (/api/products)',
       'Module 5': 'Collection Management (/api/collections)',
+      'Module 6': 'Dashboard & Reports (/api/dashboard)',
+      'Module 7': 'Catalog - Price List (/api/catalogs)',
+      'Module 8': 'Inventory Management (/api/inventories)',
+      'Module 9': 'Order Management (/api/orders)',
     },
     contact: 'admin@supermarket.com',
   });

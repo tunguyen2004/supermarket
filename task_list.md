@@ -1,468 +1,536 @@
+# 📋 TASK LIST - HỆ THỐNG QUẢN LÝ SIÊU THỊ MINI
+
+**Cập nhật:** 31/01/2026  
+**Tham khảo:** `API_ANALYSIS.md`
+
+---
+
 ## 📊 TỔNG QUAN
 
-| Tổng số Module | Tổng số API | Tổng số Tables |
-|----------------|-------------|----------------|
-| 14 modules | ~95 APIs | ~20 tables |
+| Hạng mục | Đã có | Còn thiếu | Tổng |
+|----------|-------|-----------|------|
+| **APIs** | 129 | 0 | 129 |
+| **Modules** | 21 | 0 | 21 |
+
+### 🎉 TẤT CẢ MODULES ĐÃ HOÀN THÀNH!
+
+### 🎯 Vừa hoà### ✅ Module 20: Bank Account - Tài khoản ngân hàng (5 APIs) - DONE
+
+> **Frontend:** `PaymentDrawer.vue` (Thiết lập tài khoản thụ hưởng)
+> **Service:** ✅ `bankAccountService.js` đã tạo
+
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | DS tài khoản NH | GET | `/api/bank-accounts` | 🟡 MEDIUM | ✅ Done |
+| 2 | Thêm tài khoản NH | POST | `/api/bank-accounts` | 🟡 MEDIUM | ✅ Done |
+| 3 | Sửa tài khoản NH | PUT | `/api/bank-accounts/:id` | 🟢 LOW | ✅ Done |
+| 4 | Xóa tài khoản NH | DELETE | `/api/bank-accounts/:id` | 🟢 LOW | ✅ Done |
+| 5 | Tạo mã QR thanh toán | GET | `/api/bank-accounts/:id/qr` | 🟡 MEDIUM | ✅ Done |APIs mới):
+- ✅ Module 11: Customers (8 APIs)
+- ✅ Module 12: Suppliers (5 APIs)
+- ✅ Module 13: Discounts (8 APIs)
+- ✅ Module 14: Transactions (7 APIs)
+- ✅ Module 15: Shipments (8 APIs)
+- ✅ Module 16: Orders Enhancement (4 APIs)
+- ✅ Module 17: Staff Reports (5 APIs)
+- ✅ Module 18: Inventory Lookup (2 APIs)
+- ✅ Module 19: POS Payment (10 APIs)
+
+### 📝 APIs mới thêm vào danh sách:
+- 🔴 Module 19: POS Payment (8 APIs) - Thanh toán tại quầy
+- ✅ Module 20: Bank Account (5 APIs) - Quản lý tài khoản ngân hàng
+- ✅ Module 21: Checkouts (4 APIs) - Đơn chưa hoàn tất
 
 ---
 
-## 👤 THÀNH VIÊN 1: Authentication & Quản lý người dùng
+## ✅ PHẦN 1: CÁC MODULE ĐÃ HOÀN THÀNH (67 APIs)
 
-### Module 1: Authentication (Xác thực)
+### Module 1: Authentication (4 APIs) ✅
 | STT | Chức năng | Method | Endpoint | Trạng thái |
 |-----|-----------|--------|----------|------------|
-| 1 | Đăng nhập | POST | `/api/auth/login` | ✅ Đã có |
-| 2 | Đăng xuất | POST | `/api/auth/logout` | ✅ Đã có |
-| 3 | Refresh token | POST | `/api/auth/refresh` | ✅ Đã có |
-| 4 | Lấy danh sách roles | GET | `/api/auth/roles` | ✅ Đã có |
+| 1 | Đăng nhập | POST | `/api/auth/login` | ✅ Done |
+| 2 | Đăng xuất | POST | `/api/auth/logout` | ✅ Done |
+| 3 | Refresh token | POST | `/api/auth/refresh` | ✅ Done |
+| 4 | Lấy danh sách roles | GET | `/api/auth/roles` | ✅ Done |
 
-> ⚠️ **Ghi chú:** API `POST /api/auth/register` đã bỏ - Chỉ Admin mới có quyền tạo tài khoản qua Staff Management
-
-### Module 2: Quản lý tài khoản cá nhân (Profile)
+### Module 2: Profile (5 APIs) ✅
 | STT | Chức năng | Method | Endpoint | Trạng thái |
 |-----|-----------|--------|----------|------------|
-| 1 | Xem thông tin cá nhân | GET | `/api/users/profile` | ✅ Đã có |
-| 2 | Cập nhật thông tin cá nhân | PUT | `/api/users/profile` | ✅ Đã có |
-| 3 | Đổi mật khẩu | PUT | `/api/users/change-password` | ✅ Đã có |
-| 4 | Upload avatar | POST | `/api/users/avatar` | ✅ Đã có |
-| 5 | Xóa avatar | DELETE | `/api/users/avatar` | ✅ Đã có |
+| 1 | Xem thông tin cá nhân | GET | `/api/users/profile` | ✅ Done |
+| 2 | Cập nhật thông tin | PUT | `/api/users/profile` | ✅ Done |
+| 3 | Đổi mật khẩu | PUT | `/api/users/change-password` | ✅ Done |
+| 4 | Upload avatar | POST | `/api/users/avatar` | ✅ Done |
+| 5 | Xóa avatar | DELETE | `/api/users/avatar` | ✅ Done |
 
-### Module 3: Quản lý nhân viên (Staff) - *Admin Only*
+### Module 3: Staff Management (6 APIs) ✅
 | STT | Chức năng | Method | Endpoint | Trạng thái |
 |-----|-----------|--------|----------|------------|
-| 1 | Danh sách nhân viên | GET | `/api/staff` | ✅ Đã có |
-| 2 | Thêm nhân viên | POST | `/api/staff` | ✅ Đã có |
-| 3 | Chi tiết nhân viên | GET | `/api/staff/:id` | ✅ Đã có |
-| 4 | Sửa nhân viên | PUT | `/api/staff/:id` | ✅ Đã có |
-| 5 | Xóa nhân viên | DELETE | `/api/staff/:id` | ✅ Đã có |
-| 6 | Phân quyền nhân viên | PUT | `/api/staff/:id/role` | ✅ Đã có |
+| 1 | Danh sách nhân viên | GET | `/api/staff` | ✅ Done |
+| 2 | Thêm nhân viên | POST | `/api/staff` | ✅ Done |
+| 3 | Chi tiết nhân viên | GET | `/api/staff/:id` | ✅ Done |
+| 4 | Sửa nhân viên | PUT | `/api/staff/:id` | ✅ Done |
+| 5 | Xóa nhân viên | DELETE | `/api/staff/:id` | ✅ Done |
+| 6 | Phân quyền | PUT | `/api/staff/:id/role` | ✅ Done |
 
-### Database Tables:
-```
-- dim_users (users)
-- subdim_roles (roles)
-```
+### Module 4: Products (10 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | Danh sách sản phẩm | GET | `/api/products` | ✅ Done |
+| 2 | Thêm sản phẩm | POST | `/api/products` | ✅ Done |
+| 3 | Chi tiết sản phẩm | GET | `/api/products/:id` | ✅ Done |
+| 4 | Sửa sản phẩm | PUT | `/api/products/:id` | ✅ Done |
+| 5 | Xóa sản phẩm | DELETE | `/api/products/:id` | ✅ Done |
+| 6 | Bật/tắt hàng loạt | PATCH | `/api/products/bulk-status` | ✅ Done |
+| 7 | Import CSV | POST | `/api/products/import` | ✅ Done |
+| 8 | Export CSV | GET | `/api/products/export` | ✅ Done |
+| 9 | Danh sách thương hiệu | GET | `/api/brands` | ✅ Done |
+| 10 | Danh sách đơn vị | GET | `/api/units` | ✅ Done |
 
-### 📈 Tổng kết Thành viên 1:
-- **Số API:** 15 APIs
-- **Số Tables:** 2
+### Module 5: Collections (6 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | Danh sách danh mục | GET | `/api/collections` | ✅ Done |
+| 2 | Cây danh mục | GET | `/api/collections/tree` | ✅ Done |
+| 3 | Thêm danh mục | POST | `/api/collections` | ✅ Done |
+| 4 | Chi tiết danh mục | GET | `/api/collections/:id` | ✅ Done |
+| 5 | Sửa danh mục | PUT | `/api/collections/:id` | ✅ Done |
+| 6 | Xóa danh mục | DELETE | `/api/collections/:id` | ✅ Done |
 
+### Module 6: Dashboard (7 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | Tổng quan Dashboard | GET | `/api/dashboard/overview` | ✅ Done |
+| 2 | Thống kê theo khoảng | GET | `/api/dashboard/stats` | ✅ Done |
+| 3 | Biểu đồ doanh thu | GET | `/api/dashboard/revenue-chart` | ✅ Done |
+| 4 | Top sản phẩm bán chạy | GET | `/api/dashboard/top-products` | ✅ Done |
+| 5 | Kênh bán hàng | GET | `/api/dashboard/sales-channels` | ✅ Done |
+| 6 | Top khách hàng | GET | `/api/dashboard/top-customers` | ✅ Done |
+| 7 | Sản phẩm sắp hết | GET | `/api/dashboard/low-stock` | ✅ Done |
+
+### Module 7: Catalog - Bảng giá (5 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | Danh sách bảng giá | GET | `/api/catalogs` | ✅ Done |
+| 2 | Chi tiết bảng giá | GET | `/api/catalogs/:id` | ✅ Done |
+| 3 | Cập nhật giá | PUT | `/api/catalogs/:id` | ✅ Done |
+| 4 | Cập nhật giá hàng loạt | PATCH | `/api/catalogs/bulk-update` | ✅ Done |
+| 5 | Export bảng giá | GET | `/api/catalogs/export` | ✅ Done |
+
+### Module 8: Inventory (9 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | DS cửa hàng/kho | GET | `/api/stores` | ✅ Done |
+| 2 | DS loại giao dịch | GET | `/api/transaction-types` | ✅ Done |
+| 3 | Danh sách tồn kho | GET | `/api/inventories` | ✅ Done |
+| 4 | Chi tiết tồn kho | GET | `/api/inventories/:variantId` | ✅ Done |
+| 5 | Điều chỉnh tồn kho | PUT | `/api/inventories/:variantId` | ✅ Done |
+| 6 | Lịch sử xuất nhập | GET | `/api/inventories/:variantId/history` | ✅ Done |
+| 7 | Nhập kho | POST | `/api/inventories/receive` | ✅ Done |
+| 8 | Chuyển kho | POST | `/api/inventories/transfer` | ✅ Done |
+| 9 | Trả hàng NCC | POST | `/api/inventories/return` | ✅ Done |
+
+### Module 9: Product Images (7 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | DS ảnh sản phẩm | GET | `/api/products/:id/images` | ✅ Done |
+| 2 | Upload ảnh chính | POST | `/api/products/:id/image` | ✅ Done |
+| 3 | Xóa ảnh chính | DELETE | `/api/products/:id/image` | ✅ Done |
+| 4 | Upload gallery | POST | `/api/products/:id/images` | ✅ Done |
+| 5 | Xóa ảnh gallery | DELETE | `/api/products/:id/images/:imageId` | ✅ Done |
+| 6 | Set ảnh chính | PUT | `/api/products/:id/images/:imageId/primary` | ✅ Done |
+| 7 | Sắp xếp ảnh | PUT | `/api/products/:id/images/reorder` | ✅ Done |
+
+### Module 10: Orders (7 APIs) ✅
+| STT | Chức năng | Method | Endpoint | Trạng thái |
+|-----|-----------|--------|----------|------------|
+| 1 | Danh sách đơn hàng | GET | `/api/orders` | ✅ Done |
+| 2 | Tạo đơn hàng | POST | `/api/orders` | ✅ Done |
+| 3 | Chi tiết đơn hàng | GET | `/api/orders/:id` | ✅ Done |
+| 4 | Cập nhật đơn hàng | PUT | `/api/orders/:id` | ✅ Done |
+| 5 | Hủy đơn hàng | DELETE | `/api/orders/:id` | ✅ Done |
+| 6 | Thống kê summary | GET | `/api/orders/stats/summary` | ✅ Done |
+| 7 | Thống kê chi tiết | GET | `/api/orders/stats/detailed` | ✅ Done |
 
 ---
 
-## 👤 THÀNH VIÊN 2: Sản phẩm & Quản lý kho
+## ⏳ PHẦN 2: CÁC MODULE CẦN LÀM (27 APIs còn lại)
 
-### Module 4: Sản phẩm (Products)
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách sản phẩm | GET | `/api/products` | ✅ Đã có |
-| 2 | Thêm sản phẩm | POST | `/api/products` | ✅ Đã có |
-| 3 | Chi tiết sản phẩm | GET | `/api/products/:id` | ✅ Đã có |
-| 4 | Sửa sản phẩm | PUT | `/api/products/:id` | ✅ Đã có |
-| 5 | Xóa sản phẩm | DELETE | `/api/products/:id` | ✅ Đã có |
-| 6 | Bật/tắt trạng thái hàng loạt | PATCH | `/api/products/bulk-status` | ✅ Đã có |
-| 7 | Import sản phẩm từ CSV | POST | `/api/products/import` | ✅ Đã có |
-| 8 | Export sản phẩm ra CSV | GET | `/api/products/export` | ✅ Đã có |
-| 9 | Danh sách thương hiệu | GET | `/api/brands` | ✅ Đã có |
-| 10 | Danh sách đơn vị tính | GET | `/api/units` | ✅ Đã có |
+### ✅ Module 11: Customers - Khách hàng (8 APIs) - DONE
 
-> 📝 **Query Parameters cho GET /api/products:**
-> - `search` - Tìm theo tên/mã sản phẩm
-> - `category_id` - Lọc theo danh mục
-> - `brand_id` - Lọc theo thương hiệu
-> - `is_active` - Lọc theo trạng thái
-> - `page`, `limit` - Phân trang
+> **Frontend:** `CustomerList.vue`, `Customer_groups.vue`, `Pos.vue` (CustomerPicker)
+> **Service:** ✅ `customerService.js` đã tạo
 
-### Module 5: Danh mục sản phẩm (Collections)
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách danh mục | GET | `/api/collections` | ✅ Đã có |
-| 2 | Cây danh mục (Tree View) | GET | `/api/collections/tree` | ✅ Đã có |
-| 3 | Thêm danh mục | POST | `/api/collections` | ✅ Đã có |
-| 4 | Chi tiết danh mục | GET | `/api/collections/:id` | ✅ Đã có |
-| 5 | Sửa danh mục | PUT | `/api/collections/:id` | ✅ Đã có |
-| 6 | Xóa danh mục | DELETE | `/api/collections/:id` | ✅ Đã có |
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Danh sách khách hàng | GET | `/api/customers` | 🔴 HIGH | ✅ Done |
+| 2 | Tìm kiếm nhanh (POS) | GET | `/api/customers/search` | 🔴 HIGH | ✅ Done |
+| 3 | Thêm khách hàng | POST | `/api/customers` | 🔴 HIGH | ✅ Done |
+| 4 | Chi tiết khách hàng | GET | `/api/customers/:id` | 🟡 MEDIUM | ✅ Done |
+| 5 | Sửa khách hàng | PUT | `/api/customers/:id` | 🟡 MEDIUM | ✅ Done |
+| 6 | Xóa khách hàng | DELETE | `/api/customers/:id` | 🟢 LOW | ✅ Done |
+| 7 | DS nhóm khách hàng | GET | `/api/customer-groups` | 🟡 MEDIUM | ✅ Done |
+| 8 | Chuyển nhóm KH | PUT | `/api/customers/:id/group` | 🟢 LOW | ✅ Done |
 
-### Module 6: Bảng giá (Catalogs) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách bảng giá | GET | `/api/catalogs` | ⏳ Cần làm |
-| 2 | Thêm bảng giá | POST | `/api/catalogs` | ⏳ Cần làm |
-| 3 | Chi tiết bảng giá | GET | `/api/catalogs/:id` | ⏳ Cần làm |
-| 4 | Sửa bảng giá | PUT | `/api/catalogs/:id` | ⏳ Cần làm |
-| 5 | Xóa bảng giá | DELETE | `/api/catalogs/:id` | ⏳ Cần làm |
-
-### Module 7: Quản lý kho (Inventory) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách tồn kho | GET | `/api/inventories` | ⏳ Cần làm |
-| 2 | Chi tiết tồn kho | GET | `/api/inventories/:id` | ⏳ Cần làm |
-| 3 | Cập nhật số lượng tồn | PUT | `/api/inventories/:id` | ⏳ Cần làm |
-| 4 | Lịch sử xuất nhập kho | GET | `/api/inventories/:id/history` | ⏳ Cần làm |
-| 5 | Danh sách đơn đặt hàng nhập | GET | `/api/purchase-orders` | ⏳ Cần làm |
-| 6 | Tạo đơn đặt hàng nhập | POST | `/api/purchase-orders` | ⏳ Cần làm |
-| 7 | Chi tiết đơn nhập | GET | `/api/purchase-orders/:id` | ⏳ Cần làm |
-| 8 | Cập nhật đơn nhập | PUT | `/api/purchase-orders/:id` | ⏳ Cần làm |
-
-### Database Tables:
+**Query Params cho GET /api/customers:**
 ```
-- dim_products (sản phẩm)
-- dim_product_variants (biến thể sản phẩm: SKU, barcode, giá)
-- subdim_categories (danh mục/collections)
-- subdim_brands (thương hiệu)
-- subdim_units (đơn vị tính)
-- fact_inventory (tồn kho) - Chưa có
-- fact_purchase_orders (đơn nhập hàng) - Chưa có
+?search=tên/sđt&group_id=1&page=1&limit=20
 ```
-
-### 📈 Tổng kết Thành viên 2:
-- **Số API đã có:** 16 APIs (Module 4 + 5)
-- **Số API cần làm:** 13 APIs (Module 6 + 7)
-- **Số Tables:** 5 (đã có)
 
 ---
 
-## 👤 THÀNH VIÊN 3: Đơn hàng & Khách hàng & Khuyến mại
+### ✅ Module 12: Suppliers - Nhà cung cấp (5 APIs) - DONE
 
-### Module 8: Đơn hàng (Orders) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách đơn hàng | GET | `/api/orders` | ⏳ Cần làm |
-| 2 | Tạo đơn hàng | POST | `/api/orders` | ⏳ Cần làm |
-| 3 | Chi tiết đơn hàng | GET | `/api/orders/:id` | ⏳ Cần làm |
-| 4 | Sửa đơn hàng | PUT | `/api/orders/:id` | ⏳ Cần làm |
-| 5 | Xóa đơn hàng | DELETE | `/api/orders/:id` | ⏳ Cần làm |
-| 6 | Cập nhật trạng thái | PATCH | `/api/orders/:id/status` | ⏳ Cần làm |
-| 7 | Trả hàng | POST | `/api/orders/:id/return` | ⏳ Cần làm |
+> **Frontend:** `Suppliers.vue`
+> **Service:** ✅ `supplierService.js` đã tạo
 
-> 📝 **Query Parameters cho GET /api/orders:**
-> - `search` - Tìm theo mã đơn
-> - `status` - Lọc theo trạng thái (draft, checkout, completed, cancelled)
-> - `from`, `to` - Lọc theo ngày
-> - `page`, `limit` - Phân trang
-
-### Module 9: Khách hàng (Customers) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách khách hàng | GET | `/api/customers` | ⏳ Cần làm |
-| 2 | Thêm khách hàng | POST | `/api/customers` | ⏳ Cần làm |
-| 3 | Chi tiết khách hàng | GET | `/api/customers/:id` | ⏳ Cần làm |
-| 4 | Sửa khách hàng | PUT | `/api/customers/:id` | ⏳ Cần làm |
-| 5 | Xóa khách hàng | DELETE | `/api/customers/:id` | ⏳ Cần làm |
-| 6 | Danh sách nhóm khách hàng | GET | `/api/customer-groups` | ⏳ Cần làm |
-| 7 | Thêm nhóm khách hàng | POST | `/api/customer-groups` | ⏳ Cần làm |
-| 8 | Sửa nhóm khách hàng | PUT | `/api/customer-groups/:id` | ⏳ Cần làm |
-| 9 | Xóa nhóm khách hàng | DELETE | `/api/customer-groups/:id` | ⏳ Cần làm |
-
-### Module 10: Khuyến mại (Discounts) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách khuyến mại | GET | `/api/discounts` | ⏳ Cần làm |
-| 2 | Tạo khuyến mại | POST | `/api/discounts` | ⏳ Cần làm |
-| 3 | Chi tiết khuyến mại | GET | `/api/discounts/:id` | ⏳ Cần làm |
-| 4 | Sửa khuyến mại | PUT | `/api/discounts/:id` | ⏳ Cần làm |
-| 5 | Xóa khuyến mại | DELETE | `/api/discounts/:id` | ⏳ Cần làm |
-| 6 | Kết thúc khuyến mại | PATCH | `/api/discounts/:id/deactivate` | ⏳ Cần làm |
-| 7 | Kiểm tra mã khuyến mại | POST | `/api/discounts/validate` | ⏳ Cần làm |
-
-### Database Tables (cần tạo):
-```
-- dim_customers (khách hàng)
-- subdim_customer_groups (nhóm khách hàng)
-- fact_orders (đơn hàng)
-- fact_order_items (chi tiết đơn hàng)
-- fact_order_returns (trả hàng)
-- dim_discounts (khuyến mại)
-```
-
-### 📈 Tổng kết Thành viên 3:
-- **Số API cần làm:** 23 APIs
-- **Số Tables cần tạo:** 6
-
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Danh sách NCC | GET | `/api/suppliers` | 🔴 HIGH | ✅ Done |
+| 2 | Chi tiết NCC | GET | `/api/suppliers/:id` | � MEDIUM | ✅ Done |
+| 3 | Thêm NCC | POST | `/api/suppliers` | � HIGH | ✅ Done |
+| 4 | Sửa NCC | PUT | `/api/suppliers/:id` | � MEDIUM | ✅ Done |
+| 5 | Xóa NCC | DELETE | `/api/suppliers/:id` | 🟢 LOW | ✅ Done |
 
 ---
 
-## 👤 THÀNH VIÊN 4: Nhà cung cấp & Vận chuyển & Sổ quỹ & Báo cáo
+### ✅ Module 13: Discounts - Khuyến mại (7 APIs) - DONE
 
-### Module 11: Nhà cung cấp (Suppliers) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách nhà cung cấp | GET | `/api/suppliers` | ⏳ Cần làm |
-| 2 | Thêm nhà cung cấp | POST | `/api/suppliers` | ⏳ Cần làm |
-| 3 | Chi tiết nhà cung cấp | GET | `/api/suppliers/:id` | ⏳ Cần làm |
-| 4 | Sửa nhà cung cấp | PUT | `/api/suppliers/:id` | ⏳ Cần làm |
-| 5 | Xóa nhà cung cấp | DELETE | `/api/suppliers/:id` | ⏳ Cần làm |
-| 6 | Trả hàng cho NCC | POST | `/api/suppliers/returns` | ⏳ Cần làm |
+> **Frontend:** `Discounts.vue`, `DiscountForm.vue`
+> **Service:** ✅ `discountService.js` đã tạo
 
-### Module 12: Vận chuyển (Shipments) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách vận đơn | GET | `/api/shipments` | ⏳ Cần làm |
-| 2 | Tạo vận đơn | POST | `/api/shipments` | ⏳ Cần làm |
-| 3 | Chi tiết vận đơn | GET | `/api/shipments/:id` | ⏳ Cần làm |
-| 4 | Sửa vận đơn | PUT | `/api/shipments/:id` | ⏳ Cần làm |
-| 5 | Xóa vận đơn | DELETE | `/api/shipments/:id` | ⏳ Cần làm |
-| 6 | Cập nhật trạng thái | PATCH | `/api/shipments/:id/status` | ⏳ Cần làm |
-
-### Module 13: Sổ quỹ (Cashbook/Transactions) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Danh sách giao dịch | GET | `/api/transactions` | ⏳ Cần làm |
-| 2 | Thêm phiếu thu/chi | POST | `/api/transactions` | ⏳ Cần làm |
-| 3 | Chi tiết giao dịch | GET | `/api/transactions/:id` | ⏳ Cần làm |
-| 4 | Sửa giao dịch | PUT | `/api/transactions/:id` | ⏳ Cần làm |
-| 5 | Xóa giao dịch | DELETE | `/api/transactions/:id` | ⏳ Cần làm |
-| 6 | Thống kê tồn quỹ | GET | `/api/transactions/summary` | ⏳ Cần làm |
-
-### Module 14: Báo cáo (Reports) - *Chưa triển khai backend*
-| STT | Chức năng | Method | Endpoint | Trạng thái |
-|-----|-----------|--------|----------|------------|
-| 1 | Tổng quan dashboard | GET | `/api/reports/overview` | ⏳ Cần làm |
-| 2 | Biểu đồ doanh thu | GET | `/api/reports/revenue` | ⏳ Cần làm |
-| 3 | Top sản phẩm bán chạy | GET | `/api/reports/top-products` | ⏳ Cần làm |
-| 4 | Phân loại kênh bán hàng | GET | `/api/reports/sales-channels` | ⏳ Cần làm |
-| 5 | Top khách hàng chi tiêu | GET | `/api/reports/top-customers` | ⏳ Cần làm |
-| 6 | Sản phẩm sắp hết hàng | GET | `/api/reports/low-stock` | ⏳ Cần làm |
-| 7 | Danh sách báo cáo | GET | `/api/reports` | ⏳ Cần làm |
-
-### Database Tables (cần tạo):
-```
-- dim_suppliers (nhà cung cấp)
-- fact_supplier_returns (trả hàng NCC)
-- fact_shipments (vận đơn)
-- fact_transactions (sổ quỹ/giao dịch)
-```
-
-### 📈 Tổng kết Thành viên 4:
-- **Số API cần làm:** 25 APIs
-- **Số Tables cần tạo:** 4
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Danh sách khuyến mại | GET | `/api/discounts` | 🟡 MEDIUM | ✅ Done |
+| 2 | Tạo khuyến mại | POST | `/api/discounts` | 🟡 MEDIUM | ✅ Done |
+| 3 | Chi tiết khuyến mại | GET | `/api/discounts/:id` | 🟢 LOW | ✅ Done |
+| 4 | Sửa khuyến mại | PUT | `/api/discounts/:id` | 🟢 LOW | ✅ Done |
+| 5 | Xóa khuyến mại | DELETE | `/api/discounts/:id` | 🟢 LOW | ✅ Done |
+| 6 | Kết thúc khuyến mại | PATCH | `/api/discounts/:id/deactivate` | 🟢 LOW | ✅ Done |
+| 7 | Kiểm tra mã KM (POS) | POST | `/api/discounts/validate` | 🟡 MEDIUM | ✅ Done |
+| 8 | DS loại khuyến mại | GET | `/api/discounts/types` | 🟢 LOW | ✅ Done (bonus) |
 
 ---
 
-## 📊 TỔNG KẾT TOÀN BỘ DỰ ÁN
+### ✅ Module 14: Transactions - Sổ quỹ (6 APIs) - DONE
 
-### Trạng thái triển khai
+> **Frontend:** `Fundbook.vue`
+> **Service:** ✅ `cashbookService.js` đã tạo
 
-| Module | Tên | Số API | Trạng thái |
-|--------|-----|--------|------------|
-| 1 | Authentication | 4 | ✅ Hoàn thành |
-| 2 | Profile | 5 | ✅ Hoàn thành |
-| 3 | Staff | 6 | ✅ Hoàn thành |
-| 4 | Products | 10 | ✅ Hoàn thành |
-| 5 | Collections | 6 | ✅ Hoàn thành |
-| 6 | Catalogs | 5 | ⏳ Chưa làm |
-| 7 | Inventory | 8 | ⏳ Chưa làm |
-| 8 | Orders | 7 | ⏳ Chưa làm |
-| 9 | Customers | 9 | ⏳ Chưa làm |
-| 10 | Discounts | 7 | ⏳ Chưa làm |
-| 11 | Suppliers | 6 | ⏳ Chưa làm |
-| 12 | Shipments | 6 | ⏳ Chưa làm |
-| 13 | Transactions | 6 | ⏳ Chưa làm |
-| 14 | Reports | 7 | ⏳ Chưa làm |
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Danh sách giao dịch | GET | `/api/transactions` | 🟡 MEDIUM | ✅ Done |
+| 2 | Thêm phiếu thu/chi | POST | `/api/transactions` | 🟡 MEDIUM | ✅ Done |
+| 3 | Chi tiết giao dịch | GET | `/api/transactions/:id` | 🟢 LOW | ✅ Done |
+| 4 | Sửa giao dịch | PUT | `/api/transactions/:id` | 🟢 LOW | ✅ Done |
+| 5 | Xóa giao dịch | DELETE | `/api/transactions/:id` | 🟢 LOW | ✅ Done |
+| 6 | Thống kê tồn quỹ | GET | `/api/transactions/summary` | 🟡 MEDIUM | ✅ Done |
+| 7 | Duyệt giao dịch | PATCH | `/api/transactions/:id/approve` | 🟢 LOW | ✅ Done (bonus) |
 
-### Thống kê tổng
-
-| Hạng mục | Đã có | Cần làm | Tổng |
-|----------|-------|---------|------|
-| **APIs** | 31 | 61 | 92 |
-| **Tables** | 7 | 10 | 17 |
+**Query Params cho GET /api/transactions:**
+```
+?from=2026-01-01&to=2026-01-31&type=thu|chi&employee_id=1&page=1&limit=20
+```
 
 ---
 
-## 🎯 API ƯU TIÊN CẦN LÀM NGAY (Cho Dashboard & Frontend)
+### ✅ Module 15: Shipments - Vận chuyển (6 APIs) - DONE
 
-### 🏠 APIs cho trang Home/Dashboard
+> **Frontend:** `Shipments.vue`, `ShipmentForm.vue`, `Reports_Shipments.vue`
+> **Service:** ✅ `shipmentService.js` đã tạo
 
-Frontend hiện tại có **2 trang Dashboard**:
-1. `DashboardOverview.vue` - Trang chào mừng đơn giản
-2. `Reports/Reports.vue` - Trang tổng quan chi tiết với biểu đồ
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Danh sách vận đơn | GET | `/api/shipments` | 🟢 LOW | ✅ Done |
+| 2 | Tạo vận đơn | POST | `/api/shipments` | 🟢 LOW | ✅ Done |
+| 3 | Chi tiết vận đơn | GET | `/api/shipments/:id` | 🟢 LOW | ✅ Done |
+| 4 | Sửa vận đơn | PUT | `/api/shipments/:id` | 🟢 LOW | ✅ Done |
+| 5 | Xóa vận đơn | DELETE | `/api/shipments/:id` | 🟢 LOW | ✅ Done |
+| 6 | Cập nhật trạng thái | PATCH | `/api/shipments/:id/status` | 🟢 LOW | ✅ Done |
+| 7 | DS trạng thái vận đơn | GET | `/api/shipments/statuses` | 🟢 LOW | ✅ Done (bonus) |
+| 8 | DS đơn vị vận chuyển | GET | `/api/shipments/shippers` | 🟢 LOW | ✅ Done (bonus) |
 
-#### API 1: Tổng quan Dashboard
-**Endpoint:** `GET /api/dashboard/overview`
+---
 
-**Mô tả:** Lấy các số liệu thống kê tổng quan cho trang Home
+### ✅ Module 16: Orders Enhancement (4 APIs) - DONE
 
-**Response mẫu:**
+> **Frontend:** `OrderLookup.vue`, `Order_Returns.vue`
+> **Service:** ✅ Bổ sung vào `orderService.js`
+
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Hoàn trả đơn hàng | POST | `/api/orders/:id/return` | 🔴 HIGH | ✅ Done |
+| 2 | In hóa đơn | GET | `/api/orders/:id/invoice` | 🟡 MEDIUM | ✅ Done |
+| 3 | DS đơn trả hàng | GET | `/api/orders/returns` | 🟡 MEDIUM | ✅ Done |
+| 4 | Chi tiết đơn trả | GET | `/api/orders/returns/:id` | 🟢 LOW | ✅ Done (dùng /:id) |
+
+---
+
+### ✅ Module 17: Staff Reports - Báo cáo cuối ngày (5 APIs) - DONE
+
+> **Frontend:** `EndOfDay.vue`
+> **Service:** ✅ `reportService.js` đã tạo
+
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Doanh thu theo ngày | GET | `/api/reports/daily` | 🟡 MEDIUM | ✅ Done |
+| 2 | Thống kê thực thu | GET | `/api/reports/actual-revenue` | 🟡 MEDIUM | ✅ Done |
+| 3 | DS sản phẩm đã bán | GET | `/api/reports/sold-products` | 🟡 MEDIUM | ✅ Done |
+| 4 | In báo cáo cuối ngày | GET | `/api/reports/daily/print` | 🟢 LOW | ✅ Done |
+| 5 | DS nhân viên lọc báo cáo | GET | `/api/reports/staff` | 🟢 LOW | ✅ Done (bonus) |
+
+**Query Params:**
+```
+?from=2026-01-01&to=2026-01-31&staff_id=1&store_id=1
+```
+
+---
+
+### ✅ Module 18: Inventory Lookup - Tra cứu tồn kho (2 APIs) - DONE
+
+> **Frontend:** `InventoryLookup.vue`, `InventoryLookupDetail.vue`
+> **Service:** ✅ Thêm vào `inventoryService.js`
+
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Tìm kiếm SP tồn kho | GET | `/api/inventory/lookup/search` | 🟡 MEDIUM | ✅ Done |
+| 2 | Chi tiết tồn theo chi nhánh | GET | `/api/inventory/lookup/:productId` | 🟡 MEDIUM | ✅ Done |
+
+> **Đề xuất:** Có thể dùng chung với `/api/inventories?search=xxx` đã có
+
+---
+
+### ✅ Module 19: POS Payment - Thanh toán POS (10 APIs) - DONE
+
+> **Frontend:** `Pos.vue`, `PaymentDrawer.vue`, `Checkouts.vue`
+> **Service:** ✅ `posService.js` đã tạo
+
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | Xử lý thanh toán | POST | `/api/pos/checkout` | 🔴 HIGH | ✅ Done |
+| 2 | Tìm sản phẩm nhanh (barcode/SKU) | GET | `/api/pos/products/search` | 🔴 HIGH | ✅ Done |
+| 3 | Lấy giá SP theo store | GET | `/api/pos/products/:id/price` | 🔴 HIGH | ✅ Done |
+| 4 | Lưu đơn tạm (draft) | POST | `/api/pos/orders/draft` | 🟡 MEDIUM | ✅ Done |
+| 5 | Danh sách đơn tạm | GET | `/api/pos/orders/drafts` | 🟡 MEDIUM | ✅ Done |
+| 6 | Chi tiết đơn tạm | GET | `/api/pos/orders/drafts/:id` | 🟢 LOW | ✅ Done (bonus) |
+| 7 | Xóa đơn tạm | DELETE | `/api/pos/orders/draft/:id` | 🟢 LOW | ✅ Done |
+| 8 | In hóa đơn POS | GET | `/api/pos/orders/:id/receipt` | 🟡 MEDIUM | ✅ Done |
+| 9 | Kiểm tra mã giảm giá | POST | `/api/pos/discounts/validate` | 🟡 MEDIUM | ✅ Done |
+| 10 | DS phương thức thanh toán | GET | `/api/pos/payment-methods` | 🟢 LOW | ✅ Done (bonus) |
+
+**POST /api/pos/checkout Body:**
+```json
+{
+  "store_id": 1,
+  "customer_id": null,
+  "items": [
+    { "variant_id": 1, "quantity": 2, "unit_price": 50000 }
+  ],
+  "subtotal": 100000,
+  "discount_amount": 10000,
+  "discount_code": "SALE10",
+  "payment_method": "cash",
+  "amount_received": 100000,
+  "change": 10000,
+  "notes": "Ghi chú"
+}
+```
+
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "totalOrders": 120,
-    "totalProducts": 58,
-    "totalCustomers": 34,
-    "recentOrders": [
-      {
-        "id": 1,
-        "code": "DH001",
-        "customerName": "Nguyễn Văn A",
-        "createdAt": "2024-06-01",
-        "status": "completed",
-        "totalAmount": 1200000
-      }
-    ]
+    "order_id": 123,
+    "order_code": "ORD-260131-00001",
+    "receipt_url": "/api/pos/orders/123/receipt"
   }
 }
 ```
 
 ---
 
-#### API 2: Thống kê báo cáo (Reports Page)
-**Endpoint:** `GET /api/dashboard/stats`
+### 🟡 Module 20: Bank Account - Tài khoản ngân hàng (5 APIs)
 
-**Query Params:** `?from=2026-01-01&to=2026-01-23`
+> **Frontend:** `PaymentDrawer.vue` (Thiết lập tài khoản thụ hưởng)
+> **Service:** Cần tạo `bankAccountService.js`
 
-**Mô tả:** Lấy các số liệu thống kê cho trang Reports
-
-**Response mẫu:**
-```json
-{
-  "success": true,
-  "data": {
-    "totalRevenue": 156820000,
-    "revenueChange": 12.5,
-    "totalOrders": 1240,
-    "ordersChange": 8.2,
-    "avgOrderValue": 126467,
-    "avgOrderChange": 4.1,
-    "newCustomers": 82,
-    "customersChange": -5.5
-  }
-}
-```
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | DS tài khoản NH | GET | `/api/bank-accounts` | 🟡 MEDIUM | ⏳ TODO |
+| 2 | Thêm tài khoản NH | POST | `/api/bank-accounts` | � MEDIUM | ⏳ TODO |
+| 3 | Sửa tài khoản NH | PUT | `/api/bank-accounts/:id` | 🟢 LOW | ⏳ TODO |
+| 4 | Xóa tài khoản NH | DELETE | `/api/bank-accounts/:id` | 🟢 LOW | ⏳ TODO |
+| 5 | Tạo mã QR thanh toán | GET | `/api/bank-accounts/:id/qr` | 🟡 MEDIUM | ⏳ TODO |
 
 ---
 
-#### API 3: Biểu đồ doanh thu
-**Endpoint:** `GET /api/dashboard/revenue-chart`
+### ✅ Module 21: Checkouts - Đơn chưa hoàn tất (4 APIs) - DONE
 
-**Query Params:** `?from=2026-01-01&to=2026-01-23&groupBy=day`
+> **Frontend:** `Checkouts.vue`
+> **Service:** ✅ `checkoutService.js` đã tạo
 
-**Mô tả:** Dữ liệu cho biểu đồ line doanh thu
-
-**Response mẫu:**
-```json
-{
-  "success": true,
-  "data": {
-    "labels": ["01/01", "02/01", "03/01", "04/01", "05/01"],
-    "datasets": [
-      {
-        "label": "Doanh thu",
-        "data": [5200000, 4800000, 6100000, 5500000, 7200000]
-      }
-    ]
-  }
-}
-```
+| STT | Chức năng | Method | Endpoint | Priority | Trạng thái |
+|-----|-----------|--------|----------|----------|------------|
+| 1 | DS đơn chưa hoàn tất | GET | `/api/checkouts` | 🟢 LOW | ✅ Done |
+| 2 | Chi tiết đơn | GET | `/api/checkouts/:id` | 🟢 LOW | ✅ Done |
+| 3 | Gửi link thanh toán | POST | `/api/checkouts/:id/send-link` | 🟢 LOW | ✅ Done |
+| 4 | Gửi email hàng loạt | POST | `/api/checkouts/mass-email` | 🟢 LOW | ✅ Done |
 
 ---
 
-#### API 4: Top sản phẩm bán chạy
-**Endpoint:** `GET /api/dashboard/top-products`
+## �📊 PHẦN 3: THỐNG KÊ THEO PRIORITY
 
-**Query Params:** `?limit=5&from=2026-01-01&to=2026-01-23`
-
-**Mô tả:** Top N sản phẩm bán chạy nhất (cho bar chart)
-
-**Response mẫu:**
-```json
-{
-  "success": true,
-  "data": [
-    { "id": 1, "name": "Mì Hảo Hảo", "quantity": 1200 },
-    { "id": 2, "name": "Trứng gà", "quantity": 950 },
-    { "id": 3, "name": "Bột ngọt Ajinomoto", "quantity": 800 },
-    { "id": 4, "name": "Dầu ăn Tường An", "quantity": 700 },
-    { "id": 5, "name": "Nước mắm Nam Ngư", "quantity": 600 }
-  ]
-}
-```
+| Priority | Số APIs | Modules | Ghi chú |
+|----------|---------|---------|---------|
+| 🔴 HIGH | 14 | Customers (5), Suppliers (2), Orders (1), POS (3), Payment (3) | Cần làm ngay |
+| 🟡 MEDIUM | 27 | POS (4), Bank (3), Discounts (3), Transactions (3), Reports (4), Others | Quan trọng |
+| 🟢 LOW | 20 | Shipments (6), Checkouts (4), Discounts (4), Others | Làm sau |
 
 ---
 
-#### API 5: Phân loại kênh bán hàng
-**Endpoint:** `GET /api/dashboard/sales-channels`
+## 🎯 PHẦN 4: THỨ TỰ TRIỂN KHAI
 
-**Query Params:** `?from=2026-01-01&to=2026-01-23`
+### 🔴 Giai đoạn 1: Core POS (Tuần 1)
+**Mục tiêu:** Nhân viên có thể bán hàng, quản lý khách
 
-**Mô tả:** Phân loại doanh thu theo kênh bán (cho pie/doughnut chart)
+| Module | APIs | Mô tả |
+|--------|------|-------|
+| Customers | 5 HIGH + 2 MEDIUM | Quản lý khách hàng |
+| Orders Enhancement | 1 HIGH + 1 MEDIUM | Hoàn trả, in hóa đơn |
+| Suppliers | 2 HIGH | Quản lý NCC cơ bản |
+| POS Payment | 3 HIGH | Checkout, tìm SP, lấy giá |
 
-**Response mẫu:**
-```json
-{
-  "success": true,
-  "data": [
-    { "channel": "Tại cửa hàng", "percentage": 45, "revenue": 70569000 },
-    { "channel": "Giao hàng", "percentage": 25, "revenue": 39205000 },
-    { "channel": "ShopeeFood", "percentage": 20, "revenue": 31364000 },
-    { "channel": "GrabMart", "percentage": 10, "revenue": 15682000 }
-  ]
-}
-```
+**Tổng: 14 APIs**
 
----
+### 🟡 Giai đoạn 2: Quản lý & Báo cáo (Tuần 2)
+**Mục tiêu:** Hoàn thiện quy trình, báo cáo cuối ngày
 
-#### API 6: Top khách hàng chi tiêu
-**Endpoint:** `GET /api/dashboard/top-customers`
+| Module | APIs | Mô tả |
+|--------|------|-------|
+| Suppliers | 3 còn lại | Hoàn thiện NCC |
+| Staff Reports | 4 | Báo cáo cuối ngày |
+| Orders Enhancement | 2 còn lại | DS trả hàng |
+| Discounts | 3 MEDIUM | Khuyến mại cơ bản |
 
-**Query Params:** `?limit=5&from=2026-01-01&to=2026-01-23`
+**Tổng: 12 APIs**
 
-**Mô tả:** Top N khách hàng chi tiêu nhiều nhất
+### 🟢 Giai đoạn 3: Tính năng bổ sung (Tuần 3-4)
+**Mục tiêu:** Hoàn thiện hệ thống
 
-**Response mẫu:**
-```json
-{
-  "success": true,
-  "data": [
-    { "id": 1, "name": "Trần Văn An", "totalSpent": 15600000, "avatarUrl": "" },
-    { "id": 2, "name": "Nguyễn Thị Bình", "totalSpent": 8250000, "avatarUrl": "https://..." },
-    { "id": 3, "name": "Đỗ Ngọc Giang", "totalSpent": 5400000, "avatarUrl": "https://..." }
-  ]
-}
-```
+| Module | APIs | Mô tả |
+|--------|------|-------|
+| Discounts | 4 LOW | Hoàn thiện khuyến mại |
+| Transactions | 6 | Sổ quỹ |
+| Shipments | 6 | Vận chuyển |
+| Inventory Lookup | 2 | Tra cứu tồn kho |
+
+**Tổng: 18 APIs**
 
 ---
 
-#### API 7: Sản phẩm sắp hết hàng
-**Endpoint:** `GET /api/dashboard/low-stock`
+## 📁 PHẦN 5: SERVICE FILES CẦN XỬ LÝ
 
-**Query Params:** `?threshold=20&limit=10`
-
-**Mô tả:** Danh sách sản phẩm có số lượng tồn kho thấp
-
-**Response mẫu:**
-```json
-{
-  "success": true,
-  "data": [
-    { "id": 1, "name": "Trứng gà 10 quả", "stock": 0, "imageUrl": "https://..." },
-    { "id": 2, "name": "Bột ngọt Ajinomoto", "stock": 8, "imageUrl": "https://..." },
-    { "id": 3, "name": "Mì Hảo Hảo", "stock": 15, "imageUrl": "https://..." }
-  ]
-}
-```
+| File | Trạng thái | Hành động |
+|------|------------|-----------|
+| `customerService.js` | ❌ Chưa có | **Tạo mới** |
+| `discountService.js` | ❌ Chưa có | **Tạo mới** |
+| `supplierService.js` | ✅ Có code | Backend cần implement |
+| `cashbookService.js` | ❌ Trống | **Implement** |
+| `shipmentService.js` | ❌ Trống | Implement sau |
+| `salesService.js` | ❌ Trống | **Xóa** (không dùng) |
+| `customerGroupService.js` | ❌ Trống | Gộp vào customerService |
+| `inventoryLookupService.js` | ✅ Có code | Backend cần implement |
+| `reportService.js` | ⚠️ Thiếu | Bổ sung APIs |
 
 ---
 
-### 📋 Tóm tắt Dashboard APIs
+## 🗄️ DATABASE TABLES
 
-| STT | API | Method | Endpoint | Mô tả |
-|-----|-----|--------|----------|-------|
-| 1 | Tổng quan Home | GET | `/api/dashboard/overview` | Số liệu cho DashboardOverview.vue |
-| 2 | Thống kê Reports | GET | `/api/dashboard/stats` | 4 thẻ số liệu trên Reports.vue |
-| 3 | Biểu đồ doanh thu | GET | `/api/dashboard/revenue-chart` | Line chart doanh thu |
-| 4 | Top sản phẩm | GET | `/api/dashboard/top-products` | Bar chart sản phẩm bán chạy |
-| 5 | Kênh bán hàng | GET | `/api/dashboard/sales-channels` | Pie chart phân loại kênh |
-| 6 | Top khách hàng | GET | `/api/dashboard/top-customers` | Danh sách KH chi tiêu nhiều |
-| 7 | Sắp hết hàng | GET | `/api/dashboard/low-stock` | Danh sách SP tồn kho thấp |
+### Tables đã có
+```sql
+-- Dimensions
+dim_users, dim_products, dim_product_variants, dim_product_images
+dim_stores, dim_time
 
-**Tổng: 7 APIs cho Dashboard**
+-- Sub-dimensions  
+subdim_roles, subdim_categories, subdim_brands, subdim_units
+
+-- Facts
+fact_orders, fact_order_items
+fact_inventory_stocks, fact_inventory_transactions
+```
+
+### Tables cần tạo
+```sql
+-- Customers
+dim_customers              -- Khách hàng
+subdim_customer_groups     -- Nhóm khách hàng
+
+-- Suppliers
+dim_suppliers              -- Nhà cung cấp
+
+-- Discounts
+dim_discounts              -- Khuyến mại
+
+-- Transactions
+fact_transactions          -- Sổ quỹ (phiếu thu/chi)
+
+-- Shipments (optional)
+fact_shipments             -- Vận đơn
+
+-- Order Returns
+fact_order_returns         -- Đơn trả hàng
+```
 
 ---
 
 ## 📝 GHI CHÚ
 
-- **Cập nhật:** 23/01/2026
-- **Backend modules đã hoàn thành:** 1-5 (Auth, Profile, Staff, Products, Collections)
-- **Frontend đang sử dụng mock data** cho các module chưa có API
-- **Ưu tiên tiếp theo:** Dashboard/Reports APIs để hiển thị dữ liệu thực trên trang tổng quan
+- **Cập nhật:** 31/01/2026
+- **Tham khảo:** `API.md` (67 APIs đã có), `API_ANALYSIS.md` (phân tích chi tiết)
+- **Backend hoàn thành:** Module 1-10 (67 APIs)
+- **Frontend đang dùng mock data:** CustomerList, Suppliers, Discounts, Fundbook, Shipments
+
+---
+
+## 🚀 QUICK START
+
+### APIs cần làm đầu tiên (Bán hàng được):
+
+```javascript
+// 1. Khách hàng - Quan trọng nhất cho POS
+GET  /api/customers              // Danh sách
+GET  /api/customers/search?q=xxx // Tìm nhanh cho POS
+POST /api/customers              // Thêm mới
+GET  /api/customer-groups        // Nhóm KH
+
+// 2. Nhà cung cấp - Quản lý kho
+GET  /api/suppliers              // Danh sách
+POST /api/suppliers              // Thêm mới
+
+// 3. Orders mở rộng
+POST /api/orders/:id/return      // Hoàn trả
+GET  /api/orders/:id/invoice     // In hóa đơn
+```
+
+### Response Format chuẩn:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Success message",
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5
+  }
+}
+```
+
+---
+
+**Tổng kết:**
+- ✅ Đã có: 67 APIs (10 modules)
+- ⏳ Cần làm: 44 APIs (8 modules)
+- 🎯 Ưu tiên: Customers → Suppliers → Orders Enhancement → Staff Reports

@@ -3,7 +3,7 @@
     "_postman_id": "2d8f7e2a-8b7a-4d27-9a8a-5e1e2d9d3c11",
     "name": "Supermarket API Complete",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Supermarket Management System API - Version 2.0.0 (Updated: 28/01/2026)"
+    "description": "Supermarket Management System API - Version 3.0.0 (Updated: 01/02/2026) - 129 APIs, 21 Modules"
   },
   "variable": [
     {
@@ -57,10 +57,7 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -76,16 +73,6 @@
         {
           "name": "1.2 Me (Current User)",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/auth/me",
@@ -97,16 +84,6 @@
         {
           "name": "1.3 Logout",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "url": {
               "raw": "{{baseUrl}}/auth/logout",
@@ -120,10 +97,7 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -139,16 +113,6 @@
         {
           "name": "1.5 Get Roles",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/auth/roles",
@@ -163,7 +127,7 @@
       "name": "Module 2 - Staff Management",
       "item": [
         {
-          "name": "2.1 List Staff (limit/offset)",
+          "name": "2.1 List Staff",
           "request": {
             "method": "GET",
             "url": {
@@ -182,10 +146,7 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -199,7 +160,7 @@
           }
         },
         {
-          "name": "2.3 Staff Detail (by id)",
+          "name": "2.3 Staff Detail",
           "request": {
             "method": "GET",
             "url": {
@@ -210,14 +171,11 @@
           }
         },
         {
-          "name": "2.4 Update Staff (by id)",
+          "name": "2.4 Update Staff",
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -231,14 +189,11 @@
           }
         },
         {
-          "name": "2.5 Update Staff Role (by id)",
+          "name": "2.5 Update Staff Role",
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -252,7 +207,7 @@
           }
         },
         {
-          "name": "2.6 Delete Staff (by id)",
+          "name": "2.6 Delete Staff",
           "request": {
             "method": "DELETE",
             "url": {
@@ -283,10 +238,7 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -304,10 +256,7 @@
           "request": {
             "method": "PUT",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -327,11 +276,7 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "avatar",
-                  "type": "file",
-                  "src": ""
-                }
+                { "key": "avatar", "type": "file", "src": "" }
               ]
             },
             "url": {
@@ -395,7 +340,7 @@
           }
         },
         {
-          "name": "4.3 Product Detail (by id)",
+          "name": "4.3 Product Detail",
           "request": {
             "method": "GET",
             "url": {
@@ -406,7 +351,7 @@
           }
         },
         {
-          "name": "4.4 Update Product (by id)",
+          "name": "4.4 Update Product",
           "request": {
             "method": "PUT",
             "header": [
@@ -424,7 +369,7 @@
           }
         },
         {
-          "name": "4.5 Delete Product (by id)",
+          "name": "4.5 Delete Product",
           "request": {
             "method": "DELETE",
             "url": {
@@ -464,17 +409,13 @@
           }
         },
         {
-          "name": "4.8 Import Products CSV (form-data file)",
+          "name": "4.8 Import Products CSV",
           "request": {
             "method": "POST",
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "file",
-                  "type": "file",
-                  "src": ""
-                }
+                { "key": "file", "type": "file", "src": "" }
               ]
             },
             "url": {
@@ -540,7 +481,7 @@
           }
         },
         {
-          "name": "5.3 Add Collection (Parent)",
+          "name": "5.3 Add Collection",
           "request": {
             "method": "POST",
             "header": [
@@ -558,25 +499,7 @@
           }
         },
         {
-          "name": "5.4 Add Collection (Child)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"CANDY\",\n  \"name\": \"Kẹo\",\n  \"parent_id\": 3\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/collections",
-              "host": ["{{baseUrl}}"],
-              "path": ["collections"]
-            }
-          }
-        },
-        {
-          "name": "5.5 Collection Detail (by id)",
+          "name": "5.4 Collection Detail",
           "request": {
             "method": "GET",
             "url": {
@@ -587,7 +510,7 @@
           }
         },
         {
-          "name": "5.6 Update Collection (by id)",
+          "name": "5.5 Update Collection",
           "request": {
             "method": "PUT",
             "header": [
@@ -605,7 +528,7 @@
           }
         },
         {
-          "name": "5.7 Delete Collection (by id)",
+          "name": "5.6 Delete Collection",
           "request": {
             "method": "DELETE",
             "url": {
@@ -636,12 +559,12 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/dashboard/stats?from=2026-01-01&to=2026-01-28",
+              "raw": "{{baseUrl}}/dashboard/stats?from=2026-01-01&to=2026-02-01",
               "host": ["{{baseUrl}}"],
               "path": ["dashboard", "stats"],
               "query": [
                 { "key": "from", "value": "2026-01-01" },
-                { "key": "to", "value": "2026-01-28" }
+                { "key": "to", "value": "2026-02-01" }
               ]
             }
           }
@@ -651,12 +574,12 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/dashboard/revenue-chart?from=2026-01-01&to=2026-01-28&groupBy=day",
+              "raw": "{{baseUrl}}/dashboard/revenue-chart?from=2026-01-01&to=2026-02-01&groupBy=day",
               "host": ["{{baseUrl}}"],
               "path": ["dashboard", "revenue-chart"],
               "query": [
                 { "key": "from", "value": "2026-01-01" },
-                { "key": "to", "value": "2026-01-28" },
+                { "key": "to", "value": "2026-02-01" },
                 { "key": "groupBy", "value": "day" }
               ]
             }
@@ -667,13 +590,13 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/dashboard/top-products?limit=5&from=2026-01-01&to=2026-01-28",
+              "raw": "{{baseUrl}}/dashboard/top-products?limit=5&from=2026-01-01&to=2026-02-01",
               "host": ["{{baseUrl}}"],
               "path": ["dashboard", "top-products"],
               "query": [
                 { "key": "limit", "value": "5" },
                 { "key": "from", "value": "2026-01-01" },
-                { "key": "to", "value": "2026-01-28" }
+                { "key": "to", "value": "2026-02-01" }
               ]
             }
           }
@@ -683,12 +606,12 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/dashboard/sales-channels?from=2026-01-01&to=2026-01-28",
+              "raw": "{{baseUrl}}/dashboard/sales-channels?from=2026-01-01&to=2026-02-01",
               "host": ["{{baseUrl}}"],
               "path": ["dashboard", "sales-channels"],
               "query": [
                 { "key": "from", "value": "2026-01-01" },
-                { "key": "to", "value": "2026-01-28" }
+                { "key": "to", "value": "2026-02-01" }
               ]
             }
           }
@@ -698,13 +621,13 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/dashboard/top-customers?limit=5&from=2026-01-01&to=2026-01-28",
+              "raw": "{{baseUrl}}/dashboard/top-customers?limit=5&from=2026-01-01&to=2026-02-01",
               "host": ["{{baseUrl}}"],
               "path": ["dashboard", "top-customers"],
               "query": [
                 { "key": "limit", "value": "5" },
                 { "key": "from", "value": "2026-01-01" },
-                { "key": "to", "value": "2026-01-28" }
+                { "key": "to", "value": "2026-02-01" }
               ]
             }
           }
@@ -746,7 +669,7 @@
           }
         },
         {
-          "name": "7.2 Catalog Detail (by id)",
+          "name": "7.2 Catalog Detail",
           "request": {
             "method": "GET",
             "url": {
@@ -757,7 +680,7 @@
           }
         },
         {
-          "name": "7.3 Update Catalog (by id)",
+          "name": "7.3 Update Catalog",
           "request": {
             "method": "PUT",
             "header": [
@@ -849,7 +772,7 @@
           }
         },
         {
-          "name": "8.4 Inventory Detail (by variantId)",
+          "name": "8.4 Inventory Detail",
           "request": {
             "method": "GET",
             "url": {
@@ -881,7 +804,7 @@
           }
         },
         {
-          "name": "8.6 Inventory History (by variantId)",
+          "name": "8.6 Inventory History",
           "request": {
             "method": "GET",
             "url": {
@@ -907,7 +830,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"store_id\": 1,\n  \"items\": [\n    {\"variant_id\": 3, \"quantity\": 50, \"unit_cost\": 8000},\n    {\"variant_id\": 4, \"quantity\": 100, \"unit_cost\": 7500}\n  ],\n  \"notes\": \"Nhập hàng đợt 1 tháng 1/2026\"\n}"
+              "raw": "{\n  \"store_id\": 1,\n  \"items\": [\n    {\"variant_id\": 3, \"quantity\": 50, \"unit_cost\": 8000},\n    {\"variant_id\": 4, \"quantity\": 100, \"unit_cost\": 7500}\n  ],\n  \"notes\": \"Nhập hàng đợt 1 tháng 2/2026\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/inventories/receive",
@@ -975,11 +898,7 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "image",
-                  "type": "file",
-                  "src": ""
-                }
+                { "key": "image", "type": "file", "src": "" }
               ]
             },
             "url": {
@@ -1001,17 +920,13 @@
           }
         },
         {
-          "name": "9.4 Upload Gallery Images (max 5)",
+          "name": "9.4 Upload Gallery Images",
           "request": {
             "method": "POST",
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "images",
-                  "type": "file",
-                  "src": ""
-                }
+                { "key": "images", "type": "file", "src": "" }
               ]
             },
             "url": {
@@ -1095,7 +1010,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"store_id\": 1,\n  \"customer_id\": 1,\n  \"items\": [\n    {\n      \"variant_id\": 1,\n      \"quantity\": 2,\n      \"unit_price\": 16000,\n      \"discount_per_item\": 0\n    },\n    {\n      \"variant_id\": 2,\n      \"quantity\": 1,\n      \"unit_price\": 25000,\n      \"discount_per_item\": 5000\n    }\n  ],\n  \"subtotal\": 57000,\n  \"discount_amount\": 5000,\n  \"tax_amount\": 0,\n  \"shipping_fee\": 0,\n  \"payment_method\": \"cash\",\n  \"shipping_address\": \"123 Trần Duy Hưng, Hà Nội\",\n  \"customer_note\": \"Giao hàng trước 5h chiều\",\n  \"internal_note\": \"Khách VIP\"\n}"
+              "raw": "{\n  \"store_id\": 1,\n  \"customer_id\": 1,\n  \"items\": [\n    {\n      \"variant_id\": 1,\n      \"quantity\": 2,\n      \"unit_price\": 16000\n    }\n  ],\n  \"subtotal\": 32000,\n  \"discount_amount\": 0,\n  \"tax_amount\": 0,\n  \"shipping_fee\": 0,\n  \"payment_method\": \"cash\",\n  \"shipping_address\": \"123 Trần Duy Hưng, Hà Nội\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/orders",
@@ -1105,7 +1020,7 @@
           }
         },
         {
-          "name": "10.3 Order Detail (by id)",
+          "name": "10.3 Order Detail",
           "request": {
             "method": "GET",
             "url": {
@@ -1170,6 +1085,1055 @@
               "raw": "{{baseUrl}}/orders/stats/detailed",
               "host": ["{{baseUrl}}"],
               "path": ["orders", "stats", "detailed"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 11 - Customers",
+      "item": [
+        {
+          "name": "11.1 List Customers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers?page=1&limit=20&search=&group_id=&is_active=",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "search", "value": "" },
+                { "key": "group_id", "value": "" },
+                { "key": "is_active", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "11.2 Add Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nguyễn Văn Test\",\n  \"phone\": \"0901234567\",\n  \"email\": \"test@example.com\",\n  \"address\": \"123 Đường ABC, Quận 1\",\n  \"group_id\": 1,\n  \"notes\": \"Khách hàng mới\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "11.3 Customer Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "11.4 Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nguyễn Văn Updated\",\n  \"phone\": \"0909876543\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "11.5 Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/customers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "1"]
+            }
+          }
+        },
+        {
+          "name": "11.6 Search Customers (Quick)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers/search?q=nguyen",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "search"],
+              "query": [
+                { "key": "q", "value": "nguyen" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "11.7 Get Customer Groups",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customer-groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["customer-groups"]
+            }
+          }
+        },
+        {
+          "name": "11.8 Update Customer Group",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/1/group",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "1", "group"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 12 - Suppliers",
+      "item": [
+        {
+          "name": "12.1 List Suppliers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/suppliers?page=1&limit=20&search=&is_active=",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "search", "value": "" },
+                { "key": "is_active", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "12.2 Add Supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SUP001\",\n  \"name\": \"Nhà cung cấp ABC\",\n  \"contact_person\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\",\n  \"email\": \"abc@supplier.com\",\n  \"address\": \"123 Đường XYZ\",\n  \"tax_code\": \"0123456789\",\n  \"notes\": \"Nhà cung cấp sữa\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers"]
+            }
+          }
+        },
+        {
+          "name": "12.3 Supplier Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "1"]
+            }
+          }
+        },
+        {
+          "name": "12.4 Update Supplier",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nhà cung cấp ABC Updated\",\n  \"phone\": \"0909876543\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "1"]
+            }
+          }
+        },
+        {
+          "name": "12.5 Delete Supplier",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 13 - Discounts",
+      "item": [
+        {
+          "name": "13.1 List Discounts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/discounts?page=1&limit=20&search=&type=&is_active=",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "search", "value": "" },
+                { "key": "type", "value": "" },
+                { "key": "is_active", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "13.2 Create Discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SALE10\",\n  \"name\": \"Giảm 10%\",\n  \"description\": \"Giảm 10% cho đơn hàng trên 500k\",\n  \"discount_type\": \"percentage\",\n  \"discount_value\": 10,\n  \"min_order_amount\": 500000,\n  \"max_discount_amount\": 100000,\n  \"start_date\": \"2026-02-01\",\n  \"end_date\": \"2026-02-28\",\n  \"usage_limit\": 100,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/discounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts"]
+            }
+          }
+        },
+        {
+          "name": "13.3 Discount Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/discounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts", "1"]
+            }
+          }
+        },
+        {
+          "name": "13.4 Update Discount",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Giảm 15%\",\n  \"discount_value\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/discounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts", "1"]
+            }
+          }
+        },
+        {
+          "name": "13.5 Delete Discount",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/discounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts", "1"]
+            }
+          }
+        },
+        {
+          "name": "13.6 Validate Discount Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SALE10\",\n  \"order_amount\": 600000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/discounts/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts", "validate"]
+            }
+          }
+        },
+        {
+          "name": "13.7 Deactivate Discount",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/discounts/1/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts", "1", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "13.8 Get Discount Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/discounts/types",
+              "host": ["{{baseUrl}}"],
+              "path": ["discounts", "types"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 14 - Transactions (Sổ quỹ)",
+      "item": [
+        {
+          "name": "14.1 List Transactions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/transactions?page=1&limit=20&type=&status=&from=&to=",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "type", "value": "" },
+                { "key": "status", "value": "" },
+                { "key": "from", "value": "" },
+                { "key": "to", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14.2 Create Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"income\",\n  \"category\": \"sales\",\n  \"amount\": 500000,\n  \"payment_method\": \"cash\",\n  \"description\": \"Thu tiền bán hàng\",\n  \"reference_code\": \"ORD-001\",\n  \"store_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions"]
+            }
+          }
+        },
+        {
+          "name": "14.3 Transaction Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/transactions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "1"]
+            }
+          }
+        },
+        {
+          "name": "14.4 Approve Transaction",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/transactions/1/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "1", "approve"]
+            }
+          }
+        },
+        {
+          "name": "14.5 Cancel Transaction",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Nhập sai số tiền\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transactions/1/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "1", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "14.6 Transaction Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/transactions/summary?from=2026-02-01&to=2026-02-28&store_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "summary"],
+              "query": [
+                { "key": "from", "value": "2026-02-01" },
+                { "key": "to", "value": "2026-02-28" },
+                { "key": "store_id", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "14.7 Get Transaction Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/transactions/types",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "types"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 15 - Shipments",
+      "item": [
+        {
+          "name": "15.1 List Shipments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments?page=1&limit=20&status=&shipper_id=&from=&to=",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "" },
+                { "key": "shipper_id", "value": "" },
+                { "key": "from", "value": "" },
+                { "key": "to", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "15.2 Create Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 1,\n  \"shipper_id\": 1,\n  \"shipping_address\": \"123 Đường ABC, Quận 1\",\n  \"recipient_name\": \"Nguyễn Văn A\",\n  \"recipient_phone\": \"0901234567\",\n  \"shipping_fee\": 30000,\n  \"notes\": \"Giao trong giờ hành chính\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipments",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments"]
+            }
+          }
+        },
+        {
+          "name": "15.3 Shipment Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "1"]
+            }
+          }
+        },
+        {
+          "name": "15.4 Update Shipment Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivering\",\n  \"notes\": \"Đang giao hàng\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipments/1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "1", "status"]
+            }
+          }
+        },
+        {
+          "name": "15.5 Track Shipment",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments/1/tracking",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "1", "tracking"]
+            }
+          }
+        },
+        {
+          "name": "15.6 Cancel Shipment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Khách hủy đơn\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "1"]
+            }
+          }
+        },
+        {
+          "name": "15.7 Get Shippers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments/shippers",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "shippers"]
+            }
+          }
+        },
+        {
+          "name": "15.8 Get Shipment Statuses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shipments/statuses",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipments", "statuses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 16 - Order Returns",
+      "item": [
+        {
+          "name": "16.1 List Returns",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders/returns?page=1&limit=20&status=&from=&to=",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "returns"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "" },
+                { "key": "from", "value": "" },
+                { "key": "to", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "16.2 Create Return",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": 1,\n  \"items\": [\n    {\n      \"order_item_id\": 1,\n      \"quantity\": 1,\n      \"reason\": \"Hàng bị lỗi\"\n    }\n  ],\n  \"refund_method\": \"cash\",\n  \"notes\": \"Khách hàng đổi trả\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/returns",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "returns"]
+            }
+          }
+        },
+        {
+          "name": "16.3 Return Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders/returns/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "returns", "1"]
+            }
+          }
+        },
+        {
+          "name": "16.4 Process Return",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"refund_amount\": 50000,\n  \"notes\": \"Đã hoàn tiền\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/returns/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "returns", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 17 - Staff Reports",
+      "item": [
+        {
+          "name": "17.1 Daily Revenue Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/daily?date=2026-02-01&store_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "daily"],
+              "query": [
+                { "key": "date", "value": "2026-02-01" },
+                { "key": "store_id", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "17.2 End of Day Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/end-of-day?date=2026-02-01&store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "end-of-day"],
+              "query": [
+                { "key": "date", "value": "2026-02-01" },
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "17.3 Sold Products Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/sold-products?from=2026-02-01&to=2026-02-28&store_id=&category_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "sold-products"],
+              "query": [
+                { "key": "from", "value": "2026-02-01" },
+                { "key": "to", "value": "2026-02-28" },
+                { "key": "store_id", "value": "" },
+                { "key": "category_id", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "17.4 Print Report",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/print?type=daily&date=2026-02-01&store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "print"],
+              "query": [
+                { "key": "type", "value": "daily" },
+                { "key": "date", "value": "2026-02-01" },
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "17.5 Staff Performance",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/staff-performance?from=2026-02-01&to=2026-02-28&store_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "staff-performance"],
+              "query": [
+                { "key": "from", "value": "2026-02-01" },
+                { "key": "to", "value": "2026-02-28" },
+                { "key": "store_id", "value": "" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 18 - Inventory Lookup",
+      "item": [
+        {
+          "name": "18.1 Lookup by Barcode",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lookup?barcode=8934567890123&store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lookup"],
+              "query": [
+                { "key": "barcode", "value": "8934567890123" },
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "18.2 Lookup by SKU",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/inventory/lookup?sku=MILK001-SKU&store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "lookup"],
+              "query": [
+                { "key": "sku", "value": "MILK001-SKU" },
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 19 - POS Payment",
+      "item": [
+        {
+          "name": "19.1 POS Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": 1,\n  \"customer_id\": 1,\n  \"items\": [\n    {\n      \"variant_id\": 1,\n      \"quantity\": 2,\n      \"unit_price\": 16000\n    }\n  ],\n  \"payment_method\": \"cash\",\n  \"amount_paid\": 50000,\n  \"discount_code\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pos/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "checkout"]
+            }
+          }
+        },
+        {
+          "name": "19.2 Search Products (POS)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pos/products/search?q=sua&store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "products", "search"],
+              "query": [
+                { "key": "q", "value": "sua" },
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.3 Get Product Price",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pos/products/1/price?store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "products", "1", "price"],
+              "query": [
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.4 Save Draft Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": 1,\n  \"customer_id\": 1,\n  \"items\": [\n    {\n      \"variant_id\": 1,\n      \"quantity\": 2,\n      \"unit_price\": 16000\n    }\n  ],\n  \"notes\": \"Khách quay lại sau\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pos/orders/draft",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "orders", "draft"]
+            }
+          }
+        },
+        {
+          "name": "19.5 Get Draft Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pos/orders/drafts?store_id=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "orders", "drafts"],
+              "query": [
+                { "key": "store_id", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19.6 Get Draft Order Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pos/orders/drafts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "orders", "drafts", "1"]
+            }
+          }
+        },
+        {
+          "name": "19.7 Delete Draft Order",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/pos/orders/draft/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "orders", "draft", "1"]
+            }
+          }
+        },
+        {
+          "name": "19.8 Print Receipt",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pos/orders/1/receipt",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "orders", "1", "receipt"]
+            }
+          }
+        },
+        {
+          "name": "19.9 Validate Discount (POS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SALE10\",\n  \"order_amount\": 500000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pos/discounts/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "discounts", "validate"]
+            }
+          }
+        },
+        {
+          "name": "19.10 Get Payment Methods",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pos/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["pos", "payment-methods"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 20 - Bank Accounts",
+      "item": [
+        {
+          "name": "20.1 List Bank Accounts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/bank-accounts?page=1&limit=20&store_id=&is_active=&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank-accounts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "store_id", "value": "" },
+                { "key": "is_active", "value": "" },
+                { "key": "search", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "20.2 Add Bank Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_name\": \"Siêu Thị Mini\",\n  \"account_number\": \"9876543210\",\n  \"bank_name\": \"Techcombank\",\n  \"bank_code\": \"TCB\",\n  \"branch\": \"Chi nhánh Quận 3\",\n  \"store_id\": null,\n  \"is_default\": false,\n  \"notes\": \"Tài khoản dự phòng\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bank-accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank-accounts"]
+            }
+          }
+        },
+        {
+          "name": "20.3 Update Bank Account",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch\": \"Chi nhánh Quận 1 - Mới\",\n  \"is_default\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bank-accounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank-accounts", "1"]
+            }
+          }
+        },
+        {
+          "name": "20.4 Delete Bank Account",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/bank-accounts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank-accounts", "1"]
+            }
+          }
+        },
+        {
+          "name": "20.5 Generate Payment QR",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/bank-accounts/1/qr?amount=500000&description=Thanh%20toan%20don%20hang&order_code=ORD-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank-accounts", "1", "qr"],
+              "query": [
+                { "key": "amount", "value": "500000" },
+                { "key": "description", "value": "Thanh%20toan%20don%20hang" },
+                { "key": "order_code", "value": "ORD-001" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 21 - Checkouts (Abandoned Carts)",
+      "item": [
+        {
+          "name": "21.1 List Checkouts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/checkouts?page=1&limit=20&store_id=&status=&search=&from=&to=",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkouts"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "store_id", "value": "" },
+                { "key": "status", "value": "" },
+                { "key": "search", "value": "" },
+                { "key": "from", "value": "" },
+                { "key": "to", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "21.2 Checkout Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/checkouts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkouts", "1"]
+            }
+          }
+        },
+        {
+          "name": "21.3 Send Payment Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"custom_message\": \"Xin chào, đây là link thanh toán cho đơn hàng của bạn\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkouts/1/send-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkouts", "1", "send-link"]
+            }
+          }
+        },
+        {
+          "name": "21.4 Send Mass Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkout_ids\": [1, 2, 3],\n  \"store_id\": 1,\n  \"exclude_already_sent\": true,\n  \"custom_message\": \"Đừng bỏ lỡ giỏ hàng của bạn!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkouts/mass-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkouts", "mass-email"]
             }
           }
         }

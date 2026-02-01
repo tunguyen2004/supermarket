@@ -1,7 +1,7 @@
 # 📚 API Documentation - Supermarket Management System
 
-**Cập nhật:** 27/01/2026  
-**Version:** 2.0.0
+**Cập nhật:** 01/02/2026  
+**Version:** 3.0.0 - Complete API (129 APIs, 21 Modules)
 
 ---
 
@@ -72,6 +72,18 @@ http://localhost:5000/api
 7. [Module 7: Catalog (Bảng giá)](#module-7-catalog-bảng-giá) - 5 APIs
 8. [Module 8: Inventory (Tồn kho)](#module-8-inventory-quản-lý-tồn-kho) - 9 APIs
 9. [Module 9: Product Images (Ảnh sản phẩm)](#module-9-product-images-ảnh-sản-phẩm) - 7 APIs
+10. [Module 10: Orders](#module-10-orders) - 7 APIs
+11. [Module 11: Customers](#module-11-customers) - 8 APIs
+12. [Module 12: Suppliers](#module-12-suppliers) - 5 APIs
+13. [Module 13: Discounts](#module-13-discounts) - 8 APIs
+14. [Module 14: Transactions](#module-14-transactions) - 7 APIs
+15. [Module 15: Shipments](#module-15-shipments) - 8 APIs
+16. [Module 16: Order Returns](#module-16-order-returns) - 4 APIs
+17. [Module 17: Staff Reports](#module-17-staff-reports) - 5 APIs
+18. [Module 18: Inventory Lookup](#module-18-inventory-lookup) - 2 APIs
+19. [Module 19: POS Payment](#module-19-pos-payment) - 10 APIs
+20. [Module 20: Bank Accounts](#module-20-bank-accounts) - 5 APIs
+21. [Module 21: Checkouts](#module-21-checkouts) - 4 APIs
 
 ---
 
@@ -2732,6 +2744,430 @@ Dùng tools online như: https://jsonformatter.org
 6. GET /api/orders/stats/summary → Thống kê tổng quan
 7. GET /api/orders/stats/detailed → Thống kê chi tiết
 ```
+
+### Flow 11: Customers (Quản lý khách hàng)
+```
+1. GET /api/customers → Danh sách khách hàng
+2. POST /api/customers → Thêm khách hàng
+3. GET /api/customers/1 → Chi tiết khách hàng
+4. PUT /api/customers/1 → Cập nhật khách hàng
+5. DELETE /api/customers/1 → Xóa khách hàng
+6. GET /api/customers/search?q=xxx → Tìm nhanh
+7. GET /api/customer-groups → Danh sách nhóm KH
+8. PUT /api/customers/1/group → Cập nhật nhóm KH
+```
+
+### Flow 12: Suppliers (Nhà cung cấp)
+```
+1. GET /api/suppliers → Danh sách NCC
+2. POST /api/suppliers → Thêm NCC
+3. GET /api/suppliers/1 → Chi tiết NCC
+4. PUT /api/suppliers/1 → Cập nhật NCC
+5. DELETE /api/suppliers/1 → Xóa NCC
+```
+
+### Flow 13: Discounts (Khuyến mại)
+```
+1. GET /api/discounts → Danh sách khuyến mại
+2. POST /api/discounts → Tạo khuyến mại
+3. GET /api/discounts/1 → Chi tiết
+4. PUT /api/discounts/1 → Cập nhật
+5. DELETE /api/discounts/1 → Xóa
+6. POST /api/discounts/validate → Kiểm tra mã
+7. PUT /api/discounts/1/deactivate → Vô hiệu hóa
+8. GET /api/discounts/types → Danh sách loại KM
+```
+
+### Flow 14: Transactions (Sổ quỹ)
+```
+1. GET /api/transactions → Danh sách giao dịch
+2. POST /api/transactions → Tạo phiếu thu/chi
+3. GET /api/transactions/1 → Chi tiết
+4. PUT /api/transactions/1/approve → Duyệt phiếu
+5. PUT /api/transactions/1/cancel → Hủy phiếu
+6. GET /api/transactions/summary → Báo cáo tổng hợp
+7. GET /api/transactions/types → Danh sách loại
+```
+
+### Flow 15: Shipments (Vận chuyển)
+```
+1. GET /api/shipments → Danh sách vận đơn
+2. POST /api/shipments → Tạo vận đơn
+3. GET /api/shipments/1 → Chi tiết
+4. PUT /api/shipments/1/status → Cập nhật trạng thái
+5. GET /api/shipments/1/tracking → Theo dõi
+6. DELETE /api/shipments/1 → Hủy vận đơn
+7. GET /api/shipments/shippers → DS đơn vị VC
+8. GET /api/shipments/statuses → DS trạng thái
+```
+
+### Flow 16: POS Payment (Thanh toán POS)
+```
+1. POST /api/pos/checkout → Xử lý thanh toán
+2. GET /api/pos/products/search → Tìm SP nhanh
+3. GET /api/pos/products/1/price → Lấy giá SP
+4. POST /api/pos/orders/draft → Lưu đơn tạm
+5. GET /api/pos/orders/drafts → DS đơn tạm
+6. GET /api/pos/orders/drafts/1 → Chi tiết đơn tạm
+7. DELETE /api/pos/orders/draft/1 → Xóa đơn tạm
+8. GET /api/pos/orders/1/receipt → In hóa đơn
+9. POST /api/pos/discounts/validate → Kiểm tra mã giảm giá
+10. GET /api/pos/payment-methods → DS phương thức TT
+```
+
+### Flow 17: Bank Accounts (Tài khoản NH)
+```
+1. GET /api/bank-accounts → Danh sách TK
+2. POST /api/bank-accounts → Thêm TK
+3. PUT /api/bank-accounts/1 → Sửa TK
+4. DELETE /api/bank-accounts/1 → Xóa TK
+5. GET /api/bank-accounts/1/qr → Tạo mã QR
+```
+
+### Flow 18: Checkouts (Đơn chưa hoàn tất)
+```
+1. GET /api/checkouts → DS đơn abandoned
+2. GET /api/checkouts/1 → Chi tiết
+3. POST /api/checkouts/1/send-link → Gửi link TT
+4. POST /api/checkouts/mass-email → Gửi email hàng loạt
+```
+
+---
+
+## 📦 Module 20: Bank Accounts (Tài khoản ngân hàng)
+
+### 20.1 Danh sách tài khoản ngân hàng
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/bank-accounts`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| page | number | Trang hiện tại | `?page=1` |
+| limit | number | Số lượng/trang | `?limit=20` |
+| store_id | number | Lọc theo cửa hàng | `?store_id=1` |
+| is_active | boolean | Lọc theo trạng thái | `?is_active=true` |
+| search | string | Tìm kiếm | `?search=vietcom` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "account_name": "Siêu Thị Mini",
+      "account_number": "1234567890",
+      "bank_name": "Vietcombank",
+      "bank_code": "VCB",
+      "branch": "Chi nhánh Quận 1",
+      "store_id": null,
+      "store_name": null,
+      "is_default": true,
+      "is_active": true,
+      "created_at": "2026-01-31T00:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 3,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### 20.2 Thêm tài khoản ngân hàng
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/bank-accounts`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "account_name": "Siêu Thị Mini",
+  "account_number": "9876543210",
+  "bank_name": "Techcombank",
+  "bank_code": "TCB",
+  "branch": "Chi nhánh Quận 3",
+  "store_id": null,
+  "is_default": false,
+  "notes": "Tài khoản dự phòng"
+}
+```
+
+**Response (Success - 201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 4,
+    "account_name": "Siêu Thị Mini",
+    "account_number": "9876543210",
+    "bank_name": "Techcombank",
+    "bank_code": "TCB",
+    "is_default": false,
+    "is_active": true
+  },
+  "message": "Bank account created successfully"
+}
+```
+
+---
+
+### 20.3 Cập nhật tài khoản ngân hàng
+**Postman Setup:**
+- **Method:** `PUT`
+- **URL:** `http://localhost:5000/api/bank-accounts/1`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "branch": "Chi nhánh Quận 1 - Mới",
+  "is_default": true
+}
+```
+
+---
+
+### 20.4 Xóa tài khoản ngân hàng
+**Postman Setup:**
+- **Method:** `DELETE`
+- **URL:** `http://localhost:5000/api/bank-accounts/1`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "message": "Bank account deleted successfully"
+}
+```
+
+---
+
+### 20.5 Tạo mã QR thanh toán
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/bank-accounts/1/qr?amount=500000&description=Thanh%20toan%20don%20hang`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| amount | number | Số tiền | `?amount=500000` |
+| description | string | Nội dung | `?description=Don hang 123` |
+| order_code | string | Mã đơn hàng | `?order_code=ORD-001` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "bank_code": "VCB",
+    "bank_name": "Vietcombank",
+    "account_number": "1234567890",
+    "account_name": "Siêu Thị Mini",
+    "amount": 500000,
+    "description": "Thanh toan don hang",
+    "qr_url": "https://img.vietqr.io/image/VCB-1234567890-compact.png?amount=500000&addInfo=Thanh%20toan%20don%20hang",
+    "napas_qr": "NAPAS|970436|1234567890|500000|Thanh toan don hang"
+  },
+  "message": "Payment QR generated successfully"
+}
+```
+
+---
+
+## 📦 Module 21: Checkouts (Đơn chưa hoàn tất)
+
+### 21.1 Danh sách đơn chưa hoàn tất
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/checkouts`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Query Parameters:**
+| Param | Type | Mô tả | Ví dụ |
+|-------|------|-------|-------|
+| page | number | Trang hiện tại | `?page=1` |
+| limit | number | Số lượng/trang | `?limit=20` |
+| store_id | number | Lọc theo cửa hàng | `?store_id=1` |
+| status | string | Lọc theo trạng thái (draft/abandoned/pending) | `?status=abandoned` |
+| search | string | Tìm kiếm | `?search=CK-001` |
+| from | date | Từ ngày | `?from=2026-01-01` |
+| to | date | Đến ngày | `?to=2026-01-31` |
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "checkoutCode": "CK-260201-001",
+      "customerName": "Nguyễn Văn A",
+      "customerContact": "a@example.com",
+      "storeId": 1,
+      "storeName": "Cửa hàng HCM",
+      "createdDate": "2026-02-01T10:32:00Z",
+      "totalAmount": 450000,
+      "status": "Chưa liên hệ",
+      "itemCount": 3
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 10,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### 21.2 Chi tiết đơn chưa hoàn tất
+**Postman Setup:**
+- **Method:** `GET`
+- **URL:** `http://localhost:5000/api/checkouts/1`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "checkoutCode": "CK-260201-001",
+    "customer": {
+      "id": 1,
+      "name": "Nguyễn Văn A",
+      "email": "a@example.com",
+      "phone": "0901234567"
+    },
+    "store": {
+      "id": 1,
+      "name": "Cửa hàng HCM"
+    },
+    "displayStatus": "Chưa liên hệ",
+    "totalAmount": 450000,
+    "items": [
+      {
+        "id": 1,
+        "variantId": 10,
+        "sku": "MILK-001",
+        "productName": "Sữa tươi Vinamilk",
+        "variantName": "Hộp 1L",
+        "quantity": 2,
+        "unitPrice": 35000,
+        "lineTotal": 70000
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 21.3 Gửi link thanh toán
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/checkouts/1/send-link`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "custom_message": "Xin chào, đây là link thanh toán cho đơn hàng của bạn"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "checkout_id": 1,
+    "checkout_code": "CK-260201-001",
+    "payment_link": "https://pay.example.com/checkout/xxx",
+    "sent_to": "a@example.com",
+    "sent_at": "2026-02-01T11:00:00Z",
+    "message": "Payment link has been sent"
+  }
+}
+```
+
+---
+
+### 21.4 Gửi email hàng loạt
+**Postman Setup:**
+- **Method:** `POST`
+- **URL:** `http://localhost:5000/api/checkouts/mass-email`
+- **Header:** `Authorization: Bearer <YOUR_TOKEN>`
+- Tab **Body** → **raw** → **JSON**
+
+**Request Body:**
+```json
+{
+  "checkout_ids": [1, 2, 3],
+  "store_id": 1,
+  "exclude_already_sent": true,
+  "custom_message": "Đừng bỏ lỡ giỏ hàng của bạn!"
+}
+```
+
+**Response (Success - 200):**
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "sent_count": 3,
+    "failed_count": 0,
+    "sent_checkout_ids": [1, 2, 3],
+    "message": "Sent 3 emails, 0 failed"
+  }
+}
+```
+
+---
+
+## 📊 Tổng kết API (129 APIs - 21 Modules)
+
+| STT | Module | Số APIs | Endpoint Base |
+|-----|--------|---------|---------------|
+| 1 | Authentication | 4 | `/api/auth` |
+| 2 | Staff Management | 6 | `/api/staff` |
+| 3 | Profile Management | 5 | `/api/users` |
+| 4 | Products | 10 | `/api/products` |
+| 5 | Collections | 6 | `/api/collections` |
+| 6 | Dashboard | 7 | `/api/dashboard` |
+| 7 | Catalog | 5 | `/api/catalogs` |
+| 8 | Inventory | 9 | `/api/inventories` |
+| 9 | Product Images | 7 | `/api/products/:id/images` |
+| 10 | Orders | 7 | `/api/orders` |
+| 11 | Customers | 8 | `/api/customers` |
+| 12 | Suppliers | 5 | `/api/suppliers` |
+| 13 | Discounts | 8 | `/api/discounts` |
+| 14 | Transactions | 7 | `/api/transactions` |
+| 15 | Shipments | 8 | `/api/shipments` |
+| 16 | Order Returns | 4 | `/api/orders/returns` |
+| 17 | Staff Reports | 5 | `/api/reports` |
+| 18 | Inventory Lookup | 2 | `/api/inventory/lookup` |
+| 19 | POS Payment | 10 | `/api/pos` |
+| 20 | Bank Accounts | 5 | `/api/bank-accounts` |
+| 21 | Checkouts | 4 | `/api/checkouts` |
 
 ---
 

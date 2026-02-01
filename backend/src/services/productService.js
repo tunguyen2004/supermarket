@@ -126,8 +126,11 @@ const getProducts = async (req, res) => {
 
 /**
  * 2. Thêm sản phẩm - POST /api/products
+ * Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu
  */
 const createProduct = async (req, res) => {
+  const client = await db.pool.connect();
+  
   try {
     const {
       code,
@@ -155,7 +158,7 @@ const createProduct = async (req, res) => {
     }
 
     // Check if code already exists
-    const existingProduct = await db.query(
+    const existingProduct = await client.query(
       'SELECT id FROM dim_products WHERE code = $1',
       [code]
     );
@@ -167,13 +170,16 @@ const createProduct = async (req, res) => {
       });
     }
 
+    // ========== BẮT ĐẦU TRANSACTION ==========
+    await client.query('BEGIN');
+
     // Insert product
     const productQuery = `
       INSERT INTO dim_products (code, name, category_id, brand_id, unit_id, description, image_url, is_active, has_variants)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
-    const productResult = await db.query(productQuery, [
+    const productResult = await client.query(productQuery, [
       code, name, category_id, brand_id || null, unit_id, description || null, image_url || null, is_active, has_variants
     ]);
 
@@ -186,7 +192,7 @@ const createProduct = async (req, res) => {
         VALUES ($1, $2, $3, $4, $5)
         RETURNING *
       `;
-      await db.query(variantQuery, [
+      await client.query(variantQuery, [
         product.id,
         sku || `${code}-SKU`,
         barcode || null,
@@ -195,18 +201,26 @@ const createProduct = async (req, res) => {
       ]);
     }
 
+    // ========== COMMIT TRANSACTION ==========
+    await client.query('COMMIT');
+
     res.status(201).json({
       success: true,
       data: product,
       message: 'Thêm sản phẩm thành công'
     });
   } catch (error) {
+    // ========== ROLLBACK NẾU CÓ LỖI ==========
+    await client.query('ROLLBACK');
     console.error('Create product error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
       message: 'Lỗi khi thêm sản phẩm'
     });
+  } finally {
+    // ========== LUÔN RELEASE CLIENT ==========
+    client.release();
   }
 };
 
@@ -546,10 +560,11 @@ const importProducts = async (req, res) => {
 
     const rows = await parseCSV();
 
-    // Process each row
+    // Process each row với transaction cho từng row
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // +2 because row 1 is header
+      const client = await db.pool.connect();
 
       try {
         // Validate required fields
@@ -576,8 +591,11 @@ const importProducts = async (req, res) => {
           continue;
         }
 
+        // ========== BẮT ĐẦU TRANSACTION CHO MỖI ROW ==========
+        await client.query('BEGIN');
+
         // Check if product already exists
-        const existingProduct = await db.query(
+        const existingProduct = await client.query(
           'SELECT id FROM dim_products WHERE code = $1',
           [row.code]
         );
@@ -587,7 +605,7 @@ const importProducts = async (req, res) => {
         if (existingProduct.rows.length > 0) {
           // Update existing product
           productId = existingProduct.rows[0].id;
-          await db.query(
+          await client.query(
             `UPDATE dim_products 
              SET name = $1, category_id = $2, brand_id = $3, unit_id = $4, description = $5, updated_at = CURRENT_TIMESTAMP
              WHERE id = $6`,
@@ -595,7 +613,7 @@ const importProducts = async (req, res) => {
           );
         } else {
           // Insert new product
-          const insertResult = await db.query(
+          const insertResult = await client.query(
             `INSERT INTO dim_products (code, name, category_id, brand_id, unit_id, description)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id`,
@@ -606,20 +624,20 @@ const importProducts = async (req, res) => {
 
         // Handle variant/SKU
         if (row.sku && row.selling_price) {
-          const existingVariant = await db.query(
+          const existingVariant = await client.query(
             'SELECT id FROM dim_product_variants WHERE product_id = $1',
             [productId]
           );
 
           if (existingVariant.rows.length > 0) {
-            await db.query(
+            await client.query(
               `UPDATE dim_product_variants 
                SET sku = $1, barcode = $2, cost_price = $3, selling_price = $4
                WHERE product_id = $5`,
               [row.sku, row.barcode || null, parseFloat(row.cost_price) || null, parseFloat(row.selling_price), productId]
             );
           } else {
-            await db.query(
+            await client.query(
               `INSERT INTO dim_product_variants (product_id, sku, barcode, cost_price, selling_price)
                VALUES ($1, $2, $3, $4, $5)`,
               [productId, row.sku, row.barcode || null, parseFloat(row.cost_price) || null, parseFloat(row.selling_price)]
@@ -627,12 +645,20 @@ const importProducts = async (req, res) => {
           }
         }
 
+        // ========== COMMIT TRANSACTION ==========
+        await client.query('COMMIT');
+
         successCount++;
         results.push({ row: rowNum, code: row.code, status: 'success' });
 
       } catch (err) {
+        // ========== ROLLBACK NẾU CÓ LỖI ==========
+        await client.query('ROLLBACK');
         errors.push({ row: rowNum, code: row.code, error: err.message });
         errorCount++;
+      } finally {
+        // ========== LUÔN RELEASE CLIENT ==========
+        client.release();
       }
     }
 
