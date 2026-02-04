@@ -16,6 +16,7 @@ const getProducts = async (req, res) => {
       category_id,
       brand_id,
       is_active,
+      
       page = 1,
       limit = 10,
       sortBy = 'created_at',
@@ -564,33 +565,35 @@ const importProducts = async (req, res) => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // +2 because row 1 is header
+
+      // Validate required fields TRƯỚC khi lấy connection
+      if (!row.code || !row.name) {
+        errors.push({ row: rowNum, error: 'Thiếu code hoặc name' });
+        errorCount++;
+        continue;
+      }
+
+      // Get foreign key IDs
+      const category_id = categoriesMap.get(row.category_code);
+      const brand_id = brandsMap.get(row.brand_code) || null;
+      const unit_id = unitsMap.get(row.unit_code);
+
+      if (!category_id) {
+        errors.push({ row: rowNum, code: row.code, error: `Category không tồn tại: ${row.category_code}` });
+        errorCount++;
+        continue;
+      }
+
+      if (!unit_id) {
+        errors.push({ row: rowNum, code: row.code, error: `Unit không tồn tại: ${row.unit_code}` });
+        errorCount++;
+        continue;
+      }
+
+      // Chỉ lấy connection SAU khi đã validate xong
       const client = await db.pool.connect();
 
       try {
-        // Validate required fields
-        if (!row.code || !row.name) {
-          errors.push({ row: rowNum, error: 'Thiếu code hoặc name' });
-          errorCount++;
-          continue;
-        }
-
-        // Get foreign key IDs
-        const category_id = categoriesMap.get(row.category_code);
-        const brand_id = brandsMap.get(row.brand_code) || null;
-        const unit_id = unitsMap.get(row.unit_code);
-
-        if (!category_id) {
-          errors.push({ row: rowNum, code: row.code, error: `Category không tồn tại: ${row.category_code}` });
-          errorCount++;
-          continue;
-        }
-
-        if (!unit_id) {
-          errors.push({ row: rowNum, code: row.code, error: `Unit không tồn tại: ${row.unit_code}` });
-          errorCount++;
-          continue;
-        }
-
         // ========== BẮT ĐẦU TRANSACTION CHO MỖI ROW ==========
         await client.query('BEGIN');
 

@@ -316,6 +316,26 @@ const updateCollection = async (req, res) => {
       });
     }
 
+    // Check for circular reference - prevent setting parent to any descendant
+    if (parent_id) {
+      const descendantsQuery = `
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM subdim_categories WHERE parent_id = $1
+          UNION ALL
+          SELECT c.id FROM subdim_categories c
+          INNER JOIN descendants d ON c.parent_id = d.id
+        )
+        SELECT id FROM descendants WHERE id = $2
+      `;
+      const descendantsResult = await db.query(descendantsQuery, [id, parent_id]);
+      if (descendantsResult.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không thể chọn danh mục con làm danh mục cha (circular reference)'
+        });
+      }
+    }
+
     const query = `
       UPDATE subdim_categories
       SET 
