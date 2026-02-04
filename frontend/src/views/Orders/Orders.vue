@@ -10,7 +10,7 @@
     <el-tabs v-model="activeTab" class="order-tabs">
       <el-tab-pane label="Tất cả" name="all"></el-tab-pane>
       <el-tab-pane label="Chờ xử lý" name="pending"></el-tab-pane>
-      <el-tab-pane label="Đang giao" name="shipping"></el-tab-pane>
+      <!--<el-tab-pane label="Đang giao" name="shipping"></el-tab-pane>-->
       <el-tab-pane label="Hoàn thành" name="completed"></el-tab-pane>
       <el-tab-pane label="Đã hủy" name="cancelled"></el-tab-pane>
     </el-tabs>
@@ -46,6 +46,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="orderDate" label="Ngày tạo" width="160" />
+        <el-table-column prop="createdBy" label="Người tạo" width="150" />
         <el-table-column label="Tổng tiền" width="150" align="right">
           <template #default="scope">
             <span class="total-amount">{{
@@ -165,6 +166,7 @@
       v-if="selectedOrder"
       v-model="isModalVisible"
       :order="selectedOrder"
+      @refresh="handleRefresh"
     />
   </div>
 </template>
@@ -227,8 +229,14 @@ const fetchOrders = async () => {
       orderCode: order.order_code,
       customerName: order.customer?.name || "Khách lẻ",
       customerPhone: order.customer?.phone || "",
-      orderDate: new Date(order.created_at).toLocaleString("vi-VN"),
-      totalAmount: order.amount?.final || 0,
+      orderDate: new Date(order.date || order.created_at).toLocaleString(
+        "vi-VN",
+      ),
+      createdBy:
+        typeof order.created_by === "string"
+          ? order.created_by
+          : order.created_by?.name || "N/A",
+      totalAmount: order.amount?.total,
       paymentStatus:
         order.payment_status === "paid" ? "Đã thanh toán" : "Chưa thanh toán",
       fulfillmentStatus: mapStatusToVietnamese(order.status),
@@ -251,9 +259,13 @@ const fetchOrders = async () => {
 const mapStatusToVietnamese = (status) => {
   const statusMap = {
     pending: "Chờ xử lý",
+    processing: "Đang xử lý",
+    shipped: "Đã giao",
+    delivered: "Hoàn thành",
+    cancelled: "Đã hủy",
+    // Legacy support
     shipping: "Đang giao",
     completed: "Hoàn thành",
-    cancelled: "Đã hủy",
   };
   return statusMap[status] || "Chờ xử lý";
 };
@@ -264,7 +276,8 @@ const getPaymentStatusType = (status) =>
 
 const getFulfillmentStatusType = (status) => {
   if (status === "Hoàn thành") return "success";
-  if (status === "Đang giao") return "primary";
+  if (status === "Đã giao") return "success";
+  if (status === "Đang giao" || status === "Đang xử lý") return "primary";
   if (status === "Chờ xử lý") return "warning";
   if (status === "Đã hủy") return "danger";
   return "info";
@@ -289,9 +302,62 @@ const createOrder = () => {
   router.push({ name: "NewOrder" });
 };
 
-const viewOrder = (order) => {
-  selectedOrder.value = order;
-  isModalVisible.value = true;
+const viewOrder = async (order) => {
+  try {
+    isLoading.value = true;
+    // Gọi API chi tiết đơn hàng
+    const result = await orderService.getOrderById(order.id);
+
+    // Map dữ liệu chi tiết để hiển thị
+    selectedOrder.value = {
+      id: result.data.id,
+      orderCode: result.data.order_code,
+      customerName: result.data.customer?.name || "Khách lẻ",
+      customerPhone: result.data.customer?.phone || "",
+      customerEmail: result.data.customer?.email || "",
+      orderDate: new Date(
+        result.data.date || result.data.created_at,
+      ).toLocaleString("vi-VN"),
+      totalAmount: result.data.amount?.total || result.data.amount?.final || 0,
+      subtotal: result.data.amount?.subtotal || 0,
+      discount: result.data.amount?.discount || 0,
+      tax: result.data.amount?.tax || 0,
+      shipping: result.data.amount?.shipping || 0,
+      paymentStatus:
+        result.data.payment_status === "paid"
+          ? "Đã thanh toán"
+          : "Chưa thanh toán",
+      fulfillmentStatus: mapStatusToVietnamese(result.data.status),
+      paymentMethod: result.data.payment_method,
+      shippingAddress: result.data.shipping_address,
+      items: result.data.items || [],
+      notes: result.data.notes || {},
+      store:
+        typeof result.data.store === "string"
+          ? result.data.store
+          : result.data.store?.name || "",
+      createdBy:
+        typeof result.data.created_by === "string"
+          ? result.data.created_by
+          : result.data.created_by?.name || "",
+      createdAt: new Date(result.data.created_at).toLocaleString("vi-VN"),
+      updatedAt: result.data.updated_at
+        ? new Date(result.data.updated_at).toLocaleString("vi-VN")
+        : null,
+    };
+
+    isModalVisible.value = true;
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    ElMessage.error("Không thể tải chi tiết đơn hàng");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Handle refresh after updating order
+const handleRefresh = () => {
+  fetchOrders();
 };
 
 // --- LIFECYCLE HOOKS ---
