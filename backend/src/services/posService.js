@@ -92,13 +92,13 @@ const checkout = async (req, res) => {
           v.id as variant_id,
           v.product_id,
           p.name as product_name,
-          v.name as variant_name,
-          v.sale_price,
+          v.variant_name,
+          v.selling_price,
           v.cost_price,
           COALESCE(fi.quantity_available, 0) as stock
         FROM dim_product_variants v
         JOIN dim_products p ON v.product_id = p.id
-        LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+        LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
         WHERE v.id = $1
       `, [item.variant_id, store_id]);
 
@@ -121,7 +121,7 @@ const checkout = async (req, res) => {
         });
       }
 
-      const unitPrice = item.unit_price || variant.sale_price;
+      const unitPrice = item.unit_price || variant.selling_price;
       const itemSubtotal = unitPrice * item.quantity;
       const itemDiscount = item.discount_amount || 0;
       const itemTotal = itemSubtotal - itemDiscount;
@@ -205,9 +205,9 @@ const checkout = async (req, res) => {
 
       // Update inventory
       await client.query(`
-        UPDATE fact_inventory
-        SET quantity_available = quantity_available - $1,
-            updated_at = NOW()
+        UPDATE fact_inventory_stocks
+        SET quantity_on_hand = quantity_on_hand - $1,
+            last_updated = NOW()
         WHERE variant_id = $2 AND store_id = $3
       `, [item.quantity, item.variant_id, store_id]);
 
@@ -313,18 +313,18 @@ const searchProducts = async (req, res) => {
         SELECT 
           p.id as product_id,
           p.name as product_name,
-          p.sku,
-          p.barcode,
+          v.sku,
+          v.barcode,
           v.id as variant_id,
-          v.name as variant_name,
-          v.sale_price as price,
+          v.variant_name,
+          v.selling_price as price,
           COALESCE(fi.quantity_available, 0) as stock,
-          (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+          (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
         FROM dim_products p
         INNER JOIN dim_product_variants v ON p.id = v.product_id
-        LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+        LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
         WHERE p.is_active = true
-          AND (p.barcode = $1 OR v.barcode = $1)
+          AND v.barcode = $1
         LIMIT $3
       `, [searchTerm, store_id || 1, parseInt(limit)]);
     } else {
@@ -334,21 +334,21 @@ const searchProducts = async (req, res) => {
         SELECT 
           p.id as product_id,
           p.name as product_name,
-          p.sku,
-          p.barcode,
+          v.sku,
+          v.barcode,
           v.id as variant_id,
-          v.name as variant_name,
-          v.sale_price as price,
+          v.variant_name,
+          v.selling_price as price,
           COALESCE(fi.quantity_available, 0) as stock,
-          (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+          (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
         FROM dim_products p
         INNER JOIN dim_product_variants v ON p.id = v.product_id
-        LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+        LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
         WHERE p.is_active = true
           AND (
             LOWER(p.name) LIKE $1 
-            OR LOWER(p.sku) LIKE $1
-            OR LOWER(v.name) LIKE $1
+            OR LOWER(p.code) LIKE $1
+            OR LOWER(v.variant_name) LIKE $1
             OR LOWER(v.sku) LIKE $1
           )
         ORDER BY 
@@ -397,14 +397,14 @@ const getProductPrice = async (req, res) => {
         v.id as variant_id,
         p.id as product_id,
         p.name as product_name,
-        v.name as variant_name,
-        v.sale_price as price,
+        v.variant_name,
+        v.selling_price as price,
         v.cost_price,
         COALESCE(fi.quantity_available, 0) as stock,
         COALESCE(fi.quantity_reserved, 0) as reserved
       FROM dim_product_variants v
       JOIN dim_products p ON v.product_id = p.id
-      LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+      LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
       WHERE v.id = $1
     `, [variantId, store_id || 1]);
 

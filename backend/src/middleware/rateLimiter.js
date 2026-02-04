@@ -19,7 +19,7 @@ const rateLimit = require('express-rate-limit');
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 0, // DISABLED - Original: 100
+  max: 1000, // DISABLED - Original: 100
   // max: 100, // Limit each IP to 100 requests per windowMs
   message: {
     success: false,
@@ -37,7 +37,7 @@ const apiLimiter = rateLimit({
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 0, // DISABLED - Original: 5
+  max: 1000, // DISABLED - Original: 5
   // max: 5, // Limit each IP to 5 login requests per windowMs
   message: {
     success: false,
@@ -56,7 +56,7 @@ const authLimiter = rateLimit({
  */
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 0, // DISABLED - Original: 10
+  max: 1000, // DISABLED - Original: 10
   // max: 10, // Limit each IP to 10 upload requests per windowMs
   message: {
     success: false,
@@ -74,7 +74,7 @@ const uploadLimiter = rateLimit({
  */
 const strictLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 0, // DISABLED - Original: 3
+  max: 1000, // DISABLED - Original: 3
   // max: 3,
   message: {
     success: false,

@@ -355,6 +355,9 @@ async function hardDeleteBankAccount(id) {
 async function generatePaymentQR(accountId, options = {}) {
   const { amount, description, order_code } = options;
 
+
+  // Get amount for ordercode 
+  
   // Get bank account
   const account = await getBankAccountById(accountId);
   if (!account) {
@@ -365,20 +368,50 @@ async function generatePaymentQR(accountId, options = {}) {
     throw new Error('Bank account is inactive');
   }
 
-  // VietQR format
-  // https://img.vietqr.io/image/{bank_code}-{account_number}-compact.png?amount={amount}&addInfo={description}
+  // VietQR format - SỬ DỤNG BIN CODE, KHÔNG PHẢI SHORT CODE
+  // https://img.vietqr.io/image/{BIN}-{account_number}-compact.png?amount={amount}&addInfo={description}
   const baseUrl = 'https://img.vietqr.io/image';
   
-  // Build QR URL
-  let qrUrl = `${baseUrl}/${account.bank_code}-${account.account_number}-compact.png`;
+  // Chuyển bank_code (VD: MBB) sang BIN (VD: 970422)
+  const bankBin = getBankBin(account.bank_code);
+  
+  // Build QR URL với BIN code
+  let qrUrl = `${baseUrl}/${bankBin}-${account.account_number}-compact.png`;
   
   const queryParams = [];
-  if (amount) {
-    queryParams.push(`amount=${amount}`);
+  
+  // Determine amount and description
+  let amount_f = amount;
+  let info = description;
+  
+  // If order_code is provided and amount is missing, query subtotal from fact_orders
+  if (order_code && !amount_f) {
+    try {
+      const orderQuery = `
+        SELECT subtotal
+        FROM fact_orders 
+        WHERE order_code = $1
+      `;
+      const orderResult = await pool.query(orderQuery, [order_code]);
+      
+      if (orderResult.rows.length > 0) {
+        amount_f = orderResult.rows[0].subtotal;
+      }
+    } catch (error) {
+      console.error(`Error fetching order data for ${order_code}:`, error);
+    }
+  }
+  
+  // If description is null, set to "Thanh toan + order_code"
+  if (!info && order_code) {
+    info = `Thanh toan don hang ${order_code}`;
+  }
+  
+  if (amount_f) {
+    queryParams.push(`amount=${amount_f}`);
   }
   
   // Build description/addInfo
-  const info = description || (order_code ? `Thanh toan don hang ${order_code}` : '');
   if (info) {
     queryParams.push(`addInfo=${encodeURIComponent(info)}`);
   }
@@ -389,15 +422,16 @@ async function generatePaymentQR(accountId, options = {}) {
 
   // Also generate raw QR data for custom rendering
   const qrData = {
+    bank_bin: bankBin,
     bank_code: account.bank_code,
     bank_name: account.bank_name,
     account_number: account.account_number,
     account_name: account.account_name,
-    amount: amount || null,
+    amount: amount_f || null,
     description: info || null,
     qr_url: qrUrl,
     // EMVCo QR format for NAPAS
-    napas_qr: generateNapasQR(account, amount, info)
+    napas_qr: generateNapasQR(account, amount_f, info)
   };
 
   return qrData;
@@ -428,30 +462,70 @@ function generateNapasQR(account, amount, info) {
  * @private
  */
 function getBankBin(bankCode) {
+  // Danh sách đầy đủ ngân hàng Việt Nam - VietQR Free API
+  // Nguồn: https://api.vietqr.io/v2/banks
   const bankBins = {
-    'VCB': '970436', // Vietcombank
-    'TCB': '970407', // Techcombank
-    'ACB': '970416', // ACB
-    'VTB': '970415', // Vietinbank
-    'BID': '970418', // BIDV
-    'MBB': '970422', // MB Bank
-    'VPB': '970432', // VPBank
-    'TPB': '970423', // TPBank
-    'STB': '970403', // Sacombank
-    'SCB': '970429', // SCB
-    'SHB': '970443', // SHB
-    'MSB': '970426', // MSB
-    'HDB': '970437', // HDBank
-    'OCB': '970448', // OCB
-    'LPB': '970449', // LienVietPostBank
-    'SEA': '970440', // SeABank
-    'NAB': '970428', // Nam A Bank
-    'EIB': '970431', // Eximbank
-    'VIB': '970441', // VIB
-    'ABB': '970425'  // ABBank
+    // Ngân hàng thương mại cổ phần
+    'VCB': '970436',   // Vietcombank
+    'TCB': '970407',   // Techcombank
+    'ACB': '970416',   // ACB
+    'VTB': '970415',   // Vietinbank (CTG)
+    'BID': '970418',   // BIDV
+    'MBB': '970422',   // MB Bank
+    'VPB': '970432',   // VPBank
+    'TPB': '970423',   // TPBank
+    'STB': '970403',   // Sacombank
+    'SCB': '970429',   // SCB
+    'SHB': '970443',   // SHB
+    'MSB': '970426',   // MSB (Maritime Bank)
+    'HDB': '970437',   // HDBank
+    'OCB': '970448',   // OCB
+    'LPB': '970449',   // LienVietPostBank
+    'SEA': '970440',   // SeABank
+    'NAB': '970428',   // Nam A Bank
+    'EIB': '970431',   // Eximbank
+    'VIB': '970441',   // VIB
+    'ABB': '970425',   // ABBank
+    
+    // Ngân hàng bổ sung
+    'AGRI': '970405',  // Agribank
+    'BAB': '970409',   // BacABank
+    'CAKE': '546034',  // CAKE by VPBank
+    'CBB': '970444',   // CBBank
+    'CIMB': '422589',  // CIMB Bank
+    'COOPBANK': '970446', // Co-opBank
+    'DBS': '796500',   // DBS Bank
+    'DOB': '970406',   // DongABank
+    'GPB': '970408',   // GPBank
+    'HSBC': '458761',  // HSBC
+    'IBKVN': '970455', // IBK - Industrial Bank of Korea
+    'IVB': '970434',   // IndovinaBank
+    'KLB': '970452',   // KienLongBank
+    'KBank': '668888', // KBank (Kasikornbank)
+    'MAFC': '977777',  // MAFC
+    'NCB': '970419',   // NCB (Quoc Dan)
+    'NHB': '801011',   // Nonghyup Bank
+    'PBVN': '970439',  // PublicBank Vietnam
+    'PGB': '970430',   // PGBank
+    'PVCB': '970412',  // PVcomBank
+    'SCVN': '970410',  // Standard Chartered VN
+    'SGICB': '970400', // SaigonBank (SGB)
+    'SHBVN': '970424', // Shinhan Bank VN
+    'TIMO': '963388',  // Timo by BanViet
+    'UOB': '970458',   // UOB Vietnam
+    'UBANK': '546035', // Ubank by VPBank
+    'VAB': '970427',   // VietABank
+    'VBB': '970433',   // Viet Capital Bank (BanViet)
+    'VCCB': '970454',  // Viet Credit
+    'VIETBANK': '970433', // VietBank
+    'VNPTMONEY': '971011', // VNPT Money
+    'VRB': '970421',   // VRB
+    'VTLMONEY': '971005', // Viettel Money
+    'WOO': '970457'    // Woori Bank VN
+
   };
   
-  return bankBins[bankCode] || bankCode;
+  return bankBins[bankCode.toUpperCase()] || bankCode;
 }
 
 /**
