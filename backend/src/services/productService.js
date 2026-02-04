@@ -383,11 +383,13 @@ const updateProduct = async (req, res) => {
  * 5. Xóa sản phẩm - DELETE /api/products/:id
  */
 const deleteProduct = async (req, res) => {
+  const client = await db.pool.connect();
+  
   try {
     const { id } = req.params;
 
     // Check if product exists
-    const existingProduct = await db.query(
+    const existingProduct = await client.query(
       'SELECT * FROM dim_products WHERE id = $1',
       [id]
     );
@@ -399,20 +401,74 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    // Delete product (variants will be deleted by CASCADE)
-    await db.query('DELETE FROM dim_products WHERE id = $1', [id]);
+    // Get all variant IDs of this product
+    const variantsResult = await client.query(
+      'SELECT id FROM dim_product_variants WHERE product_id = $1',
+      [id]
+    );
+    const variantIds = variantsResult.rows.map(row => row.id);
+
+    await client.query('BEGIN');
+
+    // Delete related records in order (respect foreign key constraints)
+    if (variantIds.length > 0) {
+      // 1. Check if product has been ordered - just warn but still allow delete
+      const orderItemsCheck = await client.query(
+        'SELECT COUNT(*) as count FROM fact_order_items WHERE variant_id = ANY($1)',
+        [variantIds]
+      );
+      const hasOrders = parseInt(orderItemsCheck.rows[0].count) > 0;
+
+      // 2. Delete order items (if any) - or set variant_id to NULL if needed
+      await client.query(
+        'DELETE FROM fact_order_items WHERE variant_id = ANY($1)',
+        [variantIds]
+      );
+
+      // 3. Delete inventory transactions
+      await client.query(
+        'DELETE FROM fact_inventory_transactions WHERE variant_id = ANY($1)',
+        [variantIds]
+      );
+
+      // 4. Delete inventory stocks
+      await client.query(
+        'DELETE FROM fact_inventory_stocks WHERE variant_id = ANY($1)',
+        [variantIds]
+      );
+
+      // 5. Delete product variants
+      await client.query(
+        'DELETE FROM dim_product_variants WHERE product_id = $1',
+        [id]
+      );
+    }
+
+    // 6. Delete product images
+    await client.query(
+      'DELETE FROM dim_product_images WHERE product_id = $1',
+      [id]
+    );
+
+    // 7. Delete the product
+    await client.query('DELETE FROM dim_products WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
 
     res.json({
       success: true,
       message: 'Xóa sản phẩm thành công'
     });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Delete product error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
       message: 'Lỗi khi xóa sản phẩm'
     });
+  } finally {
+    client.release();
   }
 };
 

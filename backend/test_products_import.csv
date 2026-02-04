@@ -1,0 +1,11 @@
+code,name,category_code,brand_code,unit_code,description,sku,barcode,cost_price,selling_price
+SP001,Sữa tươi Vinamilk 1L,DAIRY,VINAMILK,L,Sữa tươi tiệt trùng Vinamilk hộp 1 lít,SKU-SP001,8934567890123,28000,35000
+SP002,Mì gói Hảo Hảo tôm chua cay,INSTANT,ACE,GOI,Mì ăn liền Hảo Hảo vị tôm chua cay,SKU-SP002,8934567890124,3500,5000
+SP003,Nước mắm Chinsu 500ml,SAUCE,CHINCHIN,CHAI,Nước mắm Chinsu chai 500ml,SKU-SP003,8934567890125,22000,28000
+SP004,Nước ngọt Coca Cola 1.5L,SOFT_DRINK,COCA,CHAI,Nước ngọt Coca Cola chai 1.5 lít,SKU-SP004,8934567890126,18000,25000
+SP005,Sữa TH True Milk 1L,MILK,TH,L,Sữa tươi TH True Milk hộp 1 lít,SKU-SP005,8934567890127,32000,38000
+SP006,Snack Oishi tôm cay 40g,CHIPS,OISHI,GOI,Snack Oishi vị tôm cay gói 40g,SKU-SP006,8934567890128,8000,12000
+SP007,Coca Cola lon 330ml,SOFT_DRINK,COCA,LON,Nước ngọt Coca Cola lon 330ml,SKU-SP007,8934567890129,8000,10000
+SP008,Mì Omachi sườn hầm,INSTANT,OMI,GOI,Mì khoai tây Omachi sườn hầm ngũ quả,SKU-SP008,8934567890130,6000,8000
+SP009,Sữa chua Vinamilk có đường,YOGURT,VINAMILK,HOP,Sữa chua Vinamilk có đường lốc 4 hộp,SKU-SP009,8934567890131,18000,22000
+SP010,Nước giặt OMO 2.7kg,DETERGENT,OMO,CHAI,Nước giặt OMO Matic chai 2.7kg,SKU-SP010,8934567890132,125000,145000

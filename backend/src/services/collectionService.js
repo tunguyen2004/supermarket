@@ -15,23 +15,23 @@ const getCollections = async (req, res) => {
     let whereClause = 'WHERE 1=1';
 
     if (search) {
-      whereClause += ` AND (name ILIKE $${paramIndex} OR code ILIKE $${paramIndex})`;
+      whereClause += ` AND (c.name ILIKE $${paramIndex} OR c.code ILIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
 
     if (parent_id !== undefined) {
       if (parent_id === 'null' || parent_id === '') {
-        whereClause += ' AND parent_id IS NULL';
+        whereClause += ' AND c.parent_id IS NULL';
       } else {
-        whereClause += ` AND parent_id = $${paramIndex}`;
+        whereClause += ` AND c.parent_id = $${paramIndex}`;
         params.push(parent_id);
         paramIndex++;
       }
     }
 
     // Count total
-    const countQuery = `SELECT COUNT(*) as total FROM subdim_categories ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM subdim_categories c ${whereClause}`;
     const countResult = await db.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
