@@ -15,23 +15,23 @@ const getCollections = async (req, res) => {
     let whereClause = 'WHERE 1=1';
 
     if (search) {
-      whereClause += ` AND (name ILIKE $${paramIndex} OR code ILIKE $${paramIndex})`;
+      whereClause += ` AND (c.name ILIKE $${paramIndex} OR c.code ILIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
 
     if (parent_id !== undefined) {
       if (parent_id === 'null' || parent_id === '') {
-        whereClause += ' AND parent_id IS NULL';
+        whereClause += ' AND c.parent_id IS NULL';
       } else {
-        whereClause += ` AND parent_id = $${paramIndex}`;
+        whereClause += ` AND c.parent_id = $${paramIndex}`;
         params.push(parent_id);
         paramIndex++;
       }
     }
 
     // Count total
-    const countQuery = `SELECT COUNT(*) as total FROM subdim_categories ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM subdim_categories c ${whereClause}`;
     const countResult = await db.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
@@ -314,6 +314,26 @@ const updateCollection = async (req, res) => {
         success: false,
         message: 'Không thể chọn chính danh mục này làm danh mục cha'
       });
+    }
+
+    // Check for circular reference - prevent setting parent to any descendant
+    if (parent_id) {
+      const descendantsQuery = `
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM subdim_categories WHERE parent_id = $1
+          UNION ALL
+          SELECT c.id FROM subdim_categories c
+          INNER JOIN descendants d ON c.parent_id = d.id
+        )
+        SELECT id FROM descendants WHERE id = $2
+      `;
+      const descendantsResult = await db.query(descendantsQuery, [id, parent_id]);
+      if (descendantsResult.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Không thể chọn danh mục con làm danh mục cha (circular reference)'
+        });
+      }
     }
 
     const query = `

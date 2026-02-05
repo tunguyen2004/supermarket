@@ -264,39 +264,52 @@ const bulkUpdateCatalogs = async (req, res) => {
 
         await client.query('BEGIN');
 
-        let updateQuery;
+        let updateResult;
         if (price_change_type === 'fixed') {
+            // Validate fixed price is not negative
+            if (price_change_value < 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Giá cố định không được âm'
+                });
+            }
             // Set fixed price for all variants
-            updateQuery = `
+            const updateQuery = `
                 UPDATE dim_product_variants
                 SET selling_price = $1
                 WHERE id = ANY($2) AND selling_price IS NOT NULL
+                RETURNING id
             `;
-            await client.query(updateQuery, [price_change_value, variant_ids]);
+            updateResult = await client.query(updateQuery, [price_change_value, variant_ids]);
         } else {
+            // Validate percentage won't result in negative prices
+            if (price_change_value < -100) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({
+                    success: false,
+                    message: 'Phần trăm giảm giá không được vượt quá 100%'
+                });
+            }
             // Increase/decrease by percentage
-            updateQuery = `
+            const updateQuery = `
                 UPDATE dim_product_variants
-                SET selling_price = selling_price * (1 + $1 / 100.0)
+                SET selling_price = GREATEST(0, selling_price * (1 + $1 / 100.0))
                 WHERE id = ANY($2) AND selling_price IS NOT NULL
+                RETURNING id
             `;
-            await client.query(updateQuery, [price_change_value, variant_ids]);
+            updateResult = await client.query(updateQuery, [price_change_value, variant_ids]);
         }
 
-        // Count updated records
-        const countQuery = `
-            SELECT COUNT(*) as count 
-            FROM dim_product_variants 
-            WHERE id = ANY($1)
-        `;
-        const countResult = await client.query(countQuery, [variant_ids]);
+        // Count from actual RETURNING result
+        const updatedCount = updateResult.rowCount;
 
         await client.query('COMMIT');
 
         res.json({
             success: true,
             message: 'Cập nhật giá hàng loạt thành công',
-            updated_count: parseInt(countResult.rows[0].count)
+            updated_count: updatedCount
         });
     } catch (error) {
         await client.query('ROLLBACK');

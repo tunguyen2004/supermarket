@@ -2,9 +2,9 @@
   <div class="customer-groups-page">
     <div class="page-header">
       <h1 class="page-title">Nhóm khách hàng</h1>
-      <el-button type="primary" :icon="Plus" @click="openDialog()">
+      <!-- <el-button type="primary" :icon="Plus" @click="openDialog()">
         Thêm nhóm
-      </el-button>
+      </el-button> -->
     </div>
 
     <div class="table-container">
@@ -19,7 +19,12 @@
         />
       </div>
 
-      <el-table v-if="!isMobile" :data="pagedGroups" style="width: 100%">
+      <el-table
+        v-if="!isMobile"
+        :data="pagedGroups"
+        style="width: 100%"
+        v-loading="loading"
+      >
         <el-table-column label="Tên nhóm" min-width="350">
           <template #default="scope">
             <div class="group-info">
@@ -58,7 +63,7 @@
                 @click="viewCustomersInGroup(scope.row)"
                 >Xem khách</el-button
               >
-              <el-button
+              <!-- <el-button
                 size="small"
                 :icon="Edit"
                 text
@@ -74,13 +79,13 @@
                 type="danger"
                 @click="handleDelete(scope.row)"
                 >Xóa</el-button
-              >
+              > -->
             </div>
           </template>
         </el-table-column>
       </el-table>
 
-      <div v-else class="mobile-card-list">
+      <div v-else class="mobile-card-list" v-loading="loading">
         <div v-for="item in pagedGroups" :key="item.code" class="mobile-card">
           <div class="card-header">
             <div class="group-info">
@@ -167,18 +172,28 @@
             placeholder="Ví dụ: Khách VIP, Khách sỉ..."
           />
         </el-form-item>
-        <el-form-item label="Mã nhóm">
+        <el-form-item label="Mã nhóm" required>
           <el-input
             v-model="form.code"
-            placeholder="Mã sẽ tự tạo nếu để trống"
+            placeholder="VD: VIP, GOLD, SILVER..."
           />
         </el-form-item>
-        <el-form-item label="Mô tả">
-          <el-input
-            v-model="form.description"
-            type="textarea"
-            :rows="3"
-            placeholder="Nhập mô tả ngắn cho nhóm"
+        <el-form-item label="Chiết khấu (%)">
+          <el-input-number
+            v-model="form.discount_percentage"
+            :min="0"
+            :max="100"
+            :step="0.5"
+            :precision="2"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="Mức mua tối thiểu (VNĐ)">
+          <el-input-number
+            v-model="form.min_purchase_amount"
+            :min="0"
+            :step="100000"
+            style="width: 100%"
           />
         </el-form-item>
       </el-form>
@@ -203,6 +218,7 @@ import {
   Delete,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import customerService from "@/services/customerService";
 
 // --- ROUTER & RESPONSIVE STATE ---
 const router = useRouter();
@@ -213,6 +229,7 @@ const checkScreenSize = () => {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
+  fetchGroups();
 });
 onUnmounted(() => {
   window.removeEventListener("resize", checkScreenSize);
@@ -222,46 +239,19 @@ onUnmounted(() => {
 const search = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
-const groups = ref([
-  {
-    code: "GR001",
-    name: "Khách lẻ",
-    customerCount: 120,
-    description: "Khách hàng mua hàng không thường xuyên.",
-  },
-  {
-    code: "GR002",
-    name: "Khách sỉ",
-    customerCount: 35,
-    description: "Đối tác mua hàng số lượng lớn.",
-  },
-  {
-    code: "GR003",
-    name: "Đại lý",
-    customerCount: 18,
-    description: "Các đại lý phân phối sản phẩm.",
-  },
-  {
-    code: "GR004",
-    name: "Khách VIP",
-    customerCount: 7,
-    description: "Khách hàng có doanh số cao nhất.",
-  },
-  {
-    code: "GR005",
-    name: "Khách doanh nghiệp",
-    customerCount: 10,
-    description: "Khách hàng là các công ty, tổ chức.",
-  },
-]);
+const loading = ref(false);
+const groups = ref([]);
+const totalGroups = ref(0);
 
 // --- FORM STATE & DIALOG ---
 const dialogVisible = ref(false);
 const isEditMode = ref(false);
 const form = reactive({
+  id: null,
   code: "",
   name: "",
-  description: "",
+  discount_percentage: "0",
+  min_purchase_amount: "0",
   customerCount: 0,
 });
 
@@ -273,7 +263,7 @@ const filteredGroups = computed(() => {
   return groups.value.filter(
     (item) =>
       item.name.toLowerCase().includes(searchTerm) ||
-      item.code.toLowerCase().includes(searchTerm)
+      item.code.toLowerCase().includes(searchTerm),
   );
 });
 
@@ -287,20 +277,56 @@ const onSearch = () => {
   currentPage.value = 1;
 };
 
+// --- API METHODS ---
+const fetchGroups = async () => {
+  try {
+    loading.value = true;
+    const response = await customerService.getCustomerGroups();
+    if (response.success) {
+      groups.value = response.data.map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        discount_percentage: item.discount_percentage,
+        min_purchase_amount: item.min_purchase_amount,
+        customerCount: parseInt(item.customer_count || 0),
+        description: `Chiết khấu ${
+          item.discount_percentage
+        }% - Mua tối thiểu ${parseFloat(
+          item.min_purchase_amount,
+        ).toLocaleString("vi-VN")}đ`,
+      }));
+      totalGroups.value = response.data.length;
+    }
+  } catch (error) {
+    ElMessage.error("Không thể tải danh sách nhóm khách hàng");
+  } finally {
+    loading.value = false;
+  }
+};
+
 // --- CRUD & ACTION FUNCTIONS ---
 const openDialog = (group = null) => {
   if (group) {
     // Chế độ sửa
     isEditMode.value = true;
-    Object.assign(form, group); // Copy dữ liệu của nhóm vào form
+    Object.assign(form, {
+      id: group.id,
+      code: group.code,
+      name: group.name,
+      discount_percentage: group.discount_percentage,
+      min_purchase_amount: group.min_purchase_amount,
+      customerCount: group.customerCount,
+    });
   } else {
     // Chế độ thêm mới
     isEditMode.value = false;
     Object.assign(form, {
-      // Reset form
+      id: null,
       code: "",
       name: "",
-      description: "",
+      discount_percentage: "0",
+      min_purchase_amount: "0",
       customerCount: 0,
     });
   }
@@ -326,7 +352,7 @@ const handleSave = () => {
       // Tự tạo mã mới nếu để trống
       const nextId =
         Math.max(
-          ...groups.value.map((g) => parseInt(g.code.replace("GR", "")))
+          ...groups.value.map((g) => parseInt(g.code.replace("GR", ""))),
         ) + 1;
       newGroup.code = "GR" + String(nextId).padStart(3, "0");
     }
@@ -345,7 +371,7 @@ const handleDelete = (group) => {
       confirmButtonText: "Đồng ý xóa",
       cancelButtonText: "Hủy",
       type: "warning",
-    }
+    },
   )
     .then(() => {
       groups.value = groups.value.filter((g) => g.code !== group.code);

@@ -1013,12 +1013,18 @@ async function searchProductsForLookup(req, res) {
         const sortColumn = validSorts.includes(sort) ? sort : 'name';
         const sortDir = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
-        // Build sort mapping
+        // Build sort mapping - sử dụng đúng tên cột trong schema
         const sortMap = {
             name: 'p.name',
+<<<<<<< HEAD
             price: 'v.selling_price',
             stock: 'total_stock',
             sku: 'v.sku',
+=======
+            price: 'pv.selling_price',
+            stock: 'total_stock',
+            sku: 'pv.sku',
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             created_at: 'p.created_at'
         };
 
@@ -1030,7 +1036,11 @@ async function searchProductsForLookup(req, res) {
         if (query && query.trim()) {
             paramIndex++;
             const searchTerm = `%${query.trim().toLowerCase()}%`;
+<<<<<<< HEAD
             searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(v.sku) LIKE $${paramIndex} OR LOWER(v.barcode) LIKE $${paramIndex})`;
+=======
+            searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(p.code) LIKE $${paramIndex} OR LOWER(pv.sku) LIKE $${paramIndex} OR LOWER(pv.barcode) LIKE $${paramIndex})`;
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             params.push(searchTerm);
         }
 
@@ -1038,15 +1048,16 @@ async function searchProductsForLookup(req, res) {
         let storeCondition = '';
         if (store_id) {
             paramIndex++;
-            storeCondition = `AND fi.store_id = $${paramIndex}`;
+            storeCondition = `AND fis.store_id = $${paramIndex}`;
             params.push(parseInt(store_id));
         }
 
-        // Get products with inventory totals
+        // Get products with inventory totals - sử dụng đúng schema
         const productsQuery = `
             SELECT 
                 p.id as product_id,
                 p.name,
+<<<<<<< HEAD
                 p.code,
                 v.sku,
                 v.barcode,
@@ -1063,26 +1074,48 @@ async function searchProductsForLookup(req, res) {
             WHERE p.is_active = true
             ${searchCondition}
             GROUP BY p.id, p.name, p.code, v.sku, v.barcode, p.is_active, v.id, v.variant_name, v.selling_price
+=======
+                p.code as sku,
+                pv.barcode,
+                p.is_active,
+                pv.id as variant_id,
+                pv.sku as variant_name,
+                pv.selling_price as price,
+                COALESCE(SUM(fis.quantity_on_hand), 0) as total_stock,
+                COUNT(DISTINCT fis.store_id) as store_count,
+                p.image_url
+            FROM dim_products p
+            INNER JOIN dim_product_variants pv ON p.id = pv.product_id
+            LEFT JOIN fact_inventory_stocks fis ON pv.id = fis.variant_id ${storeCondition}
+            WHERE p.is_active = true
+            ${searchCondition}
+            GROUP BY p.id, p.name, p.code, pv.barcode, p.is_active, pv.id, pv.sku, pv.selling_price, p.image_url
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             ORDER BY ${sortMap[sortColumn]} ${sortDir}
             LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
         `;
 
         params.push(parseInt(limit), parseInt(offset));
 
-        const result = await db.query(productsQuery, params);
+        const result = await pool.query(productsQuery, params);
 
         // Get total count for pagination
         const countParams = params.slice(0, paramIndex); // Exclude limit/offset
         const countQuery = `
-            SELECT COUNT(DISTINCT (p.id, v.id)) as total
+            SELECT COUNT(DISTINCT (p.id, pv.id)) as total
             FROM dim_products p
+<<<<<<< HEAD
             INNER JOIN dim_product_variants v ON p.id = v.product_id
             LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id ${storeCondition}
+=======
+            INNER JOIN dim_product_variants pv ON p.id = pv.product_id
+            LEFT JOIN fact_inventory_stocks fis ON pv.id = fis.variant_id ${storeCondition}
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             WHERE p.is_active = true
             ${searchCondition}
         `;
 
-        const countResult = await db.query(countQuery, countParams);
+        const countResult = await pool.query(countQuery, countParams);
         const total = parseInt(countResult.rows[0]?.total || 0);
 
         return res.status(200).json({
@@ -1128,16 +1161,26 @@ async function getProductInventoryDetail(req, res) {
         const { productId } = req.params;
 
         // Get product info
-        const productResult = await db.query(`
+        const productResult = await pool.query(`
             SELECT 
                 p.id,
                 p.name,
+<<<<<<< HEAD
                 p.code,
                 p.description,
                 p.is_active,
                 (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+=======
+                p.code as sku,
+                pv.barcode,
+                p.description,
+                p.is_active,
+                p.image_url
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             FROM dim_products p
+            LEFT JOIN dim_product_variants pv ON p.id = pv.product_id
             WHERE p.id = $1
+            LIMIT 1
         `, [productId]);
 
         if (productResult.rows.length === 0) {
@@ -1150,24 +1193,38 @@ async function getProductInventoryDetail(req, res) {
         const product = productResult.rows[0];
 
         // Get variants with prices
-        const variantsResult = await db.query(`
+        const variantsResult = await pool.query(`
             SELECT 
                 v.id,
+<<<<<<< HEAD
                 v.variant_name,
                 v.sku as variant_sku,
                 v.selling_price,
+=======
+                v.sku as name,
+                v.sku as variant_sku,
+                v.selling_price as sale_price,
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
                 v.cost_price,
-                COALESCE(SUM(fi.quantity_available), 0) as total_stock
+                COALESCE(SUM(fis.quantity_on_hand), 0) as total_stock
             FROM dim_product_variants v
+<<<<<<< HEAD
             LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id
             WHERE v.product_id = $1
             GROUP BY v.id, v.variant_name, v.sku, v.selling_price, v.cost_price
             ORDER BY v.variant_name ASC
+=======
+            LEFT JOIN fact_inventory_stocks fis ON v.id = fis.variant_id
+            WHERE v.product_id = $1
+            GROUP BY v.id, v.sku, v.selling_price, v.cost_price
+            ORDER BY v.sku ASC
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
         `, [productId]);
 
         // Get inventory by store for each variant
-        const inventoryResult = await db.query(`
+        const inventoryResult = await pool.query(`
             SELECT 
+<<<<<<< HEAD
                 fi.variant_id,
                 s.id as store_id,
                 s.name as store_name,
@@ -1181,6 +1238,20 @@ async function getProductInventoryDetail(req, res) {
             INNER JOIN dim_stores s ON fi.store_id = s.id
             INNER JOIN subdim_cities c ON s.city_id = c.id
             INNER JOIN dim_product_variants v ON fi.variant_id = v.id
+=======
+                fis.variant_id,
+                s.id as store_id,
+                s.name as store_name,
+                s.code as store_code,
+                s.address as city,
+                fis.quantity_on_hand as stock,
+                fis.quantity_reserved,
+                fis.min_stock_level as reorder_point,
+                fis.last_updated as updated_at
+            FROM fact_inventory_stocks fis
+            INNER JOIN dim_stores s ON fis.store_id = s.id
+            INNER JOIN dim_product_variants v ON fis.variant_id = v.id
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             WHERE v.product_id = $1
             ORDER BY s.name ASC
         `, [productId]);

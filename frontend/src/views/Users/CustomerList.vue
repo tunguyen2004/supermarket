@@ -20,7 +20,7 @@
         <div v-if="!isMobile" class="advanced-filters">
           <el-dropdown @command="handleGroupFilter">
             <el-button>
-              {{ selectedGroup || "Nhóm khách hàng" }}
+              {{ selectedGroupName || "Nhóm khách hàng" }}
               <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </el-button>
             <template #dropdown>
@@ -28,9 +28,9 @@
                 <el-dropdown-item :command="null">Tất cả</el-dropdown-item>
                 <el-dropdown-item
                   v-for="group in customerGroups"
-                  :key="group"
-                  :command="group"
-                  >{{ group }}</el-dropdown-item
+                  :key="group.id"
+                  :command="group.id"
+                  >{{ group.name }}</el-dropdown-item
                 >
               </el-dropdown-menu>
             </template>
@@ -41,8 +41,13 @@
         </div>
       </div>
 
-      <el-table v-if="!isMobile" :data="pagedCustomers" style="width: 100%">
-        <el-table-column label="Khách hàng" min-width="250">
+      <el-table
+        v-if="!isMobile"
+        :data="pagedCustomers"
+        style="width: 100%"
+        v-loading="loading"
+      >
+        <el-table-column label="Khách hàng" min-width="280">
           <template #default="scope">
             <div class="customer-info">
               <el-avatar :size="40" :src="scope.row.avatarUrl">{{
@@ -51,6 +56,7 @@
               <div>
                 <div class="customer-name">{{ scope.row.name }}</div>
                 <div class="customer-contact">{{ scope.row.phone }}</div>
+                <div class="customer-code">{{ scope.row.code }}</div>
               </div>
             </div>
           </template>
@@ -69,9 +75,15 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="Thao tác" width="120" align="center">
+        <el-table-column label="Thao tác" width="150" align="center">
           <template #default="scope">
             <div class="action-buttons">
+              <el-button
+                size="small"
+                :icon="View"
+                circle
+                @click="fetchCustomerDetail(scope.row.id)"
+              />
               <el-button
                 size="small"
                 :icon="Edit"
@@ -150,7 +162,7 @@
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredCustomers.length"
+        :total="totalCustomers"
         :page-size="pageSize"
         v-model:current-page="currentPage"
       />
@@ -163,8 +175,14 @@
       size="450px"
     >
       <el-form :model="form" label-position="top">
+        <el-form-item label="Mã khách hàng">
+          <el-input v-model="form.code" placeholder="Nhập mã khách hàng" />
+        </el-form-item>
         <el-form-item label="Tên khách hàng" required>
-          <el-input v-model="form.name" placeholder="Nhập tên khách hàng" />
+          <el-input
+            v-model="form.full_name"
+            placeholder="Nhập tên khách hàng"
+          />
         </el-form-item>
         <el-form-item label="Số điện thoại" required>
           <el-input v-model="form.phone" placeholder="Nhập số điện thoại" />
@@ -172,13 +190,43 @@
         <el-form-item label="Email">
           <el-input v-model="form.email" placeholder="Nhập email" />
         </el-form-item>
+        <el-form-item label="Địa chỉ">
+          <el-input v-model="form.address" placeholder="Nhập địa chỉ" />
+        </el-form-item>
+        <el-form-item label="Ngày sinh">
+          <el-date-picker
+            v-model="form.date_of_birth"
+            type="date"
+            placeholder="Chọn ngày sinh"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="Giới tính">
+          <el-select v-model="form.gender" placeholder="Chọn giới tính">
+            <el-option label="Nam" value="Nam" />
+            <el-option label="Nữ" value="Nữ" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="Nhóm khách hàng">
-          <el-select v-model="form.group" placeholder="Chọn nhóm khách hàng">
+          <el-select
+            v-model="form.customer_group_id"
+            placeholder="Chọn nhóm khách hàng"
+          >
             <el-option
               v-for="group in customerGroups"
-              :key="group"
-              :label="group"
-              :value="group"
+              :key="group.id"
+              :label="group.name"
+              :value="group.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Thành phố">
+          <el-select v-model="form.city_id" placeholder="Chọn thành phố">
+            <el-option
+              v-for="city in cities"
+              :key="city.id"
+              :label="city.name"
+              :value="city.id"
             />
           </el-select>
         </el-form-item>
@@ -188,11 +236,184 @@
         <el-button type="primary" @click="handleSave">Lưu</el-button>
       </template>
     </el-drawer>
+
+    <!-- Customer Detail Dialog -->
+    <el-dialog
+      v-model="detailDialogVisible"
+      title="Chi tiết khách hàng"
+      width="90%"
+      :style="{ 'max-width': '800px' }"
+    >
+      <div v-if="selectedCustomer" class="customer-detail">
+        <div class="detail-header">
+          <el-avatar :size="80" class="detail-avatar">{{
+            selectedCustomer.full_name.charAt(0)
+          }}</el-avatar>
+          <div class="detail-info">
+            <h2>{{ selectedCustomer.full_name }}</h2>
+            <p class="customer-code">{{ selectedCustomer.code }}</p>
+            <el-tag
+              :type="
+                selectedCustomer.group_name === 'Khách VIP' ? 'warning' : 'info'
+              "
+            >
+              {{ selectedCustomer.group_name }}
+            </el-tag>
+          </div>
+        </div>
+
+        <el-divider />
+
+        <div class="detail-content">
+          <el-row :gutter="24">
+            <el-col :xs="24" :md="12">
+              <div class="info-section">
+                <h4>Thông tin cơ bản</h4>
+                <div class="info-item">
+                  <label>Số điện thoại:</label>
+                  <span>{{ selectedCustomer.phone }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Email:</label>
+                  <span>{{ selectedCustomer.email }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Địa chỉ:</label>
+                  <span>{{ selectedCustomer.address }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Thành phố:</label>
+                  <span>{{ selectedCustomer.city_name }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Ngày sinh:</label>
+                  <span>{{
+                    selectedCustomer.date_of_birth
+                      ? new Date(
+                          selectedCustomer.date_of_birth,
+                        ).toLocaleDateString("vi-VN")
+                      : "Chưa có"
+                  }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Giới tính:</label>
+                  <span>{{ selectedCustomer.gender }}</span>
+                </div>
+              </div>
+            </el-col>
+            <el-col :xs="24" :md="12">
+              <div class="info-section">
+                <h4>Thống kê mua hàng</h4>
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <div class="stat-value">
+                      {{ selectedCustomer.total_orders }}
+                    </div>
+                    <div class="stat-label">Đơn hàng</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-value">
+                      {{
+                        formatCurrency(
+                          parseFloat(selectedCustomer.total_spent || 0),
+                        )
+                      }}
+                    </div>
+                    <div class="stat-label">Tổng chi tiêu</div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-value">
+                      {{ selectedCustomer.discount_percentage }}%
+                    </div>
+                    <div class="stat-label">Chiết khấu</div>
+                  </div>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+
+          <el-divider />
+
+          <div class="recent-orders">
+            <h4>Gần đây nhất</h4>
+            <el-table
+              :data="selectedCustomer.recent_orders || []"
+              style="width: 100%"
+            >
+              <el-table-column prop="order_code" label="Mã đơn" width="150" />
+              <el-table-column label="Ngày" width="120">
+                <template #default="scope">
+                  {{
+                    new Date(scope.row.created_at).toLocaleDateString("vi-VN")
+                  }}
+                </template>
+              </el-table-column>
+              <el-table-column label="Trạng thái" width="120">
+                <template #default="scope">
+                  <el-tag
+                    :type="
+                      scope.row.status === 'completed'
+                        ? 'success'
+                        : scope.row.status === 'pending'
+                        ? 'warning'
+                        : 'danger'
+                    "
+                    size="small"
+                  >
+                    {{
+                      scope.row.status === "completed"
+                        ? "Hoàn thành"
+                        : scope.row.status === "pending"
+                        ? "Chờ xử lý"
+                        : "Hủy"
+                    }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Thanh toán" width="120">
+                <template #default="scope">
+                  <el-tag
+                    :type="
+                      scope.row.payment_status === 'paid'
+                        ? 'success'
+                        : 'warning'
+                    "
+                    size="small"
+                  >
+                    {{
+                      scope.row.payment_status === "paid"
+                        ? "Đã thanh toán"
+                        : "Chưa thanh toán"
+                    }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="Số tiền" align="right">
+                <template #default="scope">
+                  <span class="total-spent">{{
+                    formatCurrency(parseFloat(scope.row.final_amount))
+                  }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="detailDialogVisible = false">Đóng</el-button>
+          <el-button type="primary" @click="openDrawer(selectedCustomer)"
+            >Chỉnh sửa</el-button
+          >
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from "vue";
 import {
   Search,
   Plus,
@@ -200,18 +421,17 @@ import {
   Delete,
   ArrowDown,
   PriceTag,
+  View,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import customerService from "@/services/customerService";
 
 // --- RESPONSIVE STATE ---
 const isMobile = ref(false);
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
 };
-onMounted(() => {
-  checkScreenSize();
-  window.addEventListener("resize", checkScreenSize);
-});
+
 onUnmounted(() => {
   window.removeEventListener("resize", checkScreenSize);
 });
@@ -221,159 +441,212 @@ const search = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
 const selectedGroup = ref(null);
-
-const customers = ref([
-  {
-    id: 1,
-    name: "Trần Văn An",
-    phone: "0905123456",
-    email: "an.tv@example.com",
-    group: "Khách VIP",
-    totalSpent: 15600000,
-    avatarUrl: "",
-  },
-  {
-    id: 2,
-    name: "Nguyễn Thị Bình",
-    phone: "0913654321",
-    email: "binh.nt@example.com",
-    group: "Khách thân thiết",
-    totalSpent: 8250000,
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-  },
-  {
-    id: 3,
-    name: "Lê Hoàng Cường",
-    phone: "0987111222",
-    email: "cuong.lh@example.com",
-    group: "Khách sỉ",
-    totalSpent: 22000000,
-    avatarUrl: "",
-  },
-  {
-    id: 4,
-    name: "Phạm Mỹ Duyên",
-    phone: "0933555888",
-    email: "duyen.pm@example.com",
-    group: "Khách lẻ",
-    totalSpent: 150000,
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026705d",
-  },
-  {
-    id: 5,
-    name: "Võ Thành Danh",
-    phone: "0977999000",
-    email: "danh.vt@example.com",
-    group: "Khách mới",
-    totalSpent: 320000,
-    avatarUrl: "",
-  },
-  {
-    id: 6,
-    name: "Đỗ Ngọc Giang",
-    phone: "0945121212",
-    email: "giang.dn@example.com",
-    group: "Khách thân thiết",
-    totalSpent: 5400000,
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026706d",
-  },
-]);
+const loading = ref(false);
+const customers = ref([]);
+const totalCustomers = ref(0);
+const customerGroups = ref([]);
+const cities = ref([]);
+const selectedCustomer = ref(null);
+const detailDialogVisible = ref(false);
 
 // --- FORM STATE & DRAWER ---
 const drawerVisible = ref(false);
 const isEditMode = ref(false);
 const form = reactive({
   id: null,
-  name: "",
+  code: "",
+  full_name: "",
   phone: "",
   email: "",
-  group: "Khách mới",
+  address: "",
+  date_of_birth: "",
+  gender: "Nam",
+  customer_group_id: null,
+  city_id: null,
 });
 
 const formatCurrency = (value) =>
   value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
 
-const customerGroups = computed(() => {
-  const groups = customers.value.map((c) => c.group);
-  return [...new Set(groups)]; // Lấy các nhóm duy nhất
-});
-
-const filteredCustomers = computed(() => {
-  let result = customers.value;
-  // Lọc theo từ khóa tìm kiếm
-  if (search.value) {
-    const searchTerm = search.value.toLowerCase();
-    result = result.filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.phone.includes(searchTerm) ||
-        item.email.toLowerCase().includes(searchTerm)
-    );
+// API methods
+const fetchCustomers = async () => {
+  try {
+    loading.value = true;
+    const params = {
+      page: currentPage.value,
+      limit: pageSize,
+      search: search.value,
+      groupId: selectedGroup.value,
+    };
+    const response = await customerService.getCustomers(params);
+    if (response.success) {
+      customers.value = response.data.map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.full_name,
+        phone: item.phone,
+        email: item.email,
+        group: item.group_name,
+        totalSpent: parseFloat(item.total_lifetime_value || 0),
+        avatarUrl: "",
+        address: item.address,
+        date_of_birth: item.date_of_birth,
+        gender: item.gender,
+        city_name: item.city_name,
+        discount_percentage: item.discount_percentage,
+      }));
+      totalCustomers.value = response.pagination.total;
+    }
+  } catch (error) {
+    ElMessage.error("Không thể tải danh sách khách hàng");
+  } finally {
+    loading.value = false;
   }
-  // Lọc theo nhóm khách hàng
-  if (selectedGroup.value) {
-    result = result.filter((item) => item.group === selectedGroup.value);
-  }
-  return result;
-});
+};
 
+const fetchCustomerGroups = async () => {
+  try {
+    const response = await customerService.getCustomerGroups();
+    if (response.success) {
+      customerGroups.value = response.data;
+    }
+  } catch (error) {
+    console.error("Error fetching customer groups:", error);
+  }
+};
+
+const fetchCities = async () => {
+  try {
+    const response = await customerService.getCities();
+    if (response.success) {
+      cities.value = response.data;
+    }
+  } catch (error) {
+    console.error("Error fetching cities:", error);
+  }
+};
+
+const fetchCustomerDetail = async (id) => {
+  try {
+    loading.value = true;
+    const response = await customerService.getCustomerById(id);
+    if (response.success) {
+      selectedCustomer.value = response.data;
+      detailDialogVisible.value = true;
+    }
+  } catch (error) {
+    ElMessage.error("Không thể tải thông tin khách hàng");
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Computed properties
 const pagedCustomers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredCustomers.value.slice(start, start + pageSize);
+  return customers.value;
+});
+
+const selectedGroupName = computed(() => {
+  if (!selectedGroup.value) return null;
+  const group = customerGroups.value.find((g) => g.id === selectedGroup.value);
+  return group ? group.name : null;
 });
 
 const onSearch = () => {
   currentPage.value = 1;
+  fetchCustomers();
 };
 
-const handleGroupFilter = (group) => {
-  selectedGroup.value = group;
+const handleGroupFilter = (groupId) => {
+  selectedGroup.value = groupId; // null hoặc group id
   currentPage.value = 1;
+  fetchCustomers();
 };
 
 // --- CRUD FUNCTIONS ---
 const openDrawer = (customer = null) => {
   if (customer) {
     isEditMode.value = true;
-    Object.assign(form, customer);
+    // Check if customer is from detail (selectedCustomer) or from list
+    const customerData = customer.full_name
+      ? customer
+      : {
+          id: customer.id,
+          code: customer.code,
+          full_name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          address: customer.address,
+          date_of_birth: customer.date_of_birth,
+          gender: customer.gender,
+          customer_group_id: customer.customer_group_id,
+          city_id: customer.city_id,
+        };
+
+    Object.assign(form, {
+      id: customerData.id,
+      code: customerData.code,
+      full_name: customerData.full_name,
+      phone: customerData.phone,
+      email: customerData.email,
+      address: customerData.address,
+      date_of_birth: customerData.date_of_birth
+        ? customerData.date_of_birth.split("T")[0]
+        : "",
+      gender: customerData.gender,
+      customer_group_id: customerData.customer_group_id,
+      city_id: customerData.city_id,
+    });
   } else {
     isEditMode.value = false;
     Object.assign(form, {
-      // Reset form
       id: null,
-      name: "",
+      code: "",
+      full_name: "",
       phone: "",
       email: "",
-      group: "Khách mới",
+      address: "",
+      date_of_birth: "",
+      gender: "Nam",
+      customer_group_id: null,
+      city_id: null,
     });
   }
   drawerVisible.value = true;
 };
 
-const handleSave = () => {
-  if (!form.name || !form.phone) {
+const handleSave = async () => {
+  if (!form.full_name || !form.phone) {
     ElMessage.error("Vui lòng nhập Tên và Số điện thoại.");
     return;
   }
 
-  if (isEditMode.value) {
-    // Update logic
-    const index = customers.value.findIndex((c) => c.id === form.id);
-    if (index !== -1) {
-      customers.value[index] = { ...form };
+  try {
+    loading.value = true;
+    if (isEditMode.value) {
+      const response = await customerService.updateCustomer(form.id, form);
+      if (response.success) {
+        ElMessage.success("Cập nhật khách hàng thành công!");
+        drawerVisible.value = false;
+        fetchCustomers();
+      }
+    } else {
+      const response = await customerService.createCustomer(form);
+      if (response.success) {
+        ElMessage.success("Thêm khách hàng thành công!");
+        drawerVisible.value = false;
+        fetchCustomers();
+      }
     }
-  } else {
-    // Create logic
-    customers.value.unshift({
-      ...form,
-      id: Date.now(), // Tạo ID tạm thời
-      totalSpent: 0,
-      avatarUrl: "",
-    });
+  } catch (error) {
+    ElMessage.error(
+      isEditMode.value
+        ? "Không thể cập nhật khách hàng"
+        : "Không thể thêm khách hàng",
+    );
+  } finally {
+    loading.value = false;
   }
-
-  ElMessage.success("Lưu khách hàng thành công!");
-  drawerVisible.value = false;
 };
 
 const handleDelete = (customer) => {
@@ -384,16 +657,34 @@ const handleDelete = (customer) => {
       confirmButtonText: "Đồng ý",
       cancelButtonText: "Hủy",
       type: "warning",
-    }
+    },
   )
-    .then(() => {
-      customers.value = customers.value.filter((c) => c.id !== customer.id);
-      ElMessage.success("Xóa thành công");
+    .then(async () => {
+      try {
+        const response = await customerService.deleteCustomer(customer.id);
+        if (response.success) {
+          ElMessage.success("Xóa khách hàng thành công");
+          fetchCustomers();
+        }
+      } catch (error) {
+        ElMessage.error("Không thể xóa khách hàng");
+      }
     })
     .catch(() => {});
 };
-</script>
 
+// Watchers
+watch(currentPage, () => {
+  fetchCustomers();
+});
+
+// Initialize data
+onMounted(async () => {
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+  await Promise.all([fetchCustomers(), fetchCustomerGroups(), fetchCities()]);
+});
+</script>
 <style scoped>
 .customer-info {
   display: flex;
@@ -404,19 +695,126 @@ const handleDelete = (customer) => {
   font-weight: 600;
   color: #111827;
 }
-.customer-contact {
-  font-size: 0.85rem;
-  color: #6b7280;
+.customer-code {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 400;
 }
 .total-spent {
   font-weight: 500;
   color: #166534; /* Green for money */
 }
 
+/* Customer detail dialog styles (FIX: bỏ nesting SCSS) */
+.customer-detail .detail-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.customer-detail .detail-header .detail-avatar {
+  flex-shrink: 0;
+}
+.customer-detail .detail-header .detail-info h2 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.customer-detail .detail-header .customer-code {
+  margin: 4px 0 8px 0;
+}
+
+.customer-detail .detail-content .info-section {
+  margin-bottom: 20px;
+}
+.customer-detail .detail-content .info-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+.customer-detail .detail-content .info-section .info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.customer-detail .detail-content .info-section .info-item label {
+  font-weight: 500;
+  color: #6b7280;
+  min-width: 120px;
+}
+.customer-detail .detail-content .info-section .info-item span {
+  color: #111827;
+  text-align: right;
+}
+
+.customer-detail .detail-content .info-section .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+.customer-detail .detail-content .info-section .stats-grid .stat-item {
+  text-align: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.customer-detail
+  .detail-content
+  .info-section
+  .stats-grid
+  .stat-item
+  .stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+.customer-detail
+  .detail-content
+  .info-section
+  .stats-grid
+  .stat-item
+  .stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.customer-detail .detail-content .recent-orders h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Mobile responsive for customer detail */
+@media (max-width: 768px) {
+  .customer-detail .detail-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .customer-detail .detail-header .detail-info h2 {
+    font-size: 1.25rem;
+  }
+
+  .customer-detail .detail-content .info-section .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .customer-detail .detail-content .info-section .info-item span {
+    text-align: left;
+  }
+}
+
 /* Thêm style cho card-value của mobile */
 .mobile-card .card-value.total-spent {
   font-size: 1rem;
 }
+
 /* ----- GLOBAL LAYOUT & TYPOGRAPHY ----- */
 .page-container {
   padding: 16px;
@@ -543,6 +941,7 @@ const handleDelete = (customer) => {
   .pagination-container {
     justify-content: flex-end;
   }
+
   .page-container :deep(.el-button--primary) {
     background-color: #2563eb;
     border-color: #2563eb;
