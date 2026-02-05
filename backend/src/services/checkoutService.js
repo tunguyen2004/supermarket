@@ -58,7 +58,7 @@ async function getAllCheckouts(options = {}) {
   if (search) {
     whereClause += ` AND (
       o.order_code ILIKE $${paramIndex} OR 
-      c.name ILIKE $${paramIndex} OR
+      c.full_name ILIKE $${paramIndex} OR
       c.email ILIKE $${paramIndex} OR
       c.phone ILIKE $${paramIndex}
     )`;
@@ -86,7 +86,7 @@ async function getAllCheckouts(options = {}) {
       o.order_code,
       o.date_key,
       o.customer_id,
-      c.name as customer_name,
+      c.full_name as customer_name,
       c.email as customer_email,
       c.phone as customer_phone,
       o.store_id,
@@ -166,7 +166,7 @@ async function getCheckoutById(id) {
       o.order_code,
       o.date_key,
       o.customer_id,
-      c.name as customer_name,
+      c.full_name as customer_name,
       c.email as customer_email,
       c.phone as customer_phone,
       c.address as customer_address,

@@ -2,10 +2,13 @@
  * Swagger Configuration - Supermarket Management System
  * @module config/swagger
  * @description API Documentation với Swagger/OpenAPI 3.0
- * @version 3.0.0
- * @updated 01/02/2026
+ * @version 3.1.0
+ * @updated 05/02/2026
  * 
- * Tổng cộng: 129 APIs - 21 Modules
+ * Tổng cộng: 129+ APIs - 21 Modules
+ * Database: PostgreSQL
+ * Authentication: JWT Bearer Token
+ * Rate Limiting: Enabled
  */
 
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -16,53 +19,90 @@ const options = {
     openapi: '3.0.0',
     info: {
       title: 'Supermarket Management System API',
-      version: '3.0.0',
+      version: '3.1.0',
       description: `
 # 🛒 Supermarket Management System API Documentation
 
 Hệ thống quản lý siêu thị mini với đầy đủ các tính năng:
-- Quản lý sản phẩm, danh mục, tồn kho
-- Quản lý đơn hàng, khách hàng, nhà cung cấp
-- Hệ thống POS (Point of Sale)
-- Báo cáo doanh thu, sổ quỹ
-- Quản lý khuyến mại, vận chuyển
+- ✅ Quản lý sản phẩm, danh mục, tồn kho
+- ✅ Quản lý đơn hàng, khách hàng, nhà cung cấp
+- ✅ Hệ thống POS (Point of Sale)
+- ✅ Báo cáo doanh thu, sổ quỹ
+- ✅ Quản lý khuyến mại, vận chuyển
+- ✅ Quản lý tài khoản ngân hàng
 
 ## 🔐 Authentication
-Sử dụng JWT Bearer Token. Lấy token từ endpoint \`/api/auth/login\`.
+Sử dụng JWT Bearer Token. Lấy token từ endpoint \`POST /api/auth/login\`.
 
-## 📊 Tổng quan Modules
-| Module | APIs | Description |
-|--------|------|-------------|
-| Authentication | 4 | Đăng nhập, đăng xuất, refresh token |
-| Staff | 6 | Quản lý nhân viên |
-| Profile | 5 | Quản lý hồ sơ cá nhân |
-| Products | 10 | Quản lý sản phẩm |
-| Collections | 6 | Quản lý danh mục |
-| Dashboard | 7 | Tổng quan, thống kê |
-| Catalog | 5 | Bảng giá |
-| Inventory | 9 | Quản lý tồn kho |
-| Product Images | 7 | Ảnh sản phẩm |
-| Orders | 7 | Quản lý đơn hàng |
-| Customers | 8 | Quản lý khách hàng |
-| Suppliers | 5 | Nhà cung cấp |
-| Discounts | 8 | Khuyến mại |
-| Transactions | 7 | Sổ quỹ |
-| Shipments | 8 | Vận chuyển |
-| Order Returns | 4 | Hoàn trả |
-| Reports | 5 | Báo cáo |
-| Inventory Lookup | 2 | Tra cứu tồn kho |
-| POS | 10 | Point of Sale |
-| Bank Accounts | 5 | Tài khoản ngân hàng |
-| Checkouts | 4 | Đơn chưa hoàn tất |
+**Quy trình:**
+1. Gọi \`POST /api/auth/login\` với username và password
+2. Lấy token từ response
+3. Thêm token vào header: \`Authorization: Bearer <token>\`
+4. Dùng \`POST /api/auth/refresh\` để cập nhật token khi sắp hết hạn
 
-**Tổng cộng: 129 APIs**
+## 🚀 Getting Started
+- Base URL: \`http://localhost:5000\` (Development) hoặc \`https://api.supermarket.com\` (Production)
+- Response Format: JSON
+- Pagination: \`page\` và \`limit\` query parameters
+- Rate Limiting: 100 requests/15 minutes per IP
+
+## 📊 Tổng quan Modules (129 APIs)
+
+| # | Module | APIs | Description |
+|---|--------|------|-------------|
+| 1 | Authentication | 4 | Đăng nhập, đăng xuất, refresh token |
+| 2 | Staff | 6 | Quản lý nhân viên |
+| 3 | Profile | 5 | Quản lý hồ sơ cá nhân |
+| 4 | Products | 10 | Quản lý sản phẩm |
+| 5 | Collections | 6 | Quản lý danh mục |
+| 6 | Dashboard | 7 | Tổng quan, thống kê |
+| 7 | Catalog | 5 | Bảng giá |
+| 8 | Inventory | 9 | Quản lý tồn kho |
+| 9 | Product Images | 7 | Ảnh sản phẩm |
+| 10 | Orders | 7 | Quản lý đơn hàng |
+| 11 | Customers | 8 | Quản lý khách hàng |
+| 12 | Suppliers | 5 | Nhà cung cấp |
+| 13 | Discounts | 8 | Khuyến mại |
+| 14 | Transactions | 7 | Sổ quỹ |
+| 15 | Shipments | 8 | Vận chuyển |
+| 16 | Order Returns | 4 | Hoàn trả |
+| 17 | Reports | 5 | Báo cáo |
+| 18 | POS | 10 | Point of Sale |
+| 19 | Bank Accounts | 5 | Tài khoản ngân hàng |
+| 20 | Checkouts | 4 | Đơn chưa hoàn tất |
+| 21 | Customer Groups | 3 | Nhóm khách hàng |
+
+## 🔄 Response Format
+\`\`\`json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": {},
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5
+  }
+}
+\`\`\`
+
+## ⚠️ Error Handling
+- \`400\`: Bad Request - Dữ liệu không hợp lệ
+- \`401\`: Unauthorized - Token không hợp lệ/hết hạn
+- \`403\`: Forbidden - Không có quyền thực hiện
+- \`404\`: Not Found - Không tìm thấy resource
+- \`422\`: Unprocessable Entity - Validation error
+- \`429\`: Too Many Requests - Vượt quá rate limit
+- \`500\`: Internal Server Error - Lỗi server
       `,
       contact: {
-        name: 'API Support',
-        email: 'support@supermarket.com'
+        name: 'API Support Team',
+        email: 'support@supermarket.com',
+        url: 'https://supermarket.com/support'
       },
       license: {
-        name: 'MIT',
+        name: 'MIT License',
         url: 'https://opensource.org/licenses/MIT'
       }
     },
@@ -83,20 +123,21 @@ Sử dụng JWT Bearer Token. Lấy token từ endpoint \`/api/auth/login\`.
       { name: 'Products', description: 'Product Management - Quản lý sản phẩm' },
       { name: 'Collections', description: 'Category Management - Quản lý danh mục' },
       { name: 'Dashboard', description: 'Dashboard - Tổng quan & thống kê' },
-      { name: 'Catalogs', description: 'Price Catalog - Bảng giá' },
+      { name: 'Catalogs', description: 'Price Catalog - Bảng giá sản phẩm' },
       { name: 'Inventory', description: 'Inventory Management - Quản lý tồn kho' },
       { name: 'Product Images', description: 'Product Images - Ảnh sản phẩm' },
       { name: 'Orders', description: 'Order Management - Quản lý đơn hàng' },
       { name: 'Customers', description: 'Customer Management - Quản lý khách hàng' },
       { name: 'Customer Groups', description: 'Customer Groups - Nhóm khách hàng' },
-      { name: 'Suppliers', description: 'Supplier Management - Nhà cung cấp' },
-      { name: 'Discounts', description: 'Discount Management - Khuyến mại' },
-      { name: 'Transactions', description: 'Cashbook/Transactions - Sổ quỹ' },
-      { name: 'Shipments', description: 'Shipment Management - Vận chuyển' },
-      { name: 'Reports', description: 'Reports - Báo cáo doanh thu' },
+      { name: 'Suppliers', description: 'Supplier Management - Quản lý nhà cung cấp' },
+      { name: 'Discounts', description: 'Discount Management - Quản lý khuyến mại' },
+      { name: 'Transactions', description: 'Cashbook - Quản lý sổ quỹ & giao dịch' },
+      { name: 'Shipments', description: 'Shipment Management - Quản lý vận chuyển' },
+      { name: 'Order Returns', description: 'Order Returns - Quản lý hoàn trả' },
+      { name: 'Reports', description: 'Reports - Báo cáo doanh thu & thống kê' },
       { name: 'POS', description: 'Point of Sale - Bán hàng tại quầy' },
       { name: 'Bank Accounts', description: 'Bank Account Management - Tài khoản ngân hàng' },
-      { name: 'Checkouts', description: 'Abandoned Checkouts - Đơn chưa hoàn tất' }
+      { name: 'Checkouts', description: 'Checkouts - Đơn chưa hoàn tất' }
     ],
     components: {
       securitySchemes: {
@@ -109,23 +150,68 @@ Sử dụng JWT Bearer Token. Lấy token từ endpoint \`/api/auth/login\`.
       },
       schemas: {
         // ==================== COMMON SCHEMAS ====================
+        SuccessResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Operation successful' },
+            data: { type: 'object', description: 'Response data' }
+          }
+        },
+        PaginatedResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Retrieved successfully' },
+            data: {
+              type: 'array',
+              items: { type: 'object' }
+            },
+            pagination: { $ref: '#/components/schemas/Pagination' }
+          }
+        },
         Pagination: {
           type: 'object',
           properties: {
-            page: { type: 'integer', example: 1 },
-            limit: { type: 'integer', example: 20 },
-            total: { type: 'integer', example: 100 },
-            totalPages: { type: 'integer', example: 5 }
+            page: { type: 'integer', example: 1, description: 'Current page number' },
+            limit: { type: 'integer', example: 20, description: 'Items per page' },
+            total: { type: 'integer', example: 100, description: 'Total items' },
+            totalPages: { type: 'integer', example: 5, description: 'Total pages' }
           }
         },
         Error: {
           type: 'object',
           properties: {
             success: { type: 'boolean', example: false },
-            message: { type: 'string' },
+            message: { type: 'string', example: 'An error occurred' },
             errors: {
               type: 'array',
-              items: { type: 'object' }
+              items: {
+                type: 'object',
+                properties: {
+                  field: { type: 'string', description: 'Field name' },
+                  message: { type: 'string', description: 'Error message' }
+                }
+              }
+            },
+            timestamp: { type: 'string', format: 'date-time', description: 'Error timestamp' }
+          }
+        },
+        ValidationError: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            message: { type: 'string', example: 'Validation failed' },
+            errors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  field: { type: 'string' },
+                  message: { type: 'string' },
+                  value: { type: 'string' }
+                }
+              }
             }
           }
         },
@@ -135,26 +221,29 @@ Sử dụng JWT Bearer Token. Lấy token từ endpoint \`/api/auth/login\`.
           type: 'object',
           required: ['username', 'password'],
           properties: {
-            username: { type: 'string', example: 'admin' },
-            password: { type: 'string', example: '1' }
+            username: { type: 'string', example: 'admin', minLength: 3, maxLength: 50, description: 'Tên đăng nhập' },
+            password: { type: 'string', example: 'password123', minLength: 6, description: 'Mật khẩu' }
           }
         },
         LoginResponse: {
           type: 'object',
           properties: {
-            status: { type: 'string', example: 'OK' },
+            success: { type: 'boolean', example: true },
             message: { type: 'string', example: 'Login successful' },
             data: {
               type: 'object',
               properties: {
                 id: { type: 'integer', example: 1 },
                 username: { type: 'string', example: 'admin' },
-                email: { type: 'string', example: 'admin@supermarket.com' },
+                email: { type: 'string', example: 'admin@supermarket.com', format: 'email' },
                 full_name: { type: 'string', example: 'Administrator' },
-                role_id: { type: 'integer', example: 1 },
+                role_id: { type: 'integer', example: 1, description: '1=Admin, 2=Manager, 3=Staff' },
                 role_name: { type: 'string', example: 'Admin' },
                 is_active: { type: 'boolean', example: true },
-                token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+                avatar_url: { type: 'string', nullable: true, description: 'URL ảnh đại diện' },
+                token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', description: 'JWT Bearer Token (hết hạn sau 24h)' },
+                refreshToken: { type: 'string', description: 'Token để làm mới access token' },
+                tokenExpires: { type: 'string', format: 'date-time', example: '2026-02-06T05:30:00Z', description: 'Thời gian token hết hạn' }
               }
             }
           }
@@ -1229,81 +1318,131 @@ Sử dụng JWT Bearer Token. Lấy token từ endpoint \`/api/auth/login\`.
         }
       },
       responses: {
-        UnauthorizedError: {
-          description: 'Không có quyền truy cập - Token không hợp lệ hoặc hết hạn',
+        Success200: {
+          description: 'Success - Operation completed successfully',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+            }
+          }
+        },
+        Success201: {
+          description: 'Created - Resource created successfully',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  message: { type: 'string', example: 'Resource created successfully' },
+                  data: { type: 'object', description: 'Created resource' }
+                }
+              }
+            }
+          }
+        },
+        ListSuccess: {
+          description: 'Success - Retrieved list',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/PaginatedResponse' }
+            }
+          }
+        },
+        BadRequest400: {
+          description: 'Bad Request - Invalid input data',
           content: {
             'application/json': {
               schema: {
                 type: 'object',
                 properties: {
                   success: { type: 'boolean', example: false },
-                  message: { type: 'string', example: 'Token không hợp lệ hoặc đã hết hạn' }
+                  message: { type: 'string', example: 'Invalid request data' },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        },
+        UnauthorizedError: {
+          description: 'Unauthorized - Token không hợp lệ hoặc hết hạn',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Unauthorized: Token không hợp lệ hoặc đã hết hạn' },
+                  timestamp: { type: 'string', format: 'date-time' }
                 }
               }
             }
           }
         },
         ForbiddenError: {
-          description: 'Không có quyền thực hiện hành động này',
+          description: 'Forbidden - Không có quyền thực hiện hành động',
           content: {
             'application/json': {
               schema: {
                 type: 'object',
                 properties: {
                   success: { type: 'boolean', example: false },
-                  message: { type: 'string', example: 'Bạn không có quyền thực hiện hành động này' }
+                  message: { type: 'string', example: 'Forbidden: Bạn không có quyền thực hiện hành động này' },
+                  timestamp: { type: 'string', format: 'date-time' }
                 }
               }
             }
           }
         },
         NotFoundError: {
-          description: 'Không tìm thấy resource',
+          description: 'Not Found - Không tìm thấy resource',
           content: {
             'application/json': {
               schema: {
                 type: 'object',
                 properties: {
                   success: { type: 'boolean', example: false },
-                  message: { type: 'string', example: 'Không tìm thấy dữ liệu' }
+                  message: { type: 'string', example: 'Not Found: Không tìm thấy dữ liệu' },
+                  timestamp: { type: 'string', format: 'date-time' }
                 }
               }
             }
           }
         },
         ValidationError: {
-          description: 'Dữ liệu không hợp lệ',
+          description: 'Unprocessable Entity - Validation error',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ValidationError' }
+            }
+          }
+        },
+        RateLimitError: {
+          description: 'Too Many Requests - Vượt quá rate limit (100 requests/15 min)',
           content: {
             'application/json': {
               schema: {
                 type: 'object',
                 properties: {
                   success: { type: 'boolean', example: false },
-                  message: { type: 'string', example: 'Dữ liệu không hợp lệ' },
-                  errors: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        field: { type: 'string' },
-                        message: { type: 'string' }
-                      }
-                    }
-                  }
+                  message: { type: 'string', example: 'Too many requests. Please try again after 15 minutes.' },
+                  retryAfter: { type: 'integer', example: 900, description: 'Seconds to wait' }
                 }
               }
             }
           }
         },
         ServerError: {
-          description: 'Lỗi server',
+          description: 'Internal Server Error - Lỗi server',
           content: {
             'application/json': {
               schema: {
                 type: 'object',
                 properties: {
                   success: { type: 'boolean', example: false },
-                  message: { type: 'string', example: 'Đã xảy ra lỗi, vui lòng thử lại sau' }
+                  message: { type: 'string', example: 'Internal Server Error: Đã xảy ra lỗi, vui lòng thử lại sau' },
+                  errorId: { type: 'string', description: 'Error tracking ID' },
+                  timestamp: { type: 'string', format: 'date-time' }
                 }
               }
             }
@@ -1333,22 +1472,56 @@ const setupSwagger = (app) => {
   // Swagger UI options
   const swaggerUiOptions = {
     customCss: `
-      .swagger-ui .topbar { display: none }
-      .swagger-ui .info { margin: 30px 0 }
-      .swagger-ui .info .title { font-size: 2.5em }
+      .swagger-ui .topbar { 
+        display: none 
+      }
+      .swagger-ui .info { 
+        margin: 30px 0;
+        border-bottom: 2px solid #2d6a4f;
+        padding-bottom: 20px;
+      }
+      .swagger-ui .info .title { 
+        font-size: 2.5em;
+        color: #1b4332;
+        font-weight: 600;
+      }
+      .swagger-ui .info .description {
+        color: #555;
+        line-height: 1.8;
+      }
+      .swagger-ui .scheme-container {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+      }
+      .swagger-ui .operation {
+        border-left: 4px solid #52b788;
+      }
+      .swagger-ui .btn {
+        border-radius: 4px;
+      }
+      .swagger-ui .btn.try-out {
+        background-color: #2d6a4f;
+      }
     `,
-    customSiteTitle: 'Supermarket API Documentation',
+    customSiteTitle: 'Supermarket Management System - API Documentation',
     customfavIcon: '/favicon.ico',
     swaggerOptions: {
       persistAuthorization: true,
       filter: true,
       showExtensions: true,
       showCommonExtensions: true,
-      docExpansion: 'none',
-      defaultModelsExpandDepth: 3,
-      defaultModelExpandDepth: 3,
+      docExpansion: 'list',
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 2,
       tagsSorter: 'alpha',
-      operationsSorter: 'alpha'
+      operationsSorter: 'method',
+      displayOperationId: false,
+      deepLinking: true,
+      presets: [
+        require('swagger-ui-express').presets.apis,
+        require('swagger-ui-express').SwaggerUIBundle.SwaggerUIStandalonePreset
+      ]
     }
   };
 
@@ -1358,10 +1531,22 @@ const setupSwagger = (app) => {
   // Serve swagger JSON spec
   app.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(specs);
   });
 
-  console.log('📚 Swagger documentation available at: /api-docs');
+  // Health check for documentation
+  app.get('/api-docs/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      message: 'API Documentation is available',
+      docs_url: '/api-docs',
+      spec_url: '/api-docs.json'
+    });
+  });
+
+  console.log('📚 Swagger documentation available at: http://localhost:5000/api-docs');
+  console.log('📋 OpenAPI spec available at: http://localhost:5000/api-docs.json');
 };
 
 module.exports = {

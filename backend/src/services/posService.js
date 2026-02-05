@@ -574,7 +574,7 @@ const getDrafts = async (req, res) => {
         s.full_name as created_by_name
       FROM fact_orders o
       LEFT JOIN dim_customers c ON o.customer_id = c.id
-      LEFT JOIN dim_staff s ON o.created_by = s.id
+      LEFT JOIN dim_users s ON o.created_by = s.id
       LEFT JOIN fact_order_items oi ON o.id = oi.order_id
       WHERE o.status = 'draft'
         ${storeFilter}
@@ -658,9 +658,9 @@ const getDraftById = async (req, res) => {
         oi.discount_amount,
         oi.total,
         p.name as product_name,
-        v.name as variant_name,
-        p.sku,
-        (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+        v.variant_name,
+        v.sku,
+        (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
       FROM fact_order_items oi
       JOIN dim_product_variants v ON oi.variant_id = v.id
       JOIN dim_products p ON v.product_id = p.id
@@ -707,6 +707,131 @@ const getDraftById = async (req, res) => {
 };
 
 /**
+ * PUT /api/pos/orders/draft/:id
+ * Cập nhật đơn hàng tạm (thêm/xóa/sửa items, cập nhật thông tin)
+ * 
+ * Body:
+ * - customer_id: ID khách hàng (nullable)
+ * - items: Danh sách sản phẩm mới (sẽ thay thế toàn bộ)
+ * - discount_amount: Số tiền giảm giá
+ * - discount_id: ID mã giảm giá
+ * - notes: Ghi chú
+ */
+const updateDraft = async (req, res) => {
+  const client = await db.pool.connect();
+  
+  try {
+    const { id } = req.params;
+    const {
+      customer_id,
+      items = [],
+      discount_amount = 0,
+      discount_id,
+      notes
+    } = req.body;
+
+    await client.query('BEGIN');
+
+    // Check if draft exists
+    const checkResult = await client.query(`
+      SELECT id, store_id FROM fact_orders WHERE id = $1 AND status = 'draft'
+    `, [id]);
+
+    if (checkResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn tạm'
+      });
+    }
+
+    const storeId = checkResult.rows[0].store_id;
+
+    // Calculate new subtotal
+    let subtotal = 0;
+    for (const item of items) {
+      const itemTotal = (item.unit_price || 0) * (item.quantity || 0);
+      subtotal += itemTotal;
+    }
+
+    const finalAmount = subtotal - discount_amount;
+
+    // Update order info
+    await client.query(`
+      UPDATE fact_orders
+      SET customer_id = $1,
+          subtotal = $2,
+          discount_amount = $3,
+          discount_id = $4,
+          final_amount = $5,
+          notes = $6,
+          updated_at = NOW()
+      WHERE id = $7
+    `, [
+      customer_id || null,
+      subtotal,
+      discount_amount,
+      discount_id || null,
+      finalAmount,
+      notes || null,
+      id
+    ]);
+
+    // Delete existing items
+    await client.query(`
+      DELETE FROM fact_order_items WHERE order_id = $1
+    `, [id]);
+
+    // Insert new items
+    for (const item of items) {
+      const itemSubtotal = (item.unit_price || 0) * (item.quantity || 0);
+      const itemDiscount = item.discount_amount || 0;
+      const itemTotal = itemSubtotal - itemDiscount;
+
+      await client.query(`
+        INSERT INTO fact_order_items (
+          order_id, variant_id, quantity, unit_price,
+          subtotal, discount_amount, tax_amount, total
+        ) VALUES ($1, $2, $3, $4, $5, $6, 0, $7)
+      `, [
+        id,
+        item.variant_id,
+        item.quantity,
+        item.unit_price || 0,
+        itemSubtotal,
+        itemDiscount,
+        itemTotal
+      ]);
+    }
+
+    await client.query('COMMIT');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật đơn tạm thành công',
+      data: {
+        draft_id: parseInt(id),
+        subtotal,
+        discount_amount,
+        final_amount: finalAmount,
+        item_count: items.length
+      }
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Update draft error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật đơn tạm',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
  * DELETE /api/pos/orders/draft/:id
  * Xóa đơn hàng tạm
  */
@@ -748,6 +873,7 @@ const deleteDraft = async (req, res) => {
       message: 'Xóa đơn tạm thành công'
     });
 
+
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Delete draft error:', error);
@@ -777,7 +903,7 @@ const getReceipt = async (req, res) => {
         o.date_key,
         o.created_at,
         o.store_id,
-        s.store_name,
+        s.name as store_name,
         s.address as store_address,
         s.phone as store_phone,
         o.customer_id,
@@ -793,9 +919,9 @@ const getReceipt = async (req, res) => {
         o.notes,
         st.full_name as cashier_name
       FROM fact_orders o
-      LEFT JOIN dim_stores s ON o.store_id = s.store_id
+      LEFT JOIN dim_stores s ON o.store_id = s.id
       LEFT JOIN dim_customers c ON o.customer_id = c.id
-      LEFT JOIN dim_staff st ON o.created_by = st.id
+      LEFT JOIN dim_users st ON o.created_by = st.id
       WHERE o.id = $1
     `, [id]);
 
@@ -813,7 +939,7 @@ const getReceipt = async (req, res) => {
       SELECT 
         oi.id,
         p.name as product_name,
-        v.name as variant_name,
+        v.variant_name,
         oi.quantity,
         oi.unit_price,
         oi.discount_amount,
@@ -1070,6 +1196,7 @@ module.exports = {
   saveDraft,
   getDrafts,
   getDraftById,
+  updateDraft,
   deleteDraft,
   getReceipt,
   validateDiscountCode,

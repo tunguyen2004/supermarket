@@ -211,6 +211,57 @@ router.get('/orders/drafts/:id',
 /**
  * @swagger
  * /api/pos/orders/draft/{id}:
+ *   put:
+ *     summary: Cập nhật đơn hàng tạm (thêm/xóa/sửa items)
+ *     tags: [POS]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customer_id:
+ *                 type: integer
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     variant_id:
+ *                       type: integer
+ *                     quantity:
+ *                       type: integer
+ *                     unit_price:
+ *                       type: number
+ *               discount_amount:
+ *                 type: number
+ *               discount_id:
+ *                 type: integer
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put('/orders/draft/:id', 
+  verifyToken, 
+  posService.updateDraft
+);
+
+/**
+ * @swagger
+ * /api/pos/orders/draft/{id}:
  *   delete:
  *     summary: Xóa đơn hàng tạm
  *     tags: [POS]

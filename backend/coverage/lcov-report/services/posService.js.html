@@ -2311,13 +2311,13 @@ const checkout = <span class="cstat-no" title="statement not covered" ><span cla
           v.id as variant_id,
           v.product_id,
           p.name as product_name,
-          v.name as variant_name,
-          v.sale_price,
+          v.variant_name,
+          v.selling_price,
           v.cost_price,
           COALESCE(fi.quantity_available, 0) as stock
         FROM dim_product_variants v
         JOIN dim_products p ON v.product_id = p.id
-        LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+        LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
         WHERE v.id = $1
       `, [item.variant_id, store_id]);
 &nbsp;
@@ -2340,7 +2340,7 @@ const checkout = <span class="cstat-no" title="statement not covered" ><span cla
         });
       }
 &nbsp;
-      const unitPrice = <span class="cstat-no" title="statement not covered" >item.unit_price || variant.sale_price;</span>
+      const unitPrice = <span class="cstat-no" title="statement not covered" >item.unit_price || variant.selling_price;</span>
       const itemSubtotal = <span class="cstat-no" title="statement not covered" >unitPrice * item.quantity;</span>
       const itemDiscount = <span class="cstat-no" title="statement not covered" >item.discount_amount || 0;</span>
       const itemTotal = <span class="cstat-no" title="statement not covered" >itemSubtotal - itemDiscount;</span>
@@ -2424,9 +2424,9 @@ const checkout = <span class="cstat-no" title="statement not covered" ><span cla
 &nbsp;
       // Update inventory
 <span class="cstat-no" title="statement not covered" >      await client.query(`</span>
-        UPDATE fact_inventory
-        SET quantity_available = quantity_available - $1,
-            updated_at = NOW()
+        UPDATE fact_inventory_stocks
+        SET quantity_on_hand = quantity_on_hand - $1,
+            last_updated = NOW()
         WHERE variant_id = $2 AND store_id = $3
       `, [item.quantity, item.variant_id, store_id]);
 &nbsp;
@@ -2532,18 +2532,18 @@ const searchProducts = <span class="cstat-no" title="statement not covered" ><sp
         SELECT 
           p.id as product_id,
           p.name as product_name,
-          p.sku,
-          p.barcode,
+          v.sku,
+          v.barcode,
           v.id as variant_id,
-          v.name as variant_name,
-          v.sale_price as price,
+          v.variant_name,
+          v.selling_price as price,
           COALESCE(fi.quantity_available, 0) as stock,
-          (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+          (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
         FROM dim_products p
         INNER JOIN dim_product_variants v ON p.id = v.product_id
-        LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+        LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
         WHERE p.is_active = true
-          AND (p.barcode = $1 OR v.barcode = $1)
+          AND v.barcode = $1
         LIMIT $3
       `, [searchTerm, store_id || 1, parseInt(limit)]);
     } else {
@@ -2553,21 +2553,21 @@ const searchProducts = <span class="cstat-no" title="statement not covered" ><sp
         SELECT 
           p.id as product_id,
           p.name as product_name,
-          p.sku,
-          p.barcode,
+          v.sku,
+          v.barcode,
           v.id as variant_id,
-          v.name as variant_name,
-          v.sale_price as price,
+          v.variant_name,
+          v.selling_price as price,
           COALESCE(fi.quantity_available, 0) as stock,
-          (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+          (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
         FROM dim_products p
         INNER JOIN dim_product_variants v ON p.id = v.product_id
-        LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+        LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
         WHERE p.is_active = true
           AND (
             LOWER(p.name) LIKE $1 
-            OR LOWER(p.sku) LIKE $1
-            OR LOWER(v.name) LIKE $1
+            OR LOWER(p.code) LIKE $1
+            OR LOWER(v.variant_name) LIKE $1
             OR LOWER(v.sku) LIKE $1
           )
         ORDER BY 
@@ -2616,14 +2616,14 @@ const getProductPrice = <span class="cstat-no" title="statement not covered" ><s
         v.id as variant_id,
         p.id as product_id,
         p.name as product_name,
-        v.name as variant_name,
-        v.sale_price as price,
+        v.variant_name,
+        v.selling_price as price,
         v.cost_price,
         COALESCE(fi.quantity_available, 0) as stock,
         COALESCE(fi.quantity_reserved, 0) as reserved
       FROM dim_product_variants v
       JOIN dim_products p ON v.product_id = p.id
-      LEFT JOIN fact_inventory fi ON v.id = fi.variant_id AND fi.store_id = $2
+      LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
       WHERE v.id = $1
     `, [variantId, store_id || 1]);
 &nbsp;
@@ -2793,7 +2793,7 @@ const getDrafts = <span class="cstat-no" title="statement not covered" ><span cl
         s.full_name as created_by_name
       FROM fact_orders o
       LEFT JOIN dim_customers c ON o.customer_id = c.id
-      LEFT JOIN dim_staff s ON o.created_by = s.id
+      LEFT JOIN dim_users s ON o.created_by = s.id
       LEFT JOIN fact_order_items oi ON o.id = oi.order_id
       WHERE o.status = 'draft'
         ${storeFilter}
@@ -2877,9 +2877,9 @@ const getDraftById = <span class="cstat-no" title="statement not covered" ><span
         oi.discount_amount,
         oi.total,
         p.name as product_name,
-        v.name as variant_name,
-        p.sku,
-        (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+        v.variant_name,
+        v.sku,
+        (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
       FROM fact_order_items oi
       JOIN dim_product_variants v ON oi.variant_id = v.id
       JOIN dim_products p ON v.product_id = p.id
@@ -2996,7 +2996,7 @@ const getReceipt = <span class="cstat-no" title="statement not covered" ><span c
         o.date_key,
         o.created_at,
         o.store_id,
-        s.store_name,
+        s.name as store_name,
         s.address as store_address,
         s.phone as store_phone,
         o.customer_id,
@@ -3012,9 +3012,9 @@ const getReceipt = <span class="cstat-no" title="statement not covered" ><span c
         o.notes,
         st.full_name as cashier_name
       FROM fact_orders o
-      LEFT JOIN dim_stores s ON o.store_id = s.store_id
+      LEFT JOIN dim_stores s ON o.store_id = s.id
       LEFT JOIN dim_customers c ON o.customer_id = c.id
-      LEFT JOIN dim_staff st ON o.created_by = st.id
+      LEFT JOIN dim_users st ON o.created_by = st.id
       WHERE o.id = $1
     `, [id]);
 &nbsp;
@@ -3032,7 +3032,7 @@ const getReceipt = <span class="cstat-no" title="statement not covered" ><span c
       SELECT 
         oi.id,
         p.name as product_name,
-        v.name as variant_name,
+        v.variant_name,
         oi.quantity,
         oi.unit_price,
         oi.discount_amount,
@@ -3301,7 +3301,7 @@ const getPaymentMethods = <span class="cstat-no" title="statement not covered" >
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-31T18:05:27.255Z
+                at 2026-02-04T03:30:13.211Z
             </div>
         <script src="../prettify.js"></script>
         <script>

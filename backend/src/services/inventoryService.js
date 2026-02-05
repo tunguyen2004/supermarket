@@ -1016,9 +1016,9 @@ async function searchProductsForLookup(req, res) {
         // Build sort mapping
         const sortMap = {
             name: 'p.name',
-            price: 'v.sale_price',
+            price: 'v.selling_price',
             stock: 'total_stock',
-            sku: 'p.sku',
+            sku: 'v.sku',
             created_at: 'p.created_at'
         };
 
@@ -1030,7 +1030,7 @@ async function searchProductsForLookup(req, res) {
         if (query && query.trim()) {
             paramIndex++;
             const searchTerm = `%${query.trim().toLowerCase()}%`;
-            searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(p.sku) LIKE $${paramIndex} OR LOWER(p.barcode) LIKE $${paramIndex})`;
+            searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(v.sku) LIKE $${paramIndex} OR LOWER(v.barcode) LIKE $${paramIndex})`;
             params.push(searchTerm);
         }
 
@@ -1047,21 +1047,22 @@ async function searchProductsForLookup(req, res) {
             SELECT 
                 p.id as product_id,
                 p.name,
-                p.sku,
-                p.barcode,
+                p.code,
+                v.sku,
+                v.barcode,
                 p.is_active,
                 v.id as variant_id,
-                v.name as variant_name,
-                v.sale_price as price,
+                v.variant_name,
+                v.selling_price as price,
                 COALESCE(SUM(fi.quantity_available), 0) as total_stock,
                 COUNT(DISTINCT fi.store_id) as store_count,
-                (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+                (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
             FROM dim_products p
             INNER JOIN dim_product_variants v ON p.id = v.product_id
-            LEFT JOIN fact_inventory fi ON v.id = fi.variant_id ${storeCondition}
+            LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id ${storeCondition}
             WHERE p.is_active = true
             ${searchCondition}
-            GROUP BY p.id, p.name, p.sku, p.barcode, p.is_active, v.id, v.name, v.sale_price
+            GROUP BY p.id, p.name, p.code, v.sku, v.barcode, p.is_active, v.id, v.variant_name, v.selling_price
             ORDER BY ${sortMap[sortColumn]} ${sortDir}
             LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
         `;
@@ -1076,7 +1077,7 @@ async function searchProductsForLookup(req, res) {
             SELECT COUNT(DISTINCT (p.id, v.id)) as total
             FROM dim_products p
             INNER JOIN dim_product_variants v ON p.id = v.product_id
-            LEFT JOIN fact_inventory fi ON v.id = fi.variant_id ${storeCondition}
+            LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id ${storeCondition}
             WHERE p.is_active = true
             ${searchCondition}
         `;
@@ -1131,11 +1132,10 @@ async function getProductInventoryDetail(req, res) {
             SELECT 
                 p.id,
                 p.name,
-                p.sku,
-                p.barcode,
+                p.code,
                 p.description,
                 p.is_active,
-                (SELECT url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+                (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
             FROM dim_products p
             WHERE p.id = $1
         `, [productId]);
@@ -1153,35 +1153,36 @@ async function getProductInventoryDetail(req, res) {
         const variantsResult = await db.query(`
             SELECT 
                 v.id,
-                v.name,
+                v.variant_name,
                 v.sku as variant_sku,
-                v.sale_price,
+                v.selling_price,
                 v.cost_price,
                 COALESCE(SUM(fi.quantity_available), 0) as total_stock
             FROM dim_product_variants v
-            LEFT JOIN fact_inventory fi ON v.id = fi.variant_id
+            LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id
             WHERE v.product_id = $1
-            GROUP BY v.id, v.name, v.sku, v.sale_price, v.cost_price
-            ORDER BY v.name ASC
+            GROUP BY v.id, v.variant_name, v.sku, v.selling_price, v.cost_price
+            ORDER BY v.variant_name ASC
         `, [productId]);
 
         // Get inventory by store for each variant
         const inventoryResult = await db.query(`
             SELECT 
                 fi.variant_id,
-                s.store_id,
-                s.store_name,
-                s.store_code,
-                s.city,
+                s.id as store_id,
+                s.name as store_name,
+                s.code as store_code,
+                c.name as city,
                 fi.quantity_available as stock,
                 fi.quantity_reserved,
-                fi.reorder_point,
-                fi.updated_at
-            FROM fact_inventory fi
-            INNER JOIN dim_stores s ON fi.store_id = s.store_id
+                fi.min_stock_level as reorder_point,
+                fi.last_updated as updated_at
+            FROM fact_inventory_stocks fi
+            INNER JOIN dim_stores s ON fi.store_id = s.id
+            INNER JOIN subdim_cities c ON s.city_id = c.id
             INNER JOIN dim_product_variants v ON fi.variant_id = v.id
             WHERE v.product_id = $1
-            ORDER BY s.store_name ASC
+            ORDER BY s.name ASC
         `, [productId]);
 
         // Organize inventory by store
@@ -1210,7 +1211,7 @@ async function getProductInventoryDetail(req, res) {
         const totalStock = variantsResult.rows.reduce((sum, v) => sum + parseInt(v.total_stock || 0), 0);
 
         // Get default price from first variant
-        const defaultPrice = variantsResult.rows[0]?.sale_price || 0;
+        const defaultPrice = variantsResult.rows[0]?.selling_price || 0;
 
         return res.status(200).json({
             success: true,
@@ -1218,8 +1219,7 @@ async function getProductInventoryDetail(req, res) {
             data: {
                 product_id: product.id,
                 name: product.name,
-                sku: product.sku,
-                barcode: product.barcode,
+                code: product.code,
                 description: product.description,
                 is_active: product.is_active,
                 imageUrl: product.image_url,
@@ -1228,9 +1228,9 @@ async function getProductInventoryDetail(req, res) {
                 productDetailUrl: `/products/${product.id}`,
                 variants: variantsResult.rows.map(v => ({
                     id: v.id,
-                    name: v.name,
+                    name: v.variant_name,
                     sku: v.variant_sku,
-                    sale_price: parseFloat(v.sale_price || 0),
+                    selling_price: parseFloat(v.selling_price || 0),
                     cost_price: parseFloat(v.cost_price || 0),
                     total_stock: parseInt(v.total_stock || 0)
                 })),

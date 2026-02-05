@@ -121,7 +121,7 @@ const getDailyReport = async (req, res) => {
         COUNT(*) as order_count,
         COALESCE(SUM(o.final_amount), 0) as total_amount
       FROM fact_orders o
-      LEFT JOIN dim_staff s ON o.created_by = s.id
+      LEFT JOIN dim_users s ON o.created_by = s.id
       WHERE ${whereClause}
       GROUP BY o.created_by, s.full_name
       ORDER BY total_amount DESC
@@ -384,9 +384,9 @@ const getSoldProducts = async (req, res) => {
       SELECT 
         p.id as product_id,
         p.name as product_name,
-        p.sku,
+        v.sku,
         v.id as variant_id,
-        v.name as variant_name,
+        v.variant_name,
         COUNT(DISTINCT o.id) as order_count,
         SUM(oi.quantity) as total_quantity,
         SUM(oi.subtotal) as gross_revenue,
@@ -394,7 +394,7 @@ const getSoldProducts = async (req, res) => {
         SUM(oi.subtotal - oi.discount_amount) as total_revenue,
         SUM(oi.tax_amount) as total_tax,
         AVG(oi.unit_price) as avg_price,
-        SUM((oi.unit_price - COALESCE(v.cost_price, p.cost_price, 0)) * oi.quantity) as total_profit
+        SUM((oi.unit_price - COALESCE(v.cost_price, 0)) * oi.quantity) as total_profit
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
       JOIN dim_product_variants v ON oi.variant_id = v.id
@@ -404,7 +404,7 @@ const getSoldProducts = async (req, res) => {
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-      GROUP BY p.id, p.name, p.sku, v.id, v.name
+      GROUP BY p.id, p.name, v.sku, v.id, v.variant_name
       ORDER BY ${sortMap[sortColumn]} ${sortDir}
       LIMIT $3 OFFSET $4
     `, [fromDate, toDate, parseInt(limit), offset]);
@@ -433,7 +433,7 @@ const getSoldProducts = async (req, res) => {
         SUM(oi.discount_amount) as total_discount,
         SUM(oi.subtotal - oi.discount_amount) as net_revenue,
         SUM(oi.tax_amount) as total_tax,
-        SUM((oi.unit_price - COALESCE(v.cost_price, p.cost_price, 0)) * oi.quantity) as total_profit
+        SUM((oi.unit_price - COALESCE(v.cost_price, 0)) * oi.quantity) as total_profit
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
       JOIN dim_product_variants v ON oi.variant_id = v.id
@@ -580,7 +580,7 @@ const getDailyPrintReport = async (req, res) => {
     const topProductsResult = await db.query(`
       SELECT 
         p.name as product_name,
-        p.sku,
+        v.sku,
         SUM(oi.quantity) as quantity,
         SUM(oi.subtotal - oi.discount_amount) as revenue
       FROM fact_order_items oi
@@ -592,7 +592,7 @@ const getDailyPrintReport = async (req, res) => {
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-      GROUP BY p.id, p.name, p.sku
+      GROUP BY p.id, p.name, v.sku
       ORDER BY quantity DESC
       LIMIT 10
     `, [reportDate]);
@@ -619,7 +619,7 @@ const getDailyPrintReport = async (req, res) => {
     let staffName = 'Tất cả nhân viên';
     if (staff_id) {
       const staffResult = await db.query(
-        'SELECT full_name FROM dim_staff WHERE id = $1',
+        'SELECT full_name FROM dim_users WHERE id = $1',
         [parseInt(staff_id)]
       );
       staffName = staffResult.rows[0]?.full_name || 'Không xác định';
@@ -629,10 +629,10 @@ const getDailyPrintReport = async (req, res) => {
     let storeName = 'Tất cả cửa hàng';
     if (store_id) {
       const storeResult = await db.query(
-        'SELECT store_name FROM dim_stores WHERE store_id = $1',
+        'SELECT name FROM dim_stores WHERE id = $1',
         [parseInt(store_id)]
       );
-      storeName = storeResult.rows[0]?.store_name || 'Không xác định';
+      storeName = storeResult.rows[0]?.name || 'Không xác định';
     }
 
     return res.status(200).json({
@@ -707,7 +707,7 @@ const getStaffList = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT id, full_name, username, role_id
-      FROM dim_staff
+      FROM dim_users
       WHERE is_active = true
       ORDER BY full_name ASC
     `);

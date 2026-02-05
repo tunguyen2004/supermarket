@@ -1660,7 +1660,7 @@ const getDailyReport = <span class="cstat-no" title="statement not covered" ><sp
         COUNT(*) as order_count,
         COALESCE(SUM(o.final_amount), 0) as total_amount
       FROM fact_orders o
-      LEFT JOIN dim_staff s ON o.created_by = s.id
+      LEFT JOIN dim_users s ON o.created_by = s.id
       WHERE ${whereClause}
       GROUP BY o.created_by, s.full_name
       ORDER BY total_amount DESC
@@ -1923,9 +1923,9 @@ const getSoldProducts = <span class="cstat-no" title="statement not covered" ><s
       SELECT 
         p.id as product_id,
         p.name as product_name,
-        p.sku,
+        v.sku,
         v.id as variant_id,
-        v.name as variant_name,
+        v.variant_name,
         COUNT(DISTINCT o.id) as order_count,
         SUM(oi.quantity) as total_quantity,
         SUM(oi.subtotal) as gross_revenue,
@@ -1933,7 +1933,7 @@ const getSoldProducts = <span class="cstat-no" title="statement not covered" ><s
         SUM(oi.subtotal - oi.discount_amount) as total_revenue,
         SUM(oi.tax_amount) as total_tax,
         AVG(oi.unit_price) as avg_price,
-        SUM((oi.unit_price - COALESCE(v.cost_price, p.cost_price, 0)) * oi.quantity) as total_profit
+        SUM((oi.unit_price - COALESCE(v.cost_price, 0)) * oi.quantity) as total_profit
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
       JOIN dim_product_variants v ON oi.variant_id = v.id
@@ -1943,7 +1943,7 @@ const getSoldProducts = <span class="cstat-no" title="statement not covered" ><s
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-      GROUP BY p.id, p.name, p.sku, v.id, v.name
+      GROUP BY p.id, p.name, v.sku, v.id, v.variant_name
       ORDER BY ${sortMap[sortColumn]} ${sortDir}
       LIMIT $3 OFFSET $4
     `, [fromDate, toDate, parseInt(limit), offset]);
@@ -1972,7 +1972,7 @@ const getSoldProducts = <span class="cstat-no" title="statement not covered" ><s
         SUM(oi.discount_amount) as total_discount,
         SUM(oi.subtotal - oi.discount_amount) as net_revenue,
         SUM(oi.tax_amount) as total_tax,
-        SUM((oi.unit_price - COALESCE(v.cost_price, p.cost_price, 0)) * oi.quantity) as total_profit
+        SUM((oi.unit_price - COALESCE(v.cost_price, 0)) * oi.quantity) as total_profit
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
       JOIN dim_product_variants v ON oi.variant_id = v.id
@@ -2119,7 +2119,7 @@ const getDailyPrintReport = <span class="cstat-no" title="statement not covered"
     const topProductsResult = <span class="cstat-no" title="statement not covered" >await db.query(`</span>
       SELECT 
         p.name as product_name,
-        p.sku,
+        v.sku,
         SUM(oi.quantity) as quantity,
         SUM(oi.subtotal - oi.discount_amount) as revenue
       FROM fact_order_items oi
@@ -2131,7 +2131,7 @@ const getDailyPrintReport = <span class="cstat-no" title="statement not covered"
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-      GROUP BY p.id, p.name, p.sku
+      GROUP BY p.id, p.name, v.sku
       ORDER BY quantity DESC
       LIMIT 10
     `, [reportDate]);
@@ -2158,7 +2158,7 @@ const getDailyPrintReport = <span class="cstat-no" title="statement not covered"
     let staffName = <span class="cstat-no" title="statement not covered" >'Tất cả nhân viên';</span>
 <span class="cstat-no" title="statement not covered" >    if (staff_id) {</span>
       const staffResult = <span class="cstat-no" title="statement not covered" >await db.query(</span>
-        'SELECT full_name FROM dim_staff WHERE id = $1',
+        'SELECT full_name FROM dim_users WHERE id = $1',
         [parseInt(staff_id)]
       );
 <span class="cstat-no" title="statement not covered" >      staffName = staffResult.rows[0]?.full_name || 'Không xác định';</span>
@@ -2168,10 +2168,10 @@ const getDailyPrintReport = <span class="cstat-no" title="statement not covered"
     let storeName = <span class="cstat-no" title="statement not covered" >'Tất cả cửa hàng';</span>
 <span class="cstat-no" title="statement not covered" >    if (store_id) {</span>
       const storeResult = <span class="cstat-no" title="statement not covered" >await db.query(</span>
-        'SELECT store_name FROM dim_stores WHERE store_id = $1',
+        'SELECT name FROM dim_stores WHERE id = $1',
         [parseInt(store_id)]
       );
-<span class="cstat-no" title="statement not covered" >      storeName = storeResult.rows[0]?.store_name || 'Không xác định';</span>
+<span class="cstat-no" title="statement not covered" >      storeName = storeResult.rows[0]?.name || 'Không xác định';</span>
     }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    return res.status(200).json({</span>
@@ -2246,7 +2246,7 @@ const getStaffList = <span class="cstat-no" title="statement not covered" ><span
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const result = <span class="cstat-no" title="statement not covered" >await db.query(`</span>
       SELECT id, full_name, username, role_id
-      FROM dim_staff
+      FROM dim_users
       WHERE is_active = true
       ORDER BY full_name ASC
     `);
@@ -2281,7 +2281,7 @@ const getStaffList = <span class="cstat-no" title="statement not covered" ><span
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-31T18:05:27.255Z
+                at 2026-02-04T03:30:13.211Z
             </div>
         <script src="../prettify.js"></script>
         <script>
