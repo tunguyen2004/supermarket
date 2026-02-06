@@ -3,9 +3,9 @@
  *                    MODULE 7: INVENTORY SERVICE
  * ============================================================================
  * Quản lý tồn kho sản phẩm (Inventory Management)
- * Sử dụng bảng: fact_inventory_stocks, fact_inventory_transactions,
+ * Sử dụng bảng: fact_inventory_stocks, fact_inventory_transactions, 
  *               dim_product_variants, dim_stores, subdim_transaction_types
- *
+ * 
  * Chức năng:
  * - Xem danh sách tồn kho (có phân trang, lọc theo cửa hàng, trạng thái)
  * - Xem chi tiết tồn kho của sản phẩm
@@ -17,7 +17,7 @@
  * ============================================================================
  */
 
-const { pool, query } = require("../config/database");
+const { pool, query } = require('../config/database');
 
 /**
  * @GET /api/inventories
@@ -26,74 +26,65 @@ const { pool, query } = require("../config/database");
  * @returns { inventories: [...], pagination: {...} }
  */
 const getInventories = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || "";
-    const storeId = req.query.store_id;
-    const status = req.query.status; // 'low', 'normal', 'high', 'out'
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+        const storeId = req.query.store_id;
+        const status = req.query.status; // 'low', 'normal', 'high', 'out'
 
-    let conditions = [];
-    let params = [];
-    let paramIndex = 1;
+        let conditions = [];
+        let params = [];
+        let paramIndex = 1;
 
-    // Search by product code or name
-    if (search) {
-      conditions.push(
-        `(p.code ILIKE $${paramIndex} OR p.name ILIKE $${paramIndex} OR pv.sku ILIKE $${paramIndex})`,
-      );
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
+        // Search by product code or name
+        if (search) {
+            conditions.push(`(p.code ILIKE $${paramIndex} OR p.name ILIKE $${paramIndex} OR pv.sku ILIKE $${paramIndex})`);
+            params.push(`%${search}%`);
+            paramIndex++;
+        }
 
-    // Filter by store
-    if (storeId) {
-      conditions.push(`fis.store_id = $${paramIndex}`);
-      params.push(storeId);
-      paramIndex++;
-    }
+        // Filter by store
+        if (storeId) {
+            conditions.push(`fis.store_id = $${paramIndex}`);
+            params.push(storeId);
+            paramIndex++;
+        }
 
-    // Filter by stock status
-    if (status) {
-      switch (status) {
-        case "out":
-          conditions.push("fis.quantity_on_hand = 0");
-          break;
-        case "low":
-          conditions.push(
-            "fis.quantity_on_hand > 0 AND fis.quantity_on_hand <= fis.min_stock_level",
-          );
-          break;
-        case "normal":
-          conditions.push(
-            "fis.quantity_on_hand > fis.min_stock_level AND fis.quantity_on_hand < fis.max_stock_level",
-          );
-          break;
-        case "high":
-          conditions.push(
-            "fis.quantity_on_hand >= fis.max_stock_level AND fis.max_stock_level > 0",
-          );
-          break;
-      }
-    }
+        // Filter by stock status
+        if (status) {
+            switch (status) {
+                case 'out':
+                    conditions.push('fis.quantity_on_hand = 0');
+                    break;
+                case 'low':
+                    conditions.push('fis.quantity_on_hand > 0 AND fis.quantity_on_hand <= fis.min_stock_level');
+                    break;
+                case 'normal':
+                    conditions.push('fis.quantity_on_hand > fis.min_stock_level AND fis.quantity_on_hand < fis.max_stock_level');
+                    break;
+                case 'high':
+                    conditions.push('fis.quantity_on_hand >= fis.max_stock_level AND fis.max_stock_level > 0');
+                    break;
+            }
+        }
 
-    const whereClause =
-      conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+        const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-    // Count total
-    const countQuery = `
+        // Count total
+        const countQuery = `
             SELECT COUNT(*) as total
             FROM fact_inventory_stocks fis
             JOIN dim_product_variants pv ON fis.variant_id = pv.id
             JOIN dim_products p ON pv.product_id = p.id
             ${whereClause}
         `;
-    const countResult = await pool.query(countQuery, params);
-    const total = parseInt(countResult.rows[0].total);
+        const countResult = await pool.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].total);
 
-    // Get inventories
-    const query = `
+        // Get inventories
+        const query = `
             SELECT 
                 fis.store_id,
                 fis.variant_id as id,
@@ -126,26 +117,26 @@ const getInventories = async (req, res) => {
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
-    const result = await pool.query(query, [...params, limit, offset]);
+        const result = await pool.query(query, [...params, limit, offset]);
 
-    res.json({
-      success: true,
-      data: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching inventories:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy danh sách tồn kho",
-      error: error.message,
-    });
-  }
+        res.json({
+            success: true,
+            data: result.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching inventories:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách tồn kho',
+            error: error.message
+        });
+    }
 };
 
 /**
@@ -156,12 +147,12 @@ const getInventories = async (req, res) => {
  * @returns { variant_info, stock_by_store: [...] }
  */
 const getInventoryById = async (req, res) => {
-  try {
-    const { variantId } = req.params;
-    const storeId = req.query.store_id;
+    try {
+        const { variantId } = req.params;
+        const storeId = req.query.store_id;
 
-    // Get variant info
-    const variantQuery = `
+        // Get variant info
+        const variantQuery = `
             SELECT 
                 pv.id,
                 p.code,
@@ -176,17 +167,17 @@ const getInventoryById = async (req, res) => {
             JOIN subdim_units u ON p.unit_id = u.id
             WHERE pv.id = $1
         `;
-    const variantResult = await pool.query(variantQuery, [variantId]);
+        const variantResult = await pool.query(variantQuery, [variantId]);
 
-    if (variantResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm",
-      });
-    }
+        if (variantResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
 
-    // Get stock by store
-    let stockQuery = `
+        // Get stock by store
+        let stockQuery = `
             SELECT 
                 fis.store_id,
                 s.name as store_name,
@@ -201,32 +192,32 @@ const getInventoryById = async (req, res) => {
             JOIN dim_stores s ON fis.store_id = s.id
             WHERE fis.variant_id = $1
         `;
-    let stockParams = [variantId];
+        let stockParams = [variantId];
 
-    if (storeId) {
-      stockQuery += " AND fis.store_id = $2";
-      stockParams.push(storeId);
+        if (storeId) {
+            stockQuery += ' AND fis.store_id = $2';
+            stockParams.push(storeId);
+        }
+
+        stockQuery += ' ORDER BY s.name ASC';
+
+        const stockResult = await pool.query(stockQuery, stockParams);
+
+        res.json({
+            success: true,
+            data: {
+                variant_info: variantResult.rows[0],
+                stock_by_store: stockResult.rows
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching inventory by id:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy chi tiết tồn kho',
+            error: error.message
+        });
     }
-
-    stockQuery += " ORDER BY s.name ASC";
-
-    const stockResult = await pool.query(stockQuery, stockParams);
-
-    res.json({
-      success: true,
-      data: {
-        variant_info: variantResult.rows[0],
-        stock_by_store: stockResult.rows,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching inventory by id:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy chi tiết tồn kho",
-      error: error.message,
-    });
-  }
 };
 
 /**
@@ -237,167 +228,146 @@ const getInventoryById = async (req, res) => {
  * @returns { message, new_stock }
  */
 const updateInventory = async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const { variantId } = req.params;
-    const { store_id, quantity, adjustment_type, notes } = req.body;
-    const userId = req.user.id;
+    const client = await pool.connect();
+    try {
+        const { variantId } = req.params;
+        const { store_id, quantity, adjustment_type, notes } = req.body;
+        const userId = req.user.id;
 
-    // Validate input
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng chọn cửa hàng",
-      });
-    }
+        // Validate input
+        if (!store_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn cửa hàng'
+            });
+        }
 
-    if (quantity === undefined || quantity === null) {
-      return res.status(400).json({
-        success: false,
-        message: "Số lượng là bắt buộc",
-      });
-    }
+        if (quantity === undefined || quantity === null) {
+            return res.status(400).json({
+                success: false,
+                message: 'Số lượng là bắt buộc'
+            });
+        }
 
-    if (!["set", "add", "subtract"].includes(adjustment_type)) {
-      return res.status(400).json({
-        success: false,
-        message: "Loại điều chỉnh không hợp lệ (set, add, subtract)",
-      });
-    }
+        if (!['set', 'add', 'subtract'].includes(adjustment_type)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Loại điều chỉnh không hợp lệ (set, add, subtract)'
+            });
+        }
 
-    await client.query("BEGIN");
+        await client.query('BEGIN');
 
-    // Get current stock
-    const currentStockQuery = `
+        // Get current stock
+        const currentStockQuery = `
             SELECT quantity_on_hand 
             FROM fact_inventory_stocks 
             WHERE store_id = $1 AND variant_id = $2
         `;
-    const currentStockResult = await client.query(currentStockQuery, [
-      store_id,
-      variantId,
-    ]);
+        const currentStockResult = await client.query(currentStockQuery, [store_id, variantId]);
 
-    let currentStock = 0;
-    let newStock = 0;
-    let quantityChange = 0;
-    let transactionTypeId;
+        let currentStock = 0;
+        let newStock = 0;
+        let quantityChange = 0;
+        let transactionTypeId;
 
-    if (currentStockResult.rows.length > 0) {
-      currentStock = parseFloat(currentStockResult.rows[0].quantity_on_hand);
-    }
+        if (currentStockResult.rows.length > 0) {
+            currentStock = parseFloat(currentStockResult.rows[0].quantity_on_hand);
+        }
 
-    // Calculate new stock
-    switch (adjustment_type) {
-      case "set":
-        newStock = parseFloat(quantity);
-        quantityChange = newStock - currentStock;
-        break;
-      case "add":
-        newStock = currentStock + parseFloat(quantity);
-        quantityChange = parseFloat(quantity);
-        break;
-      case "subtract":
-        newStock = currentStock - parseFloat(quantity);
-        quantityChange = -parseFloat(quantity);
-        break;
-    }
+        // Calculate new stock
+        switch (adjustment_type) {
+            case 'set':
+                newStock = parseFloat(quantity);
+                quantityChange = newStock - currentStock;
+                break;
+            case 'add':
+                newStock = currentStock + parseFloat(quantity);
+                quantityChange = parseFloat(quantity);
+                break;
+            case 'subtract':
+                newStock = currentStock - parseFloat(quantity);
+                quantityChange = -parseFloat(quantity);
+                break;
+        }
 
-    if (newStock < 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({
-        success: false,
-        message: "Số lượng tồn kho không thể âm",
-      });
-    }
+        if (newStock < 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({
+                success: false,
+                message: 'Số lượng tồn kho không thể âm'
+            });
+        }
 
-    // Get transaction type for adjustment
-    const typeQuery = `
+        // Get transaction type for adjustment
+        const typeQuery = `
             SELECT id FROM subdim_transaction_types 
             WHERE code = 'ADJUSTMENT'
         `;
-    const typeResult = await client.query(typeQuery);
+        const typeResult = await client.query(typeQuery);
 
-    if (typeResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(500).json({
-        success: false,
-        message: "Không tìm thấy loại giao dịch điều chỉnh",
-      });
-    }
-    transactionTypeId = typeResult.rows[0].id;
+        if (typeResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(500).json({
+                success: false,
+                message: 'Không tìm thấy loại giao dịch điều chỉnh'
+            });
+        }
+        transactionTypeId = typeResult.rows[0].id;
 
-    // Update or insert stock
-    if (currentStockResult.rows.length > 0) {
-      await client.query(
-        `
+        // Update or insert stock
+        if (currentStockResult.rows.length > 0) {
+            await client.query(`
                 UPDATE fact_inventory_stocks
                 SET quantity_on_hand = $1, last_updated = CURRENT_TIMESTAMP
                 WHERE store_id = $2 AND variant_id = $3
-            `,
-        [newStock, store_id, variantId],
-      );
-    } else {
-      await client.query(
-        `
+            `, [newStock, store_id, variantId]);
+        } else {
+            await client.query(`
                 INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, last_updated)
                 VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-            `,
-        [store_id, variantId, newStock],
-      );
-    }
+            `, [store_id, variantId, newStock]);
+        }
 
-    // Ensure date exists in dim_time
-    const today = new Date().toISOString().split("T")[0];
-    await ensureDateExists(client, today);
+        // Ensure date exists in dim_time
+        const today = new Date().toISOString().split('T')[0];
+        await ensureDateExists(client, today);
 
-    // Create transaction record
-    const transactionCode = `ADJ-${Date.now()}`;
-    await client.query(
-      `
+        // Create transaction record
+        const transactionCode = `ADJ-${Date.now()}`;
+        await client.query(`
             INSERT INTO fact_inventory_transactions 
             (transaction_code, date_key, transaction_type_id, store_id, variant_id, 
              quantity_change, balance_before, balance_after, reference_type, created_by, notes)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        `,
-      [
-        transactionCode,
-        today,
-        transactionTypeId,
-        store_id,
-        variantId,
-        quantityChange,
-        currentStock,
-        newStock,
-        "ADJUSTMENT",
-        userId,
-        notes || "Điều chỉnh tồn kho",
-      ],
-    );
+        `, [
+            transactionCode, today, transactionTypeId, store_id, variantId,
+            quantityChange, currentStock, newStock, 'ADJUSTMENT', userId, notes || 'Điều chỉnh tồn kho'
+        ]);
 
-    await client.query("COMMIT");
+        await client.query('COMMIT');
 
-    res.json({
-      success: true,
-      message: "Điều chỉnh tồn kho thành công",
-      data: {
-        previous_stock: currentStock,
-        new_stock: newStock,
-        quantity_change: quantityChange,
-        transaction_code: transactionCode,
-      },
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error updating inventory:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi điều chỉnh tồn kho",
-      error: error.message,
-    });
-  } finally {
-    client.release();
-  }
+        res.json({
+            success: true,
+            message: 'Điều chỉnh tồn kho thành công',
+            data: {
+                previous_stock: currentStock,
+                new_stock: newStock,
+                quantity_change: quantityChange,
+                transaction_code: transactionCode
+            }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error updating inventory:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi điều chỉnh tồn kho',
+            error: error.message
+        });
+    } finally {
+        client.release();
+    }
 };
 
 /**
@@ -408,50 +378,50 @@ const updateInventory = async (req, res) => {
  * @returns { history: [...], pagination: {...} }
  */
 const getInventoryHistory = async (req, res) => {
-  try {
-    const { variantId } = req.params;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const offset = (page - 1) * limit;
-    const storeId = req.query.store_id;
-    const fromDate = req.query.from;
-    const toDate = req.query.to;
+    try {
+        const { variantId } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        const storeId = req.query.store_id;
+        const fromDate = req.query.from;
+        const toDate = req.query.to;
 
-    let conditions = ["fit.variant_id = $1"];
-    let params = [variantId];
-    let paramIndex = 2;
+        let conditions = ['fit.variant_id = $1'];
+        let params = [variantId];
+        let paramIndex = 2;
 
-    if (storeId) {
-      conditions.push(`fit.store_id = $${paramIndex}`);
-      params.push(storeId);
-      paramIndex++;
-    }
+        if (storeId) {
+            conditions.push(`fit.store_id = $${paramIndex}`);
+            params.push(storeId);
+            paramIndex++;
+        }
 
-    if (fromDate) {
-      conditions.push(`fit.date_key >= $${paramIndex}`);
-      params.push(fromDate);
-      paramIndex++;
-    }
+        if (fromDate) {
+            conditions.push(`fit.date_key >= $${paramIndex}`);
+            params.push(fromDate);
+            paramIndex++;
+        }
 
-    if (toDate) {
-      conditions.push(`fit.date_key <= $${paramIndex}`);
-      params.push(toDate);
-      paramIndex++;
-    }
+        if (toDate) {
+            conditions.push(`fit.date_key <= $${paramIndex}`);
+            params.push(toDate);
+            paramIndex++;
+        }
 
-    const whereClause = "WHERE " + conditions.join(" AND ");
+        const whereClause = 'WHERE ' + conditions.join(' AND ');
 
-    // Count total
-    const countQuery = `
+        // Count total
+        const countQuery = `
             SELECT COUNT(*) as total
             FROM fact_inventory_transactions fit
             ${whereClause}
         `;
-    const countResult = await pool.query(countQuery, params);
-    const total = parseInt(countResult.rows[0].total);
+        const countResult = await pool.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].total);
 
-    // Get history
-    const query = `
+        // Get history
+        const query = `
             SELECT 
                 fit.id,
                 fit.transaction_code,
@@ -478,26 +448,26 @@ const getInventoryHistory = async (req, res) => {
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
-    const result = await pool.query(query, [...params, limit, offset]);
+        const result = await pool.query(query, [...params, limit, offset]);
 
-    res.json({
-      success: true,
-      data: result.rows,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching inventory history:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy lịch sử xuất nhập kho",
-      error: error.message,
-    });
-  }
+        res.json({
+            success: true,
+            data: result.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching inventory history:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy lịch sử xuất nhập kho',
+            error: error.message
+        });
+    }
 };
 
 /**
@@ -507,137 +477,114 @@ const getInventoryHistory = async (req, res) => {
  * @returns { message, transaction_codes }
  */
 const receiveInventory = async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const { store_id, items, notes } = req.body;
-    const userId = req.user.id;
+    const client = await pool.connect();
+    try {
+        const { store_id, items, notes } = req.body;
+        const userId = req.user.id;
 
-    // Validate
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng chọn cửa hàng nhập kho",
-      });
-    }
+        // Validate
+        if (!store_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn cửa hàng nhập kho'
+            });
+        }
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Danh sách sản phẩm nhập kho không hợp lệ",
-      });
-    }
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Danh sách sản phẩm nhập kho không hợp lệ'
+            });
+        }
 
-    await client.query("BEGIN");
+        await client.query('BEGIN');
 
-    // Get PURCHASE transaction type
-    const typeResult = await client.query(
-      "SELECT id FROM subdim_transaction_types WHERE code = 'PURCHASE'",
-    );
-    if (typeResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(500).json({
-        success: false,
-        message: "Không tìm thấy loại giao dịch PURCHASE",
-      });
-    }
-    const transactionTypeId = typeResult.rows[0].id;
+        // Get PURCHASE transaction type
+        const typeResult = await client.query(
+            "SELECT id FROM subdim_transaction_types WHERE code = 'PURCHASE'"
+        );
+        if (typeResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(500).json({
+                success: false,
+                message: 'Không tìm thấy loại giao dịch PURCHASE'
+            });
+        }
+        const transactionTypeId = typeResult.rows[0].id;
 
-    const today = new Date().toISOString().split("T")[0];
-    await ensureDateExists(client, today);
+        const today = new Date().toISOString().split('T')[0];
+        await ensureDateExists(client, today);
 
-    const transactionCodes = [];
+        const transactionCodes = [];
 
-    for (const item of items) {
-      const { variant_id, quantity, unit_cost } = item;
+        for (const item of items) {
+            const { variant_id, quantity, unit_cost } = item;
 
-      if (!variant_id || !quantity || quantity <= 0) {
-        continue;
-      }
+            if (!variant_id || !quantity || quantity <= 0) {
+                continue;
+            }
 
-      // Get current stock
-      const currentQuery = `
+            // Get current stock
+            const currentQuery = `
                 SELECT quantity_on_hand FROM fact_inventory_stocks 
                 WHERE store_id = $1 AND variant_id = $2
             `;
-      const currentResult = await client.query(currentQuery, [
-        store_id,
-        variant_id,
-      ]);
-      const currentStock =
-        currentResult.rows.length > 0
-          ? parseFloat(currentResult.rows[0].quantity_on_hand)
-          : 0;
-      const newStock = currentStock + parseFloat(quantity);
+            const currentResult = await client.query(currentQuery, [store_id, variant_id]);
+            const currentStock = currentResult.rows.length > 0 
+                ? parseFloat(currentResult.rows[0].quantity_on_hand) 
+                : 0;
+            const newStock = currentStock + parseFloat(quantity);
 
-      // Update or insert stock
-      if (currentResult.rows.length > 0) {
-        await client.query(
-          `
+            // Update or insert stock
+            if (currentResult.rows.length > 0) {
+                await client.query(`
                     UPDATE fact_inventory_stocks
                     SET quantity_on_hand = $1, last_updated = CURRENT_TIMESTAMP
                     WHERE store_id = $2 AND variant_id = $3
-                `,
-          [newStock, store_id, variant_id],
-        );
-      } else {
-        await client.query(
-          `
+                `, [newStock, store_id, variant_id]);
+            } else {
+                await client.query(`
                     INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, last_updated)
                     VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-                `,
-          [store_id, variant_id, newStock],
-        );
-      }
+                `, [store_id, variant_id, newStock]);
+            }
 
-      // Create transaction
-      const transactionCode = `RCV-${Date.now()}-${variant_id}`;
-      await client.query(
-        `
+            // Create transaction
+            const transactionCode = `RCV-${Date.now()}-${variant_id}`;
+            await client.query(`
                 INSERT INTO fact_inventory_transactions 
                 (transaction_code, date_key, transaction_type_id, store_id, variant_id, 
                  quantity_change, balance_before, balance_after, reference_type, unit_cost, created_by, notes)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            `,
-        [
-          transactionCode,
-          today,
-          transactionTypeId,
-          store_id,
-          variant_id,
-          quantity,
-          currentStock,
-          newStock,
-          "RECEIVE",
-          unit_cost || 0,
-          userId,
-          notes || "Nhập kho",
-        ],
-      );
+            `, [
+                transactionCode, today, transactionTypeId, store_id, variant_id,
+                quantity, currentStock, newStock, 'RECEIVE', unit_cost || 0, userId, notes || 'Nhập kho'
+            ]);
 
-      transactionCodes.push(transactionCode);
+            transactionCodes.push(transactionCode);
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            message: `Nhập kho thành công ${transactionCodes.length} sản phẩm`,
+            data: {
+                transaction_codes: transactionCodes,
+                items_count: transactionCodes.length
+            }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error receiving inventory:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi nhập kho',
+            error: error.message
+        });
+    } finally {
+        client.release();
     }
-
-    await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      message: `Nhập kho thành công ${transactionCodes.length} sản phẩm`,
-      data: {
-        transaction_codes: transactionCodes,
-        items_count: transactionCodes.length,
-      },
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error receiving inventory:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi nhập kho",
-      error: error.message,
-    });
-  } finally {
-    client.release();
-  }
 };
 
 /**
@@ -647,213 +594,166 @@ const receiveInventory = async (req, res) => {
  * @returns { message, transaction_codes }
  */
 const transferStock = async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const { from_store_id, to_store_id, items, notes } = req.body;
-    const userId = req.user.id;
+    const client = await pool.connect();
+    try {
+        const { from_store_id, to_store_id, items, notes } = req.body;
+        const userId = req.user.id;
 
-    // Validate
-    if (!from_store_id || !to_store_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng chọn kho xuất và kho nhận",
-      });
-    }
+        // Validate
+        if (!from_store_id || !to_store_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn kho xuất và kho nhận'
+            });
+        }
 
-    if (from_store_id === to_store_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Kho xuất và kho nhận không thể giống nhau",
-      });
-    }
+        if (from_store_id === to_store_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kho xuất và kho nhận không thể giống nhau'
+            });
+        }
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Danh sách sản phẩm chuyển kho không hợp lệ",
-      });
-    }
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Danh sách sản phẩm chuyển kho không hợp lệ'
+            });
+        }
 
-    await client.query("BEGIN");
+        await client.query('BEGIN');
 
-    // Get transaction types
-    const transferOutResult = await client.query(
-      "SELECT id FROM subdim_transaction_types WHERE code = 'TRANSFER_OUT'",
-    );
-    const transferInResult = await client.query(
-      "SELECT id FROM subdim_transaction_types WHERE code = 'TRANSFER_IN'",
-    );
+        // Get transaction types
+        const transferOutResult = await client.query(
+            "SELECT id FROM subdim_transaction_types WHERE code = 'TRANSFER_OUT'"
+        );
+        const transferInResult = await client.query(
+            "SELECT id FROM subdim_transaction_types WHERE code = 'TRANSFER_IN'"
+        );
 
-    if (
-      transferOutResult.rows.length === 0 ||
-      transferInResult.rows.length === 0
-    ) {
-      await client.query("ROLLBACK");
-      return res.status(500).json({
-        success: false,
-        message: "Không tìm thấy loại giao dịch chuyển kho",
-      });
-    }
+        if (transferOutResult.rows.length === 0 || transferInResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(500).json({
+                success: false,
+                message: 'Không tìm thấy loại giao dịch chuyển kho'
+            });
+        }
 
-    const transferOutTypeId = transferOutResult.rows[0].id;
-    const transferInTypeId = transferInResult.rows[0].id;
+        const transferOutTypeId = transferOutResult.rows[0].id;
+        const transferInTypeId = transferInResult.rows[0].id;
 
-    const today = new Date().toISOString().split("T")[0];
-    await ensureDateExists(client, today);
+        const today = new Date().toISOString().split('T')[0];
+        await ensureDateExists(client, today);
 
-    const transactionCodes = [];
+        const transactionCodes = [];
 
-    for (const item of items) {
-      const { variant_id, quantity } = item;
+        for (const item of items) {
+            const { variant_id, quantity } = item;
 
-      if (!variant_id || !quantity || quantity <= 0) {
-        continue;
-      }
+            if (!variant_id || !quantity || quantity <= 0) {
+                continue;
+            }
 
-      // Check source stock
-      const sourceQuery = `
+            // Check source stock
+            const sourceQuery = `
                 SELECT quantity_on_hand FROM fact_inventory_stocks 
                 WHERE store_id = $1 AND variant_id = $2
             `;
-      const sourceResult = await client.query(sourceQuery, [
-        from_store_id,
-        variant_id,
-      ]);
+            const sourceResult = await client.query(sourceQuery, [from_store_id, variant_id]);
 
-      if (
-        sourceResult.rows.length === 0 ||
-        parseFloat(sourceResult.rows[0].quantity_on_hand) < quantity
-      ) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          success: false,
-          message: `Không đủ tồn kho để chuyển (Variant ID: ${variant_id})`,
-        });
-      }
+            if (sourceResult.rows.length === 0 || 
+                parseFloat(sourceResult.rows[0].quantity_on_hand) < quantity) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({
+                    success: false,
+                    message: `Không đủ tồn kho để chuyển (Variant ID: ${variant_id})`
+                });
+            }
 
-      const sourceStock = parseFloat(sourceResult.rows[0].quantity_on_hand);
-      const newSourceStock = sourceStock - quantity;
+            const sourceStock = parseFloat(sourceResult.rows[0].quantity_on_hand);
+            const newSourceStock = sourceStock - quantity;
 
-      // Get destination stock
-      const destQuery = `
+            // Get destination stock
+            const destQuery = `
                 SELECT quantity_on_hand FROM fact_inventory_stocks 
                 WHERE store_id = $1 AND variant_id = $2
             `;
-      const destResult = await client.query(destQuery, [
-        to_store_id,
-        variant_id,
-      ]);
-      const destStock =
-        destResult.rows.length > 0
-          ? parseFloat(destResult.rows[0].quantity_on_hand)
-          : 0;
-      const newDestStock = destStock + quantity;
+            const destResult = await client.query(destQuery, [to_store_id, variant_id]);
+            const destStock = destResult.rows.length > 0 
+                ? parseFloat(destResult.rows[0].quantity_on_hand) 
+                : 0;
+            const newDestStock = destStock + quantity;
 
-      // Update source stock
-      await client.query(
-        `
+            // Update source stock
+            await client.query(`
                 UPDATE fact_inventory_stocks
                 SET quantity_on_hand = $1, last_updated = CURRENT_TIMESTAMP
                 WHERE store_id = $2 AND variant_id = $3
-            `,
-        [newSourceStock, from_store_id, variant_id],
-      );
+            `, [newSourceStock, from_store_id, variant_id]);
 
-      // Update or insert destination stock
-      if (destResult.rows.length > 0) {
-        await client.query(
-          `
+            // Update or insert destination stock
+            if (destResult.rows.length > 0) {
+                await client.query(`
                     UPDATE fact_inventory_stocks
                     SET quantity_on_hand = $1, last_updated = CURRENT_TIMESTAMP
                     WHERE store_id = $2 AND variant_id = $3
-                `,
-          [newDestStock, to_store_id, variant_id],
-        );
-      } else {
-        await client.query(
-          `
+                `, [newDestStock, to_store_id, variant_id]);
+            } else {
+                await client.query(`
                     INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, last_updated)
                     VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-                `,
-          [to_store_id, variant_id, newDestStock],
-        );
-      }
+                `, [to_store_id, variant_id, newDestStock]);
+            }
 
-      // Create transactions
-      const transferCode = `TRF-${Date.now()}-${variant_id}`;
+            // Create transactions
+            const transferCode = `TRF-${Date.now()}-${variant_id}`;
 
-      // Transfer OUT transaction
-      await client.query(
-        `
+            // Transfer OUT transaction
+            await client.query(`
                 INSERT INTO fact_inventory_transactions 
                 (transaction_code, date_key, transaction_type_id, store_id, variant_id, 
                  quantity_change, balance_before, balance_after, reference_type, reference_id, created_by, notes)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            `,
-        [
-          transferCode + "-OUT",
-          today,
-          transferOutTypeId,
-          from_store_id,
-          variant_id,
-          -quantity,
-          sourceStock,
-          newSourceStock,
-          "TRANSFER",
-          to_store_id,
-          userId,
-          notes || "Chuyển kho",
-        ],
-      );
+            `, [
+                transferCode + '-OUT', today, transferOutTypeId, from_store_id, variant_id,
+                -quantity, sourceStock, newSourceStock, 'TRANSFER', to_store_id, userId, notes || 'Chuyển kho'
+            ]);
 
-      // Transfer IN transaction
-      await client.query(
-        `
+            // Transfer IN transaction
+            await client.query(`
                 INSERT INTO fact_inventory_transactions 
                 (transaction_code, date_key, transaction_type_id, store_id, variant_id, 
                  quantity_change, balance_before, balance_after, reference_type, reference_id, created_by, notes)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            `,
-        [
-          transferCode + "-IN",
-          today,
-          transferInTypeId,
-          to_store_id,
-          variant_id,
-          quantity,
-          destStock,
-          newDestStock,
-          "TRANSFER",
-          from_store_id,
-          userId,
-          notes || "Chuyển kho",
-        ],
-      );
+            `, [
+                transferCode + '-IN', today, transferInTypeId, to_store_id, variant_id,
+                quantity, destStock, newDestStock, 'TRANSFER', from_store_id, userId, notes || 'Chuyển kho'
+            ]);
 
-      transactionCodes.push(transferCode);
+            transactionCodes.push(transferCode);
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            message: `Chuyển kho thành công ${transactionCodes.length} sản phẩm`,
+            data: {
+                transaction_codes: transactionCodes,
+                items_count: transactionCodes.length
+            }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error transferring stock:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi chuyển kho',
+            error: error.message
+        });
+    } finally {
+        client.release();
     }
-
-    await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      message: `Chuyển kho thành công ${transactionCodes.length} sản phẩm`,
-      data: {
-        transaction_codes: transactionCodes,
-        items_count: transactionCodes.length,
-      },
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error transferring stock:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi chuyển kho",
-      error: error.message,
-    });
-  } finally {
-    client.release();
-  }
 };
 
 /**
@@ -863,135 +763,115 @@ const transferStock = async (req, res) => {
  * @returns { message, transaction_codes }
  */
 const returnToSupplier = async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const { store_id, items, notes } = req.body;
-    const userId = req.user.id;
+    const client = await pool.connect();
+    try {
+        const { store_id, items, notes } = req.body;
+        const userId = req.user.id;
 
-    // Validate
-    if (!store_id) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng chọn cửa hàng",
-      });
-    }
+        // Validate
+        if (!store_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn cửa hàng'
+            });
+        }
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Danh sách sản phẩm trả hàng không hợp lệ",
-      });
-    }
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Danh sách sản phẩm trả hàng không hợp lệ'
+            });
+        }
 
-    await client.query("BEGIN");
+        await client.query('BEGIN');
 
-    // Get RETURN_OUT transaction type
-    const typeResult = await client.query(
-      "SELECT id FROM subdim_transaction_types WHERE code = 'RETURN_OUT'",
-    );
-    if (typeResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(500).json({
-        success: false,
-        message: "Không tìm thấy loại giao dịch RETURN_OUT",
-      });
-    }
-    const transactionTypeId = typeResult.rows[0].id;
+        // Get RETURN_OUT transaction type
+        const typeResult = await client.query(
+            "SELECT id FROM subdim_transaction_types WHERE code = 'RETURN_OUT'"
+        );
+        if (typeResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(500).json({
+                success: false,
+                message: 'Không tìm thấy loại giao dịch RETURN_OUT'
+            });
+        }
+        const transactionTypeId = typeResult.rows[0].id;
 
-    const today = new Date().toISOString().split("T")[0];
-    await ensureDateExists(client, today);
+        const today = new Date().toISOString().split('T')[0];
+        await ensureDateExists(client, today);
 
-    const transactionCodes = [];
+        const transactionCodes = [];
 
-    for (const item of items) {
-      const { variant_id, quantity } = item;
+        for (const item of items) {
+            const { variant_id, quantity } = item;
 
-      if (!variant_id || !quantity || quantity <= 0) {
-        continue;
-      }
+            if (!variant_id || !quantity || quantity <= 0) {
+                continue;
+            }
 
-      // Check current stock
-      const currentQuery = `
+            // Check current stock
+            const currentQuery = `
                 SELECT quantity_on_hand FROM fact_inventory_stocks 
                 WHERE store_id = $1 AND variant_id = $2
             `;
-      const currentResult = await client.query(currentQuery, [
-        store_id,
-        variant_id,
-      ]);
+            const currentResult = await client.query(currentQuery, [store_id, variant_id]);
 
-      if (
-        currentResult.rows.length === 0 ||
-        parseFloat(currentResult.rows[0].quantity_on_hand) < quantity
-      ) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          success: false,
-          message: `Không đủ tồn kho để trả hàng (Variant ID: ${variant_id})`,
-        });
-      }
+            if (currentResult.rows.length === 0 || 
+                parseFloat(currentResult.rows[0].quantity_on_hand) < quantity) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({
+                    success: false,
+                    message: `Không đủ tồn kho để trả hàng (Variant ID: ${variant_id})`
+                });
+            }
 
-      const currentStock = parseFloat(currentResult.rows[0].quantity_on_hand);
-      const newStock = currentStock - quantity;
+            const currentStock = parseFloat(currentResult.rows[0].quantity_on_hand);
+            const newStock = currentStock - quantity;
 
-      // Update stock
-      await client.query(
-        `
+            // Update stock
+            await client.query(`
                 UPDATE fact_inventory_stocks
                 SET quantity_on_hand = $1, last_updated = CURRENT_TIMESTAMP
                 WHERE store_id = $2 AND variant_id = $3
-            `,
-        [newStock, store_id, variant_id],
-      );
+            `, [newStock, store_id, variant_id]);
 
-      // Create transaction
-      const transactionCode = `RTN-${Date.now()}-${variant_id}`;
-      await client.query(
-        `
+            // Create transaction
+            const transactionCode = `RTN-${Date.now()}-${variant_id}`;
+            await client.query(`
                 INSERT INTO fact_inventory_transactions 
                 (transaction_code, date_key, transaction_type_id, store_id, variant_id, 
                  quantity_change, balance_before, balance_after, reference_type, created_by, notes)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            `,
-        [
-          transactionCode,
-          today,
-          transactionTypeId,
-          store_id,
-          variant_id,
-          -quantity,
-          currentStock,
-          newStock,
-          "RETURN_OUT",
-          userId,
-          notes || "Trả hàng nhà cung cấp",
-        ],
-      );
+            `, [
+                transactionCode, today, transactionTypeId, store_id, variant_id,
+                -quantity, currentStock, newStock, 'RETURN_OUT', userId, notes || 'Trả hàng nhà cung cấp'
+            ]);
 
-      transactionCodes.push(transactionCode);
+            transactionCodes.push(transactionCode);
+        }
+
+        await client.query('COMMIT');
+
+        res.json({
+            success: true,
+            message: `Trả hàng thành công ${transactionCodes.length} sản phẩm`,
+            data: {
+                transaction_codes: transactionCodes,
+                items_count: transactionCodes.length
+            }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error returning to supplier:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi trả hàng nhà cung cấp',
+            error: error.message
+        });
+    } finally {
+        client.release();
     }
-
-    await client.query("COMMIT");
-
-    res.json({
-      success: true,
-      message: `Trả hàng thành công ${transactionCodes.length} sản phẩm`,
-      data: {
-        transaction_codes: transactionCodes,
-        items_count: transactionCodes.length,
-      },
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error returning to supplier:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi trả hàng nhà cung cấp",
-      error: error.message,
-    });
-  } finally {
-    client.release();
-  }
 };
 
 /**
@@ -1000,8 +880,8 @@ const returnToSupplier = async (req, res) => {
  * @returns { stores: [...] }
  */
 const getStores = async (req, res) => {
-  try {
-    const query = `
+    try {
+        const query = `
             SELECT 
                 s.id,
                 s.code,
@@ -1014,20 +894,20 @@ const getStores = async (req, res) => {
             WHERE s.is_active = true
             ORDER BY s.name ASC
         `;
-    const result = await pool.query(query);
+        const result = await pool.query(query);
 
-    res.json({
-      success: true,
-      data: result.rows,
-    });
-  } catch (error) {
-    console.error("Error fetching stores:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy danh sách cửa hàng",
-      error: error.message,
-    });
-  }
+        res.json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('Error fetching stores:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách cửa hàng',
+            error: error.message
+        });
+    }
 };
 
 /**
@@ -1036,105 +916,79 @@ const getStores = async (req, res) => {
  * @returns { types: [...] }
  */
 const getTransactionTypes = async (req, res) => {
-  try {
-    const query = `
+    try {
+        const query = `
             SELECT id, code, name, affects_stock
             FROM subdim_transaction_types
             ORDER BY id ASC
         `;
-    const result = await pool.query(query);
+        const result = await pool.query(query);
 
-    res.json({
-      success: true,
-      data: result.rows,
-    });
-  } catch (error) {
-    console.error("Error fetching transaction types:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy danh sách loại giao dịch",
-      error: error.message,
-    });
-  }
+        res.json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('Error fetching transaction types:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách loại giao dịch',
+            error: error.message
+        });
+    }
 };
 
 /**
  * Helper function to ensure date exists in dim_time
  */
 async function ensureDateExists(client, dateStr) {
-  const date = new Date(dateStr);
-  const dayOfWeek = date.getDay();
-  const dayNames = [
-    "Chủ nhật",
-    "Thứ hai",
-    "Thứ ba",
-    "Thứ tư",
-    "Thứ năm",
-    "Thứ sáu",
-    "Thứ bảy",
-  ];
-  const monthNames = [
-    "Tháng 1",
-    "Tháng 2",
-    "Tháng 3",
-    "Tháng 4",
-    "Tháng 5",
-    "Tháng 6",
-    "Tháng 7",
-    "Tháng 8",
-    "Tháng 9",
-    "Tháng 10",
-    "Tháng 11",
-    "Tháng 12",
-  ];
+    const date = new Date(dateStr);
+    const dayOfWeek = date.getDay();
+    const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+    const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
 
-  const checkQuery = "SELECT date_key FROM dim_time WHERE date_key = $1";
-  const checkResult = await client.query(checkQuery, [dateStr]);
+    const checkQuery = 'SELECT date_key FROM dim_time WHERE date_key = $1';
+    const checkResult = await client.query(checkQuery, [dateStr]);
 
-  if (checkResult.rows.length === 0) {
-    await client.query(
-      `
+    if (checkResult.rows.length === 0) {
+        await client.query(`
             INSERT INTO dim_time (date_key, day_of_week, day_name, week_of_year, month, month_name, quarter, year, is_weekend)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             ON CONFLICT (date_key) DO NOTHING
-        `,
-      [
-        dateStr,
-        dayOfWeek,
-        dayNames[dayOfWeek],
-        Math.ceil(
-          (date - new Date(date.getFullYear(), 0, 1)) /
-            (7 * 24 * 60 * 60 * 1000),
-        ),
-        date.getMonth() + 1,
-        monthNames[date.getMonth()],
-        Math.ceil((date.getMonth() + 1) / 3),
-        date.getFullYear(),
-        dayOfWeek === 0 || dayOfWeek === 6,
-      ],
-    );
-  }
+        `, [
+            dateStr,
+            dayOfWeek,
+            dayNames[dayOfWeek],
+            Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000)),
+            date.getMonth() + 1,
+            monthNames[date.getMonth()],
+            Math.ceil((date.getMonth() + 1) / 3),
+            date.getFullYear(),
+            dayOfWeek === 0 || dayOfWeek === 6
+        ]);
+    }
 }
 
 module.exports = {
-  getInventories,
-  getInventoryById,
-  updateInventory,
-  getInventoryHistory,
-  receiveInventory,
-  transferStock,
-  returnToSupplier,
-  getStores,
-  getTransactionTypes,
-  // Inventory Lookup
-  searchProductsForLookup,
-  getProductInventoryDetail,
+    getInventories,
+    getInventoryById,
+    updateInventory,
+    getInventoryHistory,
+    receiveInventory,
+    transferStock,
+    returnToSupplier,
+    getStores,
+    getTransactionTypes,
+    // Inventory Lookup
+    searchProductsForLookup,
+    getProductInventoryDetail
 };
 
 /**
  * GET /api/inventory/lookup/search
  * Tìm kiếm sản phẩm để tra cứu tồn kho
- *
+ * 
  * Query params:
  * - query: Tìm theo tên, SKU
  * - sort: Sắp xếp (name, price, stock)
@@ -1144,55 +998,83 @@ module.exports = {
  * - store_id: Lọc theo cửa hàng
  */
 async function searchProductsForLookup(req, res) {
-  try {
-    const {
-      query = "",
-      sort = "name",
-      order = "ASC",
-      limit = 50,
-      offset = 0,
-      store_id,
-    } = req.query;
+    try {
+        const { 
+            query = '', 
+            sort = 'name', 
+            order = 'ASC',
+            limit = 50, 
+            offset = 0,
+            store_id
+        } = req.query;
 
-    // Validate sort column
-    const validSorts = ["name", "price", "stock", "sku", "created_at"];
-    const sortColumn = validSorts.includes(sort) ? sort : "name";
-    const sortDir = order.toUpperCase() === "DESC" ? "DESC" : "ASC";
+        // Validate sort column
+        const validSorts = ['name', 'price', 'stock', 'sku', 'created_at'];
+        const sortColumn = validSorts.includes(sort) ? sort : 'name';
+        const sortDir = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
-    // Build sort mapping - sử dụng đúng tên cột trong schema
-    const sortMap = {
-      name: "p.name",
-      price: "pv.selling_price",
-      stock: "total_stock",
-      sku: "pv.sku",
-      created_at: "p.created_at",
-    };
+        // Build sort mapping - sử dụng đúng tên cột trong schema
+        const sortMap = {
+            name: 'p.name',
+<<<<<<< HEAD
+            price: 'v.selling_price',
+            stock: 'total_stock',
+            sku: 'v.sku',
+=======
+            price: 'pv.selling_price',
+            stock: 'total_stock',
+            sku: 'pv.sku',
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
+            created_at: 'p.created_at'
+        };
 
-    // Build search condition
-    let searchCondition = "";
-    const params = [];
-    let paramIndex = 0;
+        // Build search condition
+        let searchCondition = '';
+        const params = [];
+        let paramIndex = 0;
 
-    if (query && query.trim()) {
-      paramIndex++;
-      const searchTerm = `%${query.trim().toLowerCase()}%`;
-      searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(p.code) LIKE $${paramIndex} OR LOWER(pv.sku) LIKE $${paramIndex} OR LOWER(pv.barcode) LIKE $${paramIndex})`;
-      params.push(searchTerm);
-    }
+        if (query && query.trim()) {
+            paramIndex++;
+            const searchTerm = `%${query.trim().toLowerCase()}%`;
+<<<<<<< HEAD
+            searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(v.sku) LIKE $${paramIndex} OR LOWER(v.barcode) LIKE $${paramIndex})`;
+=======
+            searchCondition = `AND (LOWER(p.name) LIKE $${paramIndex} OR LOWER(p.code) LIKE $${paramIndex} OR LOWER(pv.sku) LIKE $${paramIndex} OR LOWER(pv.barcode) LIKE $${paramIndex})`;
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
+            params.push(searchTerm);
+        }
 
-    // Store filter
-    let storeCondition = "";
-    if (store_id) {
-      paramIndex++;
-      storeCondition = `AND fis.store_id = $${paramIndex}`;
-      params.push(parseInt(store_id));
-    }
+        // Store filter
+        let storeCondition = '';
+        if (store_id) {
+            paramIndex++;
+            storeCondition = `AND fis.store_id = $${paramIndex}`;
+            params.push(parseInt(store_id));
+        }
 
-    // Get products with inventory totals - sử dụng đúng schema
-    const productsQuery = `
+        // Get products with inventory totals - sử dụng đúng schema
+        const productsQuery = `
             SELECT 
                 p.id as product_id,
                 p.name,
+<<<<<<< HEAD
+                p.code,
+                v.sku,
+                v.barcode,
+                p.is_active,
+                v.id as variant_id,
+                v.variant_name,
+                v.selling_price as price,
+                COALESCE(SUM(fi.quantity_available), 0) as total_stock,
+                COUNT(DISTINCT fi.store_id) as store_count,
+                (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+            FROM dim_products p
+            INNER JOIN dim_product_variants v ON p.id = v.product_id
+            LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id ${storeCondition}
+            WHERE p.is_active = true
+            ${searchCondition}
+            GROUP BY p.id, p.name, p.code, v.sku, v.barcode, p.is_active, v.id, v.variant_name, v.selling_price
+=======
                 p.code as sku,
                 pv.barcode,
                 p.is_active,
@@ -1208,59 +1090,66 @@ async function searchProductsForLookup(req, res) {
             WHERE p.is_active = true
             ${searchCondition}
             GROUP BY p.id, p.name, p.code, pv.barcode, p.is_active, pv.id, pv.sku, pv.selling_price, p.image_url
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             ORDER BY ${sortMap[sortColumn]} ${sortDir}
             LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
         `;
 
-    params.push(parseInt(limit), parseInt(offset));
+        params.push(parseInt(limit), parseInt(offset));
 
-    const result = await pool.query(productsQuery, params);
+        const result = await pool.query(productsQuery, params);
 
-    // Get total count for pagination
-    const countParams = params.slice(0, paramIndex); // Exclude limit/offset
-    const countQuery = `
+        // Get total count for pagination
+        const countParams = params.slice(0, paramIndex); // Exclude limit/offset
+        const countQuery = `
             SELECT COUNT(DISTINCT (p.id, pv.id)) as total
             FROM dim_products p
+<<<<<<< HEAD
+            INNER JOIN dim_product_variants v ON p.id = v.product_id
+            LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id ${storeCondition}
+=======
             INNER JOIN dim_product_variants pv ON p.id = pv.product_id
             LEFT JOIN fact_inventory_stocks fis ON pv.id = fis.variant_id ${storeCondition}
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             WHERE p.is_active = true
             ${searchCondition}
         `;
 
-    const countResult = await pool.query(countQuery, countParams);
-    const total = parseInt(countResult.rows[0]?.total || 0);
+        const countResult = await pool.query(countQuery, countParams);
+        const total = parseInt(countResult.rows[0]?.total || 0);
 
-    return res.status(200).json({
-      success: true,
-      message: "Tìm kiếm sản phẩm thành công",
-      data: result.rows.map((row) => ({
-        product_id: row.product_id,
-        variant_id: row.variant_id,
-        name: row.name,
-        variant_name: row.variant_name,
-        sku: row.sku,
-        barcode: row.barcode,
-        price: parseFloat(row.price || 0),
-        total_stock: parseInt(row.total_stock || 0),
-        store_count: parseInt(row.store_count || 0),
-        image_url: row.image_url,
-        is_active: row.is_active,
-      })),
-      pagination: {
-        total,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        hasMore: parseInt(offset) + result.rows.length < total,
-      },
-    });
-  } catch (error) {
-    console.error("Search products for lookup error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi khi tìm kiếm sản phẩm",
-      error: error.message,
-    });
-  }
+        return res.status(200).json({
+            success: true,
+            message: 'Tìm kiếm sản phẩm thành công',
+            data: result.rows.map(row => ({
+                product_id: row.product_id,
+                variant_id: row.variant_id,
+                name: row.name,
+                variant_name: row.variant_name,
+                sku: row.sku,
+                barcode: row.barcode,
+                price: parseFloat(row.price || 0),
+                total_stock: parseInt(row.total_stock || 0),
+                store_count: parseInt(row.store_count || 0),
+                image_url: row.image_url,
+                is_active: row.is_active
+            })),
+            pagination: {
+                total,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                hasMore: parseInt(offset) + result.rows.length < total
+            }
+        });
+
+    } catch (error) {
+        console.error('Search products for lookup error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tìm kiếm sản phẩm',
+            error: error.message
+        });
+    }
 }
 
 /**
@@ -1268,60 +1157,88 @@ async function searchProductsForLookup(req, res) {
  * Chi tiết tồn kho sản phẩm theo từng chi nhánh/cửa hàng
  */
 async function getProductInventoryDetail(req, res) {
-  try {
-    const { productId } = req.params;
+    try {
+        const { productId } = req.params;
 
-    // Get product info
-    const productResult = await pool.query(
-      `
+        // Get product info
+        const productResult = await pool.query(`
             SELECT 
                 p.id,
                 p.name,
+<<<<<<< HEAD
+                p.code,
+                p.description,
+                p.is_active,
+                (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+=======
                 p.code as sku,
                 pv.barcode,
                 p.description,
                 p.is_active,
                 p.image_url
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             FROM dim_products p
             LEFT JOIN dim_product_variants pv ON p.id = pv.product_id
             WHERE p.id = $1
             LIMIT 1
-        `,
-      [productId],
-    );
+        `, [productId]);
 
-    if (productResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm",
-      });
-    }
+        if (productResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
 
-    const product = productResult.rows[0];
+        const product = productResult.rows[0];
 
-    // Get variants with prices
-    const variantsResult = await pool.query(
-      `
+        // Get variants with prices
+        const variantsResult = await pool.query(`
             SELECT 
                 v.id,
+<<<<<<< HEAD
+                v.variant_name,
+                v.sku as variant_sku,
+                v.selling_price,
+=======
                 v.sku as name,
                 v.sku as variant_sku,
                 v.selling_price as sale_price,
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
                 v.cost_price,
                 COALESCE(SUM(fis.quantity_on_hand), 0) as total_stock
             FROM dim_product_variants v
+<<<<<<< HEAD
+            LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id
+            WHERE v.product_id = $1
+            GROUP BY v.id, v.variant_name, v.sku, v.selling_price, v.cost_price
+            ORDER BY v.variant_name ASC
+=======
             LEFT JOIN fact_inventory_stocks fis ON v.id = fis.variant_id
             WHERE v.product_id = $1
             GROUP BY v.id, v.sku, v.selling_price, v.cost_price
             ORDER BY v.sku ASC
-        `,
-      [productId],
-    );
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
+        `, [productId]);
 
-    // Get inventory by store for each variant
-    const inventoryResult = await pool.query(
-      `
+        // Get inventory by store for each variant
+        const inventoryResult = await pool.query(`
             SELECT 
+<<<<<<< HEAD
+                fi.variant_id,
+                s.id as store_id,
+                s.name as store_name,
+                s.code as store_code,
+                c.name as city,
+                fi.quantity_available as stock,
+                fi.quantity_reserved,
+                fi.min_stock_level as reorder_point,
+                fi.last_updated as updated_at
+            FROM fact_inventory_stocks fi
+            INNER JOIN dim_stores s ON fi.store_id = s.id
+            INNER JOIN subdim_cities c ON s.city_id = c.id
+            INNER JOIN dim_product_variants v ON fi.variant_id = v.id
+=======
                 fis.variant_id,
                 s.id as store_id,
                 s.name as store_name,
@@ -1334,73 +1251,70 @@ async function getProductInventoryDetail(req, res) {
             FROM fact_inventory_stocks fis
             INNER JOIN dim_stores s ON fis.store_id = s.id
             INNER JOIN dim_product_variants v ON fis.variant_id = v.id
+>>>>>>> bc12d01134da5f1fd8eff1de712122070ec4f429
             WHERE v.product_id = $1
             ORDER BY s.name ASC
-        `,
-      [productId],
-    );
+        `, [productId]);
 
-    // Organize inventory by store
-    const storeInventoryMap = {};
-    inventoryResult.rows.forEach((row) => {
-      const storeKey = row.store_id;
-      if (!storeInventoryMap[storeKey]) {
-        storeInventoryMap[storeKey] = {
-          store_id: row.store_id,
-          store_name: row.store_name,
-          store_code: row.store_code,
-          city: row.city,
-          variants: [],
-        };
-      }
-      storeInventoryMap[storeKey].variants.push({
-        variant_id: row.variant_id,
-        stock: parseInt(row.stock || 0),
-        reserved: parseInt(row.quantity_reserved || 0),
-        reorder_point: parseInt(row.reorder_point || 0),
-        updated_at: row.updated_at,
-      });
-    });
+        // Organize inventory by store
+        const storeInventoryMap = {};
+        inventoryResult.rows.forEach(row => {
+            const storeKey = row.store_id;
+            if (!storeInventoryMap[storeKey]) {
+                storeInventoryMap[storeKey] = {
+                    store_id: row.store_id,
+                    store_name: row.store_name,
+                    store_code: row.store_code,
+                    city: row.city,
+                    variants: []
+                };
+            }
+            storeInventoryMap[storeKey].variants.push({
+                variant_id: row.variant_id,
+                stock: parseInt(row.stock || 0),
+                reserved: parseInt(row.quantity_reserved || 0),
+                reorder_point: parseInt(row.reorder_point || 0),
+                updated_at: row.updated_at
+            });
+        });
 
-    // Calculate total stock
-    const totalStock = variantsResult.rows.reduce(
-      (sum, v) => sum + parseInt(v.total_stock || 0),
-      0,
-    );
+        // Calculate total stock
+        const totalStock = variantsResult.rows.reduce((sum, v) => sum + parseInt(v.total_stock || 0), 0);
 
-    // Get default price from first variant
-    const defaultPrice = variantsResult.rows[0]?.selling_price || 0;
+        // Get default price from first variant
+        const defaultPrice = variantsResult.rows[0]?.selling_price || 0;
 
-    return res.status(200).json({
-      success: true,
-      message: "Lấy chi tiết tồn kho thành công",
-      data: {
-        product_id: product.id,
-        name: product.name,
-        code: product.code,
-        description: product.description,
-        is_active: product.is_active,
-        imageUrl: product.image_url,
-        price: parseFloat(defaultPrice),
-        total_stock: totalStock,
-        productDetailUrl: `/products/${product.id}`,
-        variants: variantsResult.rows.map((v) => ({
-          id: v.id,
-          name: v.variant_name,
-          sku: v.variant_sku,
-          selling_price: parseFloat(v.selling_price || 0),
-          cost_price: parseFloat(v.cost_price || 0),
-          total_stock: parseInt(v.total_stock || 0),
-        })),
-        stores: Object.values(storeInventoryMap),
-      },
-    });
-  } catch (error) {
-    console.error("Get product inventory detail error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi khi lấy chi tiết tồn kho",
-      error: error.message,
-    });
-  }
+        return res.status(200).json({
+            success: true,
+            message: 'Lấy chi tiết tồn kho thành công',
+            data: {
+                product_id: product.id,
+                name: product.name,
+                code: product.code,
+                description: product.description,
+                is_active: product.is_active,
+                imageUrl: product.image_url,
+                price: parseFloat(defaultPrice),
+                total_stock: totalStock,
+                productDetailUrl: `/products/${product.id}`,
+                variants: variantsResult.rows.map(v => ({
+                    id: v.id,
+                    name: v.variant_name,
+                    sku: v.variant_sku,
+                    selling_price: parseFloat(v.selling_price || 0),
+                    cost_price: parseFloat(v.cost_price || 0),
+                    total_stock: parseInt(v.total_stock || 0)
+                })),
+                stores: Object.values(storeInventoryMap)
+            }
+        });
+
+    } catch (error) {
+        console.error('Get product inventory detail error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy chi tiết tồn kho',
+            error: error.message
+        });
+    }
 }

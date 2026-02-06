@@ -7,7 +7,6 @@ import "element-plus/dist/index.css";
 import "./style/main.css";
 import "./style/tailwind.css";
 import "./style/responsive_style.css";
-import { useAuthStore } from "./store";
 
 // Ignore ResizeObserver loop errors (common with Element Plus components)
 window.addEventListener("error", (e) => {
@@ -35,12 +34,8 @@ window.addEventListener("error", (e) => {
 const app = createApp(App);
 const pinia = createPinia(); // 2. Tạo một instance của Pinia
 
-app.use(pinia); // 3. Yêu cầu Vue sử dụng Pinia (PHẢI dùng trước router)
 app.use(router);
 app.use(ElementPlus);
-
-// 4. Load user từ localStorage sau khi Pinia đã được khởi tạo
-const authStore = useAuthStore();
-authStore.loadUserFromStorage();
+app.use(pinia); // 3. Yêu cầu Vue sử dụng Pinia
 
 app.mount("#app");

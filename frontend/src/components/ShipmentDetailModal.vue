@@ -7,36 +7,20 @@
   >
     <div v-if="shipment" class="shipment-details">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="Mã vận đơn">{{
-          shipment.shipmentCode
-        }}</el-descriptions-item>
-        <el-descriptions-item label="Mã đơn hàng">{{
-          shipment.orderCode
-        }}</el-descriptions-item>
-        <el-descriptions-item label="Khách hàng">{{
-          shipment.customerName
-        }}</el-descriptions-item>
-        <el-descriptions-item label="Đối tác vận chuyển">{{
-          shipment.carrier
-        }}</el-descriptions-item>
+        <el-descriptions-item label="Mã vận đơn">{{ shipment.shipmentCode }}</el-descriptions-item>
+        <el-descriptions-item label="Mã đơn hàng">{{ shipment.orderCode }}</el-descriptions-item>
+        <el-descriptions-item label="Khách hàng">{{ shipment.customerName }}</el-descriptions-item>
+        <el-descriptions-item label="Đối tác vận chuyển">{{ shipment.carrier }}</el-descriptions-item>
         <el-descriptions-item label="Phí vận chuyển">
-          <span style="font-weight: bold">{{
-            formatCurrency(shipment.shippingFee)
-          }}</span>
+          <span style="font-weight: bold;">{{ formatCurrency(shipment.shippingFee) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="Trạng thái">
-          <el-select
-            v-model="editableStatus"
-            placeholder="Cập nhật"
-            size="small"
-            style="width: 180px"
-            :loading="isLoading"
-          >
+          <el-select v-model="editableStatus" placeholder="Cập nhật" size="small" style="width: 150px;">
             <el-option
               v-for="s in availableStatuses"
-              :key="s.value"
-              :label="s.label"
-              :value="s.value"
+              :key="s"
+              :label="s"
+              :value="s"
             />
           </el-select>
         </el-descriptions-item>
@@ -66,9 +50,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
-import shipmentService from "@/services/shipmentService";
+import { defineProps, defineEmits, computed, ref, watch } from 'vue';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -78,79 +60,44 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:modelValue", "update:shipment"]);
-
-const isLoading = ref(false);
-const trackingHistory = ref([]);
+const emit = defineEmits(['update:modelValue', 'update:shipment']);
 
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (value) => emit("update:modelValue", value),
+  set: (value) => emit('update:modelValue', value),
 });
 
 const handleClose = () => {
   dialogVisible.value = false;
 };
 
-const editableStatus = ref("");
+const editableStatus = ref('');
 const availableStatuses = [
-  { label: "Chờ lấy hàng", value: "pending" },
-  { label: "Đã lấy hàng", value: "picked" },
-  { label: "Đang vận chuyển", value: "shipping" },
-  { label: "Giao thành công", value: "delivered" },
-  { label: "Chuyển hoàn", value: "returning" },
-  { label: "Đã hoàn", value: "returned" },
-  { label: "Hủy", value: "cancelled" },
+  'Chờ lấy hàng',
+  'Đang giao',
+  'Giao thành công',
+  'Chuyển hoàn',
 ];
 
-watch(
-  () => props.shipment,
-  async (newShipment) => {
-    if (newShipment) {
-      editableStatus.value = newShipment.status_code || newShipment.status;
+watch(() => props.shipment, (newShipment) => {
+  if (newShipment) {
+    editableStatus.value = newShipment.status;
+  }
+}, { immediate: true });
 
-      // Load tracking history from API
-      if (newShipment.tracking_history) {
-        trackingHistory.value = newShipment.tracking_history.map((item) => ({
-          content: item.description || item.status_name,
-          timestamp: new Date(item.tracked_at).toLocaleString("vi-VN"),
-          type: item.status_code === "delivered" ? "success" : undefined,
-        }));
-      }
-    }
-  },
-  { immediate: true },
-);
-
-watch(editableStatus, async (newStatus) => {
-  if (
-    props.shipment &&
-    newStatus !== (props.shipment.status_code || props.shipment.status)
-  ) {
-    try {
-      isLoading.value = true;
-      const response = await shipmentService.updateShipmentStatus(
-        props.shipment.id,
-        {
-          status: newStatus,
-          description: `Cập nhật trạng thái thành ${newStatus}`,
-        },
-      );
-
-      if (response.data.success) {
-        ElMessage.success("Cập nhật trạng thái thành công!");
-        emit("update:shipment", { ...props.shipment, status_code: newStatus });
-      }
-    } catch (error) {
-      console.error("Update status error:", error);
-      ElMessage.error("Không thể cập nhật trạng thái");
-      editableStatus.value =
-        props.shipment.status_code || props.shipment.status;
-    } finally {
-      isLoading.value = false;
-    }
+watch(editableStatus, (newStatus) => {
+  if (props.shipment && newStatus !== props.shipment.status) {
+    emit('update:shipment', { ...props.shipment, status: newStatus });
   }
 });
+
+// Dummy data for tracking history
+const trackingHistory = ref([
+    { content: 'Giao hàng thành công', timestamp: '2025-08-09 14:30', type: 'success' },
+    { content: 'Đang giao hàng', timestamp: '2025-08-09 09:15' },
+    { content: 'Đã lấy hàng', timestamp: '2025-08-08 18:00' },
+    { content: 'Đối tác đã tạo vận đơn', timestamp: '2025-08-08 16:00' },
+]);
 
 // Helper functions
 const formatCurrency = (value) => (value || 0).toLocaleString("vi-VN") + "đ";
@@ -158,7 +105,7 @@ const formatCurrency = (value) => (value || 0).toLocaleString("vi-VN") + "đ";
 
 <style scoped>
 .shipment-details h4 {
-  margin-top: 20px;
-  margin-bottom: 15px;
+    margin-top: 20px;
+    margin-bottom: 15px;
 }
 </style>

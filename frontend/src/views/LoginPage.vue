@@ -5,37 +5,14 @@
       <div class="circle circle-2"></div>
       <div class="circle circle-3"></div>
     </div>
-
+    
     <form @submit.prevent="handleLogin" class="login-form">
       <div class="form-header">
         <div class="logo-container">
-          <svg
-            class="logo-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 2L2 7L12 12L22 7L12 2Z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M2 17L12 22L22 17"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M2 12L12 17L22 12"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <h2>Đăng nhập</h2>
@@ -45,28 +22,9 @@
       <div class="form-body">
         <div class="form-group">
           <label for="username">
-            <svg
-              class="input-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <circle
-                cx="12"
-                cy="7"
-                r="4"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Tên đăng nhập
           </label>
@@ -84,31 +42,9 @@
 
         <div class="form-group">
           <label for="password">
-            <svg
-              class="input-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                x="3"
-                y="11"
-                width="18"
-                height="11"
-                rx="2"
-                ry="2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Mật khẩu
           </label>
@@ -127,57 +63,19 @@
         <button type="submit" :disabled="isLoading" class="submit-button">
           <span v-if="!isLoading">Đăng nhập</span>
           <span v-else class="loading-content">
-            <svg
-              class="spinner"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-                stroke-opacity="0.25"
-              />
-              <path
-                d="M12 2C13.3132 2 14.6136 2.25866 15.8268 2.7612C17.0401 3.26375 18.1425 4.00035 19.0711 4.92893C19.9997 5.85752 20.7362 6.95991 21.2388 8.17317C21.7413 9.38642 22 10.6868 22 12"
-                stroke="currentColor"
-                stroke-width="4"
-                stroke-linecap="round"
-              />
+            <svg class="spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"/>
+              <path d="M12 2C13.3132 2 14.6136 2.25866 15.8268 2.7612C17.0401 3.26375 18.1425 4.00035 19.0711 4.92893C19.9997 5.85752 20.7362 6.95991 21.2388 8.17317C21.7413 9.38642 22 10.6868 22 12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
             </svg>
             Đang đăng nhập...
           </span>
         </button>
 
         <div v-if="error" class="error-message">
-          <svg
-            class="error-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-            <path
-              d="M12 8V12"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-            <path
-              d="M12 16H12.01"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
           <span>{{ error }}</span>
         </div>
@@ -188,58 +86,53 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { useAuthStore } from "@/store";
-import { storeToRefs } from "pinia";
-import { ElMessage } from "element-plus";
+import { useRouter } from "vue-router";
+import { useAuth } from "@/composables/useAuth";
+import Swal from "sweetalert2"; // ✅ import SweetAlert2
 
 const router = useRouter();
-const route = useRoute();
-const authStore = useAuthStore();
+const { login } = useAuth();
 
-// Lấy state từ store
-const { loading, error } = storeToRefs(authStore);
-
-// Form data
 const username = ref("");
 const password = ref("");
 const isLoading = ref(false);
+const error = ref("");
 
-// Handle login với Pinia Store
 const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    ElMessage.error("Vui lòng nhập đầy đủ thông tin!");
-    return;
-  }
-
   isLoading.value = true;
+  error.value = "";
+  try {
+    const loggedInUser = await login(username.value, password.value);
 
-  // Clear error trước khi login
-  authStore.error = null;
+    // ✅ Hiển thị alert đẹp
+    await Swal.fire({
+      icon: "success",
+      title: "Đăng nhập thành công!",
+      text: `Chào mừng ${username.value}!`,
+      timer: 2000,
+      showConfirmButton: false,
+      timerProgressBar: true,
+    });
 
-  const result = await authStore.login({
-    username: username.value,
-    password: password.value,
-  });
+    const targetRoute =
+      loggedInUser?.role === "staff" ? { name: "StaffPOS" } : { name: "DashboardOverview" };
+    router.push(targetRoute);
+  } catch (err) {
+    // ❌ Alert lỗi
+    await Swal.fire({
+      icon: "error",
+      title: "Lỗi đăng nhập",
+      text: err.message || "Vui lòng thử lại.",
+      confirmButtonText: "Thử lại",
+    });
 
-  isLoading.value = false;
-
-  if (result.success) {
-    ElMessage.success("Đăng nhập thành công!");
-
-    // Redirect về trang trước đó hoặc dashboard
-    const redirect = route.query.redirect || "/dashboard";
-    router.push(redirect);
-  } else {
-    ElMessage.error(result.error || "Đăng nhập thất bại!");
+    error.value = err.message || "Đăng nhập thất bại. Vui lòng thử lại.";
+  } finally {
+    isLoading.value = false;
   }
 };
 
 onMounted(() => {
-  // Nếu đã login rồi thì redirect
-  if (authStore.isAuthenticated) {
-    router.push("/dashboard");
-  }
   console.log("LoginPage component loaded");
 });
 </script>
@@ -253,14 +146,7 @@ onMounted(() => {
   align-items: center;
   padding: 2rem;
   overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    #667eea 0%,
-    #764ba2 25%,
-    #f093fb 50%,
-    #4facfe 75%,
-    #00f2fe 100%
-  );
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
@@ -320,8 +206,7 @@ onMounted(() => {
 }
 
 @keyframes float {
-  0%,
-  100% {
+  0%, 100% {
     transform: translate(0, 0) scale(1);
   }
   33% {
@@ -339,7 +224,8 @@ onMounted(() => {
   backdrop-filter: blur(20px);
   padding: 3rem 2.5rem;
   border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   width: 100%;
   max-width: 450px;
@@ -379,8 +265,7 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -463,7 +348,8 @@ input:hover {
 input:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1),
+  box-shadow: 
+    0 0 0 4px rgba(102, 126, 234, 0.1),
     0 4px 16px rgba(102, 126, 234, 0.2);
   transform: translateY(-1px);
 }
@@ -479,25 +365,21 @@ input:focus {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4),
+  box-shadow: 
+    0 4px 14px rgba(102, 126, 234, 0.4),
     0 0 0 0 rgba(102, 126, 234, 0.5);
   overflow: hidden;
   margin-top: 0.5rem;
 }
 
 .submit-button::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   transition: left 0.5s;
 }
 
@@ -507,7 +389,8 @@ input:focus {
 
 .submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5),
+  box-shadow: 
+    0 8px 24px rgba(102, 126, 234, 0.5),
     0 0 0 4px rgba(102, 126, 234, 0.2);
 }
 
@@ -562,8 +445,7 @@ input:focus {
 }
 
 @keyframes shake {
-  0%,
-  100% {
+  0%, 100% {
     transform: translateX(0);
   }
   25% {
