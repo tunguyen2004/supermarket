@@ -260,12 +260,17 @@ import { ref, onMounted, nextTick } from "vue";
 import Chart from "chart.js/auto";
 import dashboardService from "@/services/dashboardService";
 import formatCurrency from "@/utils/formatCurrency";
-import { useAuth } from "@/composables/useAuth";
+import { useAuthStore } from "@/store";
+import { storeToRefs } from "pinia";
 
 export default {
   name: "DashboardOverview",
   setup() {
-    const { user } = useAuth();
+    const authStore = useAuthStore();
+
+    // Lấy user từ store
+    const { user, userName } = storeToRefs(authStore);
+
     // Data State
     const overview = ref({});
     const stats = ref({});
@@ -285,34 +290,28 @@ export default {
     const getDates = () => {
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0); // End of month or today? Usually today for realism
-      // Format YYYY-MM-DD
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       const formatDate = (d) => d.toISOString().split("T")[0];
       return {
         from: formatDate(firstDay),
-        to: formatDate(now), // or lastDay
+        to: formatDate(now),
       };
     };
 
     const dates = getDates();
 
-    // Fetch Methods
+    // Fetch Methods - Sử dụng dashboard store hoặc trực tiếp service
+    // Có thể refactor sau để dùng useDashboardStore() nếu cần cache
     const fetchAllData = async () => {
       try {
-        // Parallel requests
-        const [
-          overviewRes,
-          statsRes,
-          topProdRes,
-          topCustRes,
-          lowStockRes,
-        ] = await Promise.all([
-          dashboardService.getOverview(),
-          dashboardService.getStats({ ...dates }),
-          dashboardService.getTopProducts({ ...dates, limit: 5 }),
-          dashboardService.getTopCustomers({ ...dates, limit: 5 }),
-          dashboardService.getLowStock({ limit: 5 }),
-        ]);
+        const [overviewRes, statsRes, topProdRes, topCustRes, lowStockRes] =
+          await Promise.all([
+            dashboardService.getOverview(),
+            dashboardService.getStats({ ...dates }),
+            dashboardService.getTopProducts({ ...dates, limit: 5 }),
+            dashboardService.getTopCustomers({ ...dates, limit: 5 }),
+            dashboardService.getLowStock({ limit: 5 }),
+          ]);
 
         if (overviewRes.data.success) {
           overview.value = overviewRes.data.data;
@@ -444,7 +443,7 @@ export default {
       // Map data for chart js if API returns array of objects
       let labels = [];
       let values = [];
-      
+
       if (Array.isArray(data)) {
         labels = data.map((d) => d.channel);
         values = data.map((d) => d.revenue);

@@ -191,15 +191,21 @@
 
 <script>
 import { ref, computed, onMounted } from "vue";
-import { ElPopover, ElTabs, ElTabPane } from "element-plus";
-import { useAuth } from "@/composables/useAuth";
-import authService from "@/services/authService";
-import apiClient from "@/services/apiClient";
+import { useRouter } from "vue-router";
+import { ElPopover, ElTabs, ElTabPane, ElMessage } from "element-plus";
+import { useAuthStore } from "@/store";
+import { storeToRefs } from "pinia";
 import { getProfile } from "@/services/userService";
 
 export default {
   name: "AppHeader",
   setup() {
+    const router = useRouter();
+    const authStore = useAuthStore();
+
+    // Lấy user từ store
+    const { user, userName, userAvatar } = storeToRefs(authStore);
+
     // Search + gợi ý
     const searchQuery = ref("");
     const showSuggestions = ref(false);
@@ -236,14 +242,21 @@ export default {
     const unreadCount = computed(() => notifications.value.length);
 
     // User dropdown
-    const { user, logout } = useAuth();
     const dropdownOpen = ref(false);
     const avatarUrl = ref("");
 
     const fullAvatarUrl = computed(() => {
-      if (!avatarUrl.value) return "";
-      if (avatarUrl.value.startsWith("http")) return avatarUrl.value;
-      return `http://localhost:5000${avatarUrl.value}`;
+      // Ưu tiên avatar từ profile API
+      if (avatarUrl.value) {
+        if (avatarUrl.value.startsWith("http")) return avatarUrl.value;
+        return `http://localhost:5000${avatarUrl.value}`;
+      }
+      // Fallback về userAvatar từ store
+      if (userAvatar.value) {
+        if (userAvatar.value.startsWith("http")) return userAvatar.value;
+        return `http://localhost:5000${userAvatar.value}`;
+      }
+      return "";
     });
 
     onMounted(async () => {
@@ -258,9 +271,7 @@ export default {
     });
 
     const userDisplayName = computed(() => {
-      return (
-        user.value?.full_name || user.value?.username || "Admin Supermarket"
-      );
+      return userName.value || user.value?.username || "Admin Supermarket";
     });
 
     const userInitials = computed(() => {
@@ -271,18 +282,32 @@ export default {
         .slice(0, 2)
         .toUpperCase();
     });
+
     const toggleDropdown = () => {
       dropdownOpen.value = !dropdownOpen.value;
     };
+
     const closeDropdown = () => {
       setTimeout(() => {
         dropdownOpen.value = false;
       }, 150);
     };
 
+    // Logout với Pinia Store
+    const logout = async () => {
+      try {
+        await authStore.logout();
+        ElMessage.success("Đăng xuất thành công!");
+        router.push("/login");
+      } catch (error) {
+        console.error("Logout error:", error);
+        ElMessage.error("Có lỗi khi đăng xuất!");
+      }
+    };
+
     // Utils
     const goTo = (path) => {
-      window.location.href = path;
+      router.push(path);
     };
 
     return {

@@ -50,10 +50,8 @@ import MyAccount from "@/views/Account/MyAccount.vue";
 // import trang quáº£n lÃ½ nhÃ¢n viÃªn
 import Staff from "@/views/Users/personnel-management/staff.vue";
 
-
-// test role nhÃ¢n viÃªn 
+// test role nhÃ¢n viÃªn
 import staffRoutes from "./modules/staff.routes";
-
 
 const routes = [
   {
@@ -255,29 +253,62 @@ const router = createRouter({
   routes,
 });
 
+// Import Auth Store để check authentication
+import { useAuthStore } from "@/store";
+
 router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
   const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth);
   const routeRoles = to.matched.flatMap((record) => record.meta?.roles || []);
-  const token = localStorage.getItem("token");
-  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const userRole = storedUser.role;
 
-  if (requiresAuth && !token) {
+  // Load user from storage nếu chưa có (trường hợp refresh page)
+  if (!authStore.user && authStore.token) {
+    authStore.loadUserFromStorage();
+  }
+
+  // Nếu đã authenticated và đang truy cập login page → redirect về dashboard
+  if (to.name === "Login" && authStore.isAuthenticated) {
+    return next({ name: "DashboardOverview" });
+  }
+
+  // Check authentication
+  if (requiresAuth && !authStore.isAuthenticated) {
     return next({ name: "Login", query: { redirect: to.fullPath } });
   }
 
-  if (routeRoles.length && !routeRoles.includes(userRole)) {
-    if (userRole === "admin") {
-      return next({ name: "DashboardOverview" });
-    }
-    if (userRole === "staff") {
-      return next({ name: "StaffPOS" });
-    }
-    return next({ name: "Login" });
+  // Nếu không require auth → cho qua
+  if (!requiresAuth) {
+    return next();
   }
 
+  // Check roles nếu route có yêu cầu roles cụ thể
+  if (routeRoles.length > 0 && authStore.user) {
+    // Map role_id sang role name để so sánh
+    const roleMap = {
+      1: "admin",
+      2: "manager",
+      3: "staff",
+    };
+
+    const userRole = roleMap[authStore.user.role_id];
+
+    // Kiểm tra user có role phù hợp không
+    if (!userRole || !routeRoles.includes(userRole)) {
+      // Redirect based on role
+      if (authStore.isAdmin) {
+        return next({ name: "DashboardOverview" });
+      }
+      if (authStore.isStaff) {
+        return next({ name: "StaffPOS" });
+      }
+      // Nếu không có role phù hợp → logout
+      authStore.logout();
+      return next({ name: "Login" });
+    }
+  }
+
+  // Tất cả checks passed → cho qua
   next();
 });
 
 export default router;
-

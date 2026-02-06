@@ -37,9 +37,12 @@
           placeholder="Đối tác giao hàng"
           clearable
         >
-          <el-option label="GHTK" value="GHTK"></el-option>
-          <el-option label="Viettel Post" value="Viettel Post"></el-option>
-          <el-option label="VNPost" value="VNPost"></el-option>
+          <el-option
+            v-for="carrier in carriers"
+            :key="carrier.id"
+            :label="carrier.name"
+            :value="carrier.id"
+          ></el-option>
         </el-select>
       </div>
 
@@ -134,11 +137,11 @@
 
     <div class="pagination-container">
       <el-pagination
-        v-if="filteredShipments.length > 0"
+        v-if="totalShipments > 0"
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredShipments.length"
+        :total="totalShipments"
         :page-size="pageSize"
         v-model:current-page="currentPage"
       />
@@ -231,6 +234,7 @@ import {
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import ShipmentDetailModal from "@/components/ShipmentDetailModal.vue";
+import shipmentService from "@/services/shipmentService";
 
 // --- ROUTER & RESPONSIVE ---
 const router = useRouter();
@@ -253,42 +257,12 @@ const search = ref("");
 const activeTab = ref("all");
 const carrierFilter = ref("");
 const currentPage = ref(1);
-const pageSize = 10;
+const pageSize = ref(20);
 const shipments = ref([]);
-const sampleShipments = [
-  {
-    shipmentCode: "GHTK819237123",
-    orderCode: "DH1234",
-    customerName: "Trần Văn An",
-    carrier: "GHTK",
-    shippingFee: 35000,
-    status: "Đang giao",
-  },
-  {
-    shipmentCode: "VTP293842344",
-    orderCode: "DH1235",
-    customerName: "Phạm Mỹ Duyên",
-    carrier: "Viettel Post",
-    shippingFee: 40000,
-    status: "Giao thành công",
-  },
-  {
-    shipmentCode: "GHTK819237124",
-    orderCode: "DH1233",
-    customerName: "Nguyễn Thị Bình",
-    carrier: "GHTK",
-    shippingFee: 25000,
-    status: "Chờ lấy hàng",
-  },
-  {
-    shipmentCode: "VNPOST2384723",
-    orderCode: "DH1231",
-    customerName: "Võ Thành Danh",
-    carrier: "VNPost",
-    shippingFee: 30000,
-    status: "Chuyển hoàn",
-  },
-];
+const carriers = ref([]);
+const statuses = ref([]);
+const totalShipments = ref(0);
+const totalPages = ref(0);
 
 // --- HELPER FUNCTIONS ---
 const checkScreenSize = () => {
@@ -306,50 +280,108 @@ const getStatusType = (status) => {
 };
 const getStatusFromTab = (tabName) => {
   const statusMap = {
-    pending: "Chờ lấy hàng",
-    shipping: "Đang giao",
-    delivered: "Giao thành công",
-    returning: "Chuyển hoàn",
+    pending: "pending",
+    shipping: "shipping",
+    delivered: "delivered",
+    returning: "returning",
   };
   return statusMap[tabName];
 };
 
-// --- COMPUTED PROPERTIES ---
-const filteredShipments = computed(() => {
-  return shipments.value.filter((item) => {
-    const searchMatch = search.value
-      ? item.shipmentCode.toLowerCase().includes(search.value.toLowerCase()) ||
-        item.orderCode.toLowerCase().includes(search.value.toLowerCase())
-      : true;
-    const carrierMatch = carrierFilter.value
-      ? item.carrier === carrierFilter.value
-      : true;
-    const tabMatch =
-      activeTab.value === "all"
-        ? true
-        : item.status === getStatusFromTab(activeTab.value);
-    return searchMatch && carrierMatch && tabMatch;
-  });
-});
+// --- API CALLS ---
+const fetchShipments = async () => {
+  isLoading.value = true;
+  try {
+    const params = {
+      page: currentPage.value,
+      limit: pageSize.value,
+      search: search.value || undefined,
+      status:
+        activeTab.value !== "all"
+          ? getStatusFromTab(activeTab.value)
+          : undefined,
+      carrier_id: carrierFilter.value || undefined,
+    };
 
-const pagedShipments = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredShipments.value.slice(start, start + pageSize);
-});
+    const response = await shipmentService.getShipments(params);
+
+    if (response.data.success) {
+      // Map backend data to frontend format
+      shipments.value = response.data.data.map((item) => ({
+        id: item.id,
+        shipmentCode: item.shipment_code,
+        orderCode: item.order_code,
+        customerName: item.recipient_name,
+        carrier: item.carrier_name || "N/A",
+        carrierId: item.carrier_code,
+        shippingFee: item.shipping_fee,
+        status: item.status_name,
+        statusCode: item.status_code,
+        trackingCode: item.tracking_code,
+        recipientPhone: item.recipient_phone,
+        recipientAddress: item.recipient_address,
+        createdAt: item.created_at,
+      }));
+
+      totalShipments.value = response.data.pagination?.total || 0;
+      totalPages.value = response.data.pagination?.totalPages || 0;
+    }
+  } catch (error) {
+    console.error("Fetch shipments error:", error);
+    ElMessage.error("Không thể tải danh sách vận đơn");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const fetchCarriers = async () => {
+  try {
+    const response = await shipmentService.getCarriers();
+    if (response.data.success) {
+      carriers.value = response.data.data;
+    }
+  } catch (error) {
+    console.error("Fetch carriers error:", error);
+  }
+};
+
+const fetchStatuses = async () => {
+  try {
+    const response = await shipmentService.getShipmentStatuses();
+    if (response.data.success) {
+      statuses.value = response.data.data;
+    }
+  } catch (error) {
+    console.error("Fetch statuses error:", error);
+  }
+};
+
+// --- COMPUTED PROPERTIES ---
+// Backend đã xử lý filter và pagination, chỉ cần return shipments
+const filteredShipments = computed(() => shipments.value);
+const pagedShipments = computed(() => shipments.value);
 
 // --- EVENT HANDLERS ---
 const createShipment = () => {
   router.push({ name: "CreateShipment" });
 };
 
-const viewShipment = (shipment) => {
-  selectedShipment.value = shipment;
-  isDetailModalVisible.value = true;
+const viewShipment = async (shipment) => {
+  try {
+    const response = await shipmentService.getShipmentById(shipment.id);
+    if (response.data.success) {
+      selectedShipment.value = response.data.data;
+      isDetailModalVisible.value = true;
+    }
+  } catch (error) {
+    console.error("Get shipment detail error:", error);
+    ElMessage.error("Không thể tải chi tiết vận đơn");
+  }
 };
 
 const handleShipmentUpdate = (updatedShipment) => {
   const index = shipments.value.findIndex(
-    (s) => s.shipmentCode === updatedShipment.shipmentCode
+    (s) => s.shipmentCode === updatedShipment.shipmentCode,
   );
   if (index !== -1) {
     shipments.value[index] = updatedShipment;
@@ -381,15 +413,19 @@ const handleExport = () => {
 // --- LIFECYCLE & WATCHERS ---
 watch([search, activeTab, carrierFilter], () => {
   currentPage.value = 1;
+  fetchShipments();
+});
+
+watch(currentPage, () => {
+  fetchShipments();
 });
 
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    shipments.value = sampleShipments;
-    isLoading.value = false;
-  }, 500);
+  fetchShipments();
+  fetchCarriers();
+  fetchStatuses();
 });
 
 onUnmounted(() => {
