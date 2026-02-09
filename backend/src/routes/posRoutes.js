@@ -1,10 +1,10 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const posService = require('../services/posService');
-const { verifyToken } = require('../middleware/auth');
-const validate = require('../middleware/validate');
-const { posValidator } = require('../validators');
+const posService = require("../services/posService");
+const { verifyToken } = require("../middleware/auth");
+const validate = require("../middleware/validate");
+const { posValidator } = require("../validators");
 
 /**
  * @swagger
@@ -51,10 +51,11 @@ const { posValidator } = require('../validators');
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/checkout', 
-  verifyToken, 
+router.post(
+  "/checkout",
+  verifyToken,
   validate(posValidator.checkoutSchema),
-  posService.checkout
+  posService.checkout,
 );
 
 /**
@@ -99,10 +100,7 @@ router.post('/checkout',
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get('/products/search', 
-  verifyToken, 
-  posService.searchProducts
-);
+router.get("/products/search", verifyToken, posService.searchProducts);
 
 /**
  * @swagger
@@ -128,9 +126,10 @@ router.get('/products/search',
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get('/products/:variantId/price', 
-  verifyToken, 
-  posService.getProductPrice
+router.get(
+  "/products/:variantId/price",
+  verifyToken,
+  posService.getProductPrice,
 );
 
 /**
@@ -153,10 +152,52 @@ router.get('/products/:variantId/price',
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/orders/draft', 
-  verifyToken, 
+router.post(
+  "/orders/draft",
+  verifyToken,
   validate(posValidator.draftSchema),
-  posService.saveDraft
+  posService.saveDraft,
+);
+
+/**
+ * @swagger
+ * /api/pos/orders/draft/create-empty:
+ *   post:
+ *     summary: Tạo đơn hàng tạm trống khi mở POS
+ *     tags: [POS]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               store_id:
+ *                 type: integer
+ *                 description: ID cửa hàng
+ *     responses:
+ *       201:
+ *         description: Tạo đơn tạm trống thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.post(
+  "/orders/draft/create-empty",
+  verifyToken,
+  posService.createEmptyDraft,
 );
 
 /**
@@ -178,10 +219,7 @@ router.post('/orders/draft',
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get('/orders/drafts', 
-  verifyToken, 
-  posService.getDrafts
-);
+router.get("/orders/drafts", verifyToken, posService.getDrafts);
 
 /**
  * @swagger
@@ -203,10 +241,7 @@ router.get('/orders/drafts',
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get('/orders/drafts/:id', 
-  verifyToken, 
-  posService.getDraftById
-);
+router.get("/orders/drafts/:id", verifyToken, posService.getDraftById);
 
 /**
  * @swagger
@@ -254,10 +289,7 @@ router.get('/orders/drafts/:id',
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.put('/orders/draft/:id', 
-  verifyToken, 
-  posService.updateDraft
-);
+router.put("/orders/draft/:id", verifyToken, posService.updateDraft);
 
 /**
  * @swagger
@@ -279,10 +311,7 @@ router.put('/orders/draft/:id',
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.delete('/orders/draft/:id', 
-  verifyToken, 
-  posService.deleteDraft
-);
+router.delete("/orders/draft/:id", verifyToken, posService.deleteDraft);
 
 /**
  * @swagger
@@ -304,10 +333,7 @@ router.delete('/orders/draft/:id',
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get('/orders/:id/receipt', 
-  verifyToken, 
-  posService.getReceipt
-);
+router.get("/orders/:id/receipt", verifyToken, posService.getReceipt);
 
 /**
  * @swagger
@@ -338,9 +364,10 @@ router.get('/orders/:id/receipt',
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/discounts/validate', 
-  verifyToken, 
-  posService.validateDiscountCode
+router.post(
+  "/discounts/validate",
+  verifyToken,
+  posService.validateDiscountCode,
 );
 
 /**
@@ -355,9 +382,6 @@ router.post('/discounts/validate',
  *       200:
  *         description: Danh sách phương thức thanh toán
  */
-router.get('/payment-methods', 
-  verifyToken, 
-  posService.getPaymentMethods
-);
+router.get("/payment-methods", verifyToken, posService.getPaymentMethods);
 
 module.exports = router;

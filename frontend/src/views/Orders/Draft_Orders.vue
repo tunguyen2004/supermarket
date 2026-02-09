@@ -269,6 +269,7 @@ import {
   View,
 } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
+import orderService from "@/services/orderService";
 
 // --- STATE ---
 const isMobile = ref(false);
@@ -277,35 +278,40 @@ const search = ref("");
 const dateRange = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
+const totalItems = ref(0);
 const drafts = ref([]);
 
-// --- MOCK DATA ---
-const sampleDrafts = [
-  {
-    draftCode: "DRAFT001",
-    createdBy: "Nhân viên A",
-    customerName: "Nguyễn Văn An",
-    createdDate: "2025-08-08 11:05",
-    totalAmount: 150000,
-    note: "",
-  },
-  {
-    draftCode: "DRAFT002",
-    createdBy: "Admin",
-    customerName: "Khách vãng lai",
-    createdDate: "2025-08-07 16:20",
-    totalAmount: 320000,
-    note: "Khách cần xác nhận số điện thoại",
-  },
-  {
-    draftCode: "DRAFT003",
-    createdBy: "Nhân viên B",
-    customerName: "Trần Thị Bích",
-    createdDate: "2025-08-06 09:30",
-    totalAmount: 85000,
-    note: "",
-  },
-];
+// --- FETCH DATA ---
+const fetchDrafts = async () => {
+  try {
+    isLoading.value = true;
+    const params = {
+      page: currentPage.value,
+      limit: pageSize,
+      search: search.value || undefined,
+    };
+
+    const result = await orderService.getDraftOrders(params);
+
+    // Map API response
+    drafts.value = result.data.map((item) => ({
+      id: item.id,
+      draftCode: item.order_code,
+      createdBy: item.created_by,
+      customerName: item.customer_name,
+      createdDate: new Date(item.created_at).toLocaleString("vi-VN"),
+      totalAmount: item.final_amount,
+      note: item.note || "",
+    }));
+
+    totalItems.value = result.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error fetching drafts:", error);
+    ElMessage.error("Không thể tải danh sách đơn nháp");
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 // --- RESPONSIVE ---
 const checkScreenSize = () => {
@@ -314,10 +320,7 @@ const checkScreenSize = () => {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    drafts.value = sampleDrafts;
-    isLoading.value = false;
-  }, 500);
+  fetchDrafts();
 });
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);
@@ -401,7 +404,7 @@ const sendPaymentLink = async (row) => {
     ElMessageBox.alert(
       `<div>Không thể sao chép tự động. Copy thủ công link sau:</div><pre style="margin-top:8px;white-space:break-spaces">${link}</pre>`,
       "Sao chép thất bại",
-      { dangerouslyUseHTMLString: true }
+      { dangerouslyUseHTMLString: true },
     );
 };
 
@@ -414,24 +417,30 @@ const completeDraft = async (row) => {
         type: "warning",
         confirmButtonText: "Hoàn tất",
         cancelButtonText: "Huỷ",
-      }
+      },
     );
   } catch {
     return;
   }
-  isLoading.value = true;
-  // mock API convert to order
-  setTimeout(() => {
-    // giả sử chuyển đơn nháp thành đơn chính và xóa khỏi danh sách nháp
-    drafts.value = drafts.value.filter((d) => d.draftCode !== row.draftCode);
+
+  try {
+    isLoading.value = true;
+    await orderService.convertDraftToOrder(row.id);
+
     ElNotification({
       title: "Thành công",
       message: "Đơn nháp đã được chuyển thành đơn hàng.",
       type: "success",
     });
-    isLoading.value = false;
+
     detailVisible.value = false;
-  }, 700);
+    await fetchDrafts();
+  } catch (error) {
+    console.error("Error completing draft:", error);
+    ElMessage.error("Không thể hoàn tất đơn nháp");
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const deleteDraft = async (row) => {
@@ -439,17 +448,24 @@ const deleteDraft = async (row) => {
     await ElMessageBox.confirm(
       `Xoá đơn nháp ${row.draftCode}?`,
       "Xác nhận xoá",
-      { type: "warning", confirmButtonText: "Xoá", cancelButtonText: "Huỷ" }
+      { type: "warning", confirmButtonText: "Xoá", cancelButtonText: "Huỷ" },
     );
   } catch {
     return;
   }
-  isLoading.value = true;
-  setTimeout(() => {
-    drafts.value = drafts.value.filter((d) => d.draftCode !== row.draftCode);
+
+  try {
+    isLoading.value = true;
+    await orderService.deleteDraftOrder(row.id);
+
     ElMessage.success("Đã xoá đơn nháp");
+    await fetchDrafts();
+  } catch (error) {
+    console.error("Error deleting draft:", error);
+    ElMessage.error("Không thể xoá đơn nháp");
+  } finally {
     isLoading.value = false;
-  }, 500);
+  }
 };
 
 // --- CREATE DIALOG ---
@@ -495,33 +511,42 @@ const createDraftOrder = () => {
 
 const nextCode = () => {
   const nums = drafts.value.map(
-    (d) => Number(d.draftCode.replace(/\D/g, "")) || 0
+    (d) => Number(d.draftCode.replace(/\D/g, "")) || 0,
   );
   const next = Math.max(0, ...nums) + 1;
   return "DRAFT" + String(next).padStart(3, "0");
 };
 
 const submitCreate = () => {
-  createFormRef.value.validate((valid) => {
+  createFormRef.value.validate(async (valid) => {
     if (!valid) return;
-    creating.value = true;
-    setTimeout(() => {
-      drafts.value.unshift({
-        draftCode: nextCode(),
-        createdBy: form.value.createdBy.trim(),
-        customerName: form.value.customerName.trim(),
-        createdDate: nowStr(),
-        totalAmount: Number(form.value.totalAmount) || 0,
+
+    try {
+      creating.value = true;
+
+      const draftData = {
+        customerId: null, // Guest customer
+        items: [], // Empty items for now
+        finalAmount: Number(form.value.totalAmount) || 0,
         note: form.value.note?.trim() || "",
-      });
+      };
+
+      await orderService.createDraftOrder(draftData);
+
       ElNotification({
         title: "Đã tạo",
         message: "Tạo đơn nháp thành công",
         type: "success",
       });
-      creating.value = false;
+
       createVisible.value = false;
-    }, 600);
+      await fetchDrafts();
+    } catch (error) {
+      console.error("Error creating draft:", error);
+      ElMessage.error("Không thể tạo đơn nháp");
+    } finally {
+      creating.value = false;
+    }
   });
 };
 </script>

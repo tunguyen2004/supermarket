@@ -10,7 +10,7 @@
     <el-tabs v-model="activeTab" class="order-tabs">
       <el-tab-pane label="Tất cả" name="all"></el-tab-pane>
       <el-tab-pane label="Đang diễn ra" name="active"></el-tab-pane>
-      <el-tab-pane label="Sắp diễn ra" name="scheduled"></el-tab-pane>
+      <el-tab-pane label="Sắp diễn ra" name="upcoming"></el-tab-pane>
       <el-tab-pane label="Đã kết thúc" name="expired"></el-tab-pane>
     </el-tabs>
 
@@ -43,13 +43,13 @@
         <el-table-column label="Thời gian hiệu lực" width="250">
           <template #default="scope">
             <span
-              >{{ formatDate(scope.row.startDate) }} -
-              {{ formatDate(scope.row.endDate) }}</span
+              >{{ formatDate(scope.row.start_date) }} -
+              {{ formatDate(scope.row.end_date) }}</span
             >
           </template>
         </el-table-column>
         <el-table-column
-          prop="usageCount"
+          prop="current_uses"
           label="Lượt sử dụng"
           width="150"
           align="center"
@@ -61,7 +61,7 @@
               effect="light"
               size="small"
             >
-              {{ scope.row.status }}</el-tag
+              {{ getStatusText(scope.row.status) }}</el-tag
             >
           </template>
         </el-table-column>
@@ -77,7 +77,7 @@
                 >Sửa</el-button
               >
               <el-button
-                v-if="scope.row.status === 'Đang diễn ra'"
+                v-if="scope.row.status === 'active'"
                 size="small"
                 :icon="CircleClose"
                 text
@@ -108,25 +108,25 @@
               :type="getStatusType(item.status)"
               effect="light"
               size="small"
-              >{{ item.status }}</el-tag
+              >{{ getStatusText(item.status) }}</el-tag
             >
           </div>
           <div class="card-body">
             <div class="card-row">
               <span class="card-label">Hiệu lực</span>
               <span class="card-value"
-                >{{ formatDate(item.startDate) }} -
-                {{ formatDate(item.endDate) }}</span
+                >{{ formatDate(item.start_date) }} -
+                {{ formatDate(item.end_date) }}</span
               >
             </div>
             <div class="card-row">
               <span class="card-label">Lượt sử dụng</span>
-              <span class="card-value">{{ item.usageCount }}</span>
+              <span class="card-value">{{ item.current_uses }}</span>
             </div>
           </div>
           <div class="card-footer">
             <el-button
-              v-if="item.status === 'Đang diễn ra'"
+              v-if="item.status === 'active'"
               size="small"
               :icon="CircleClose"
               text
@@ -155,12 +155,12 @@
 
     <div class="pagination-container">
       <el-pagination
-        v-if="filteredDiscounts.length > 0"
+        v-if="pagination.total > 0"
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredDiscounts.length"
-        :page-size="pageSize"
+        :total="pagination.total"
+        :page-size="pagination.limit"
         v-model:current-page="currentPage"
       />
     </div>
@@ -170,207 +170,57 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useDiscountStore } from "@/store/discount";
+import { storeToRefs } from "pinia";
 import { Search, Plus, Edit, CircleClose } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 // --- STATE ---
 const router = useRouter();
+const discountStore = useDiscountStore();
+const {
+  discounts,
+  loading: isLoading,
+  pagination,
+} = storeToRefs(discountStore);
+
 const isMobile = ref(false);
-const isLoading = ref(true);
 const search = ref("");
 const activeTab = ref("all");
 const currentPage = ref(1);
-const pageSize = 10;
-const discounts = ref([]);
-
-// --- DỮ LIỆU MẪU (đã bỏ status) ---
-const sampleDiscounts = [
-  {
-    id: 1,
-    name: "Giảm 20% tổng đơn hàng",
-    code: "SALE20",
-    startDate: "2025-08-01",
-    endDate: "2025-08-31",
-    usageCount: 152,
-  },
-  {
-    id: 2,
-    name: "Freeship cho đơn từ 500k",
-    code: "FREESHIP500",
-    startDate: "2025-08-01",
-    endDate: "2025-08-31",
-    usageCount: 89,
-  },
-  {
-    id: 3,
-    name: "Lễ Quốc Khánh - Giảm 50k",
-    code: "MUNG2THANG9",
-    startDate: "2025-09-01",
-    endDate: "2025-09-02",
-    usageCount: 0,
-  },
-  {
-    id: 4,
-    name: "Chào hè - Giảm 15%",
-    code: "SUMMER15",
-    startDate: "2025-06-01",
-    endDate: "2025-07-31",
-    usageCount: 340,
-  },
-  {
-    id: 5,
-    name: "Giảm 100k cho khách hàng VIP",
-    code: "VIP100K",
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    usageCount: 25,
-  },
-  {
-    id: 6,
-    name: "Giảm 10% cho đơn đầu tiên",
-    code: "FIRST10",
-    startDate: "2025-07-01",
-    endDate: "2025-07-31",
-    usageCount: 120,
-  },
-  {
-    id: 7,
-    name: "Tặng 1 sản phẩm khi mua 2",
-    code: "BUY2GET1",
-    startDate: "2025-08-15",
-    endDate: "2025-09-15",
-    usageCount: 45,
-  },
-  {
-    id: 8,
-    name: "Giảm 30% cho sản phẩm mới",
-    code: "NEW30",
-    startDate: "2025-09-01",
-    endDate: "2025-09-30",
-    usageCount: 60,
-  },
-  {
-    id: 9,
-    name: "Giảm 50k cho đơn từ 300k",
-    code: "SALE50K",
-    startDate: "2025-08-10",
-    endDate: "2025-08-20",
-    usageCount: 80,
-  },
-  {
-    id: 10,
-    name: "Giảm 5% toàn bộ cửa hàng",
-    code: "ALL5",
-    startDate: "2025-07-15",
-    endDate: "2025-08-15",
-    usageCount: 200,
-  },
-  {
-    id: 11,
-    name: "Tặng voucher 20k cho khách mới",
-    code: "WELCOME20",
-    startDate: "2025-06-01",
-    endDate: "2025-12-31",
-    usageCount: 30,
-  },
-  {
-    id: 12,
-    name: "Giảm 15% cho nhóm sản phẩm A",
-    code: "GROUPA15",
-    startDate: "2025-08-05",
-    endDate: "2025-08-25",
-    usageCount: 55,
-  },
-  {
-    id: 13,
-    name: "Freeship toàn quốc",
-    code: "FREESHIPVN",
-    startDate: "2025-09-01",
-    endDate: "2025-09-30",
-    usageCount: 100,
-  },
-  {
-    id: 14,
-    name: "Giảm 100k cho đơn từ 1 triệu",
-    code: "SALE100K",
-    startDate: "2025-08-01",
-    endDate: "2025-08-31",
-    usageCount: 70,
-  },
-  {
-    id: 15,
-    name: "Tặng quà sinh nhật",
-    code: "BIRTHDAYGIFT",
-    startDate: "2025-01-01",
-    endDate: "2025-12-31",
-    usageCount: 15,
-  },
-  // ...Thêm dữ liệu mẫu khác nếu cần
-];
+const pageSize = 20;
 
 // --- LOGIC & HELPERS ---
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
 };
+
 const formatDate = (dateString) =>
   new Date(dateString).toLocaleDateString("vi-VN");
 
-const getStatusInfo = (item) => {
-  const now = new Date();
-  const startDate = new Date(item.startDate);
-  const endDate = new Date(item.endDate);
-  endDate.setHours(23, 59, 59, 999); // Tính đến hết ngày
-
-  if (now < startDate) return { text: "Sắp diễn ra", type: "warning" };
-  if (now > endDate) return { text: "Đã kết thúc", type: "info" };
-  return { text: "Đang diễn ra", type: "success" };
+const getStatusType = (status) => {
+  const statusMap = {
+    active: "success",
+    upcoming: "warning",
+    expired: "info",
+    inactive: "info",
+  };
+  return statusMap[status] || "";
 };
 
-const getStatusType = (statusText) => {
-  if (statusText === "Đang diễn ra") return "success";
-  if (statusText === "Sắp diễn ra") return "warning";
-  if (statusText === "Đã kết thúc") return "info";
-  return "";
-};
-
-const getStatusFromTab = (tabName) => {
+const getStatusText = (status) => {
   const statusMap = {
     active: "Đang diễn ra",
-    scheduled: "Sắp diễn ra",
+    upcoming: "Sắp diễn ra",
     expired: "Đã kết thúc",
+    inactive: "Đã tắt",
   };
-  return statusMap[tabName];
+  return statusMap[status] || status;
 };
 
 // --- COMPUTED PROPERTIES ---
-const processedDiscounts = computed(() => {
-  // Thêm trường status động vào mỗi object
-  return discounts.value.map((d) => ({
-    ...d,
-    status: getStatusInfo(d).text,
-  }));
-});
-
-const filteredDiscounts = computed(() => {
-  return processedDiscounts.value.filter((item) => {
-    const searchMatch = search.value
-      ? item.name.toLowerCase().includes(search.value.toLowerCase()) ||
-        item.code.toLowerCase().includes(search.value.toLowerCase())
-      : true;
-
-    const tabMatch =
-      activeTab.value === "all"
-        ? true
-        : item.status === getStatusFromTab(activeTab.value);
-
-    return searchMatch && tabMatch;
-  });
-});
-
-const pagedDiscounts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredDiscounts.value.slice(start, start + pageSize);
-});
+// Backend đã filter theo status và search rồi, không cần filter lại client-side
+const pagedDiscounts = computed(() => discounts.value);
 
 // --- ACTIONS ---
 const createDiscount = () => {
@@ -381,41 +231,59 @@ const editDiscount = (discount) => {
   router.push({ name: "EditDiscount", params: { id: discount.id } });
 };
 
-const deactivateDiscount = (discount) => {
-  ElMessageBox.confirm(
-    `Bạn có chắc muốn kết thúc sớm chương trình khuyến mại "${discount.name}" không?`,
-    "Xác nhận hành động",
-    {
-      confirmButtonText: "Đồng ý",
-      cancelButtonText: "Hủy",
-      type: "warning",
+const deactivateDiscount = async (discount) => {
+  try {
+    await ElMessageBox.confirm(
+      `Bạn có chắc muốn kết thúc sớm chương trình khuyến mại "${discount.name}" không?`,
+      "Xác nhận hành động",
+      {
+        confirmButtonText: "Đồng ý",
+        cancelButtonText: "Hủy",
+        type: "warning",
+      },
+    );
+
+    const result = await discountStore.deactivateDiscount(discount.id);
+    if (result.success) {
+      ElMessage.success(
+        result.message || "Đã kết thúc chương trình khuyến mại",
+      );
+      loadDiscounts();
+    } else {
+      ElMessage.error(result.error || "Có lỗi xảy ra");
     }
-  )
-    .then(() => {
-      const index = discounts.value.findIndex((d) => d.id === discount.id);
-      if (index !== -1) {
-        // Cập nhật ngày kết thúc là ngày hôm qua để đảm bảo nó trở thành "Đã kết thúc"
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        discounts.value[index].endDate = yesterday.toISOString().split("T")[0];
-      }
-      ElMessage.success("Đã kết thúc chương trình khuyến mại.");
-    })
-    .catch(() => {});
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("Deactivate error:", error);
+    }
+  }
+};
+
+const loadDiscounts = async () => {
+  const params = {
+    page: currentPage.value,
+    limit: pageSize,
+    search: search.value || undefined,
+    status: activeTab.value === "all" ? undefined : activeTab.value,
+  };
+
+  await discountStore.fetchDiscounts(params);
 };
 
 // --- LIFECYCLE & WATCHERS ---
 watch([activeTab, search], () => {
   currentPage.value = 1;
+  loadDiscounts();
+});
+
+watch(currentPage, () => {
+  loadDiscounts();
 });
 
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    discounts.value = sampleDiscounts;
-    isLoading.value = false;
-  }, 500);
+  loadDiscounts();
 });
 
 onUnmounted(() => {

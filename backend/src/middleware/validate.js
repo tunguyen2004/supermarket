@@ -5,27 +5,30 @@
 
 /**
  * Validate request body
- * @param {Joi.Schema} schema - Joi validation schema
+ * @param {Joi.Schema|Object} schema - Joi validation schema hoặc object có property body
  * @returns {Function} Express middleware
  */
 const validateBody = (schema) => {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.body, {
+    // Handle case where schema is wrapped in object with 'body' property
+    const joiSchema = schema.body || schema;
+
+    const { error, value } = joiSchema.validate(req.body, {
       abortEarly: false, // Return all errors
       stripUnknown: true, // Remove unknown fields
     });
 
     if (error) {
-      const errors = error.details.map(detail => ({
-        field: detail.path.join('.'),
+      const errors = error.details.map((detail) => ({
+        field: detail.path.join("."),
         message: detail.message,
       }));
 
       return res.status(422).json({
         success: false,
-        status: 'ERROR',
-        code: 'VALIDATION_ERROR',
-        message: 'Dữ liệu không hợp lệ',
+        status: "ERROR",
+        code: "VALIDATION_ERROR",
+        message: "Dữ liệu không hợp lệ",
         errors,
         timestamp: new Date().toISOString(),
       });
@@ -39,27 +42,30 @@ const validateBody = (schema) => {
 
 /**
  * Validate request query parameters
- * @param {Joi.Schema} schema - Joi validation schema
+ * @param {Joi.Schema|Object} schema - Joi validation schema hoặc object có property query
  * @returns {Function} Express middleware
  */
 const validateQuery = (schema) => {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.query, {
+    // Handle case where schema is wrapped in object with 'query' property
+    const joiSchema = schema.query || schema;
+
+    const { error, value } = joiSchema.validate(req.query, {
       abortEarly: false,
       stripUnknown: true,
     });
 
     if (error) {
-      const errors = error.details.map(detail => ({
-        field: detail.path.join('.'),
+      const errors = error.details.map((detail) => ({
+        field: detail.path.join("."),
         message: detail.message,
       }));
 
       return res.status(422).json({
         success: false,
-        status: 'ERROR',
-        code: 'VALIDATION_ERROR',
-        message: 'Query parameters không hợp lệ',
+        status: "ERROR",
+        code: "VALIDATION_ERROR",
+        message: "Query parameters không hợp lệ",
         errors,
         timestamp: new Date().toISOString(),
       });
@@ -72,26 +78,29 @@ const validateQuery = (schema) => {
 
 /**
  * Validate request params
- * @param {Joi.Schema} schema - Joi validation schema
+ * @param {Joi.Schema|Object} schema - Joi validation schema hoặc object có property params
  * @returns {Function} Express middleware
  */
 const validateParams = (schema) => {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.params, {
+    // Handle case where schema is wrapped in object with 'params' property
+    const joiSchema = schema.params || schema;
+
+    const { error, value } = joiSchema.validate(req.params, {
       abortEarly: false,
     });
 
     if (error) {
-      const errors = error.details.map(detail => ({
-        field: detail.path.join('.'),
+      const errors = error.details.map((detail) => ({
+        field: detail.path.join("."),
         message: detail.message,
       }));
 
       return res.status(422).json({
         success: false,
-        status: 'ERROR',
-        code: 'VALIDATION_ERROR',
-        message: 'URL parameters không hợp lệ',
+        status: "ERROR",
+        code: "VALIDATION_ERROR",
+        message: "URL parameters không hợp lệ",
         errors,
         timestamp: new Date().toISOString(),
       });

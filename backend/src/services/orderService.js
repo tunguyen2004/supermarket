@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const db = require("../config/database");
 
 /**
  * ============================================================================
@@ -10,21 +10,21 @@ const db = require('../config/database');
 /**
  * Danh sách đơn hàng - GET /api/orders
  * Query params: ?limit=10&offset=0&status=pending&payment_status=unpaid
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Danh sách đơn hàng với pagination
  */
 const getOrderList = async (req, res) => {
   try {
-    const { 
-      limit = 10, 
-      offset = 0, 
-      status, 
+    const {
+      limit = 10,
+      offset = 0,
+      status,
       payment_status,
       search,
-      sort = 'created_at',
-      order = 'DESC'
+      sort = "created_at",
+      order = "DESC",
     } = req.query;
 
     // Đảm bảo limit và offset là số
@@ -32,11 +32,17 @@ const getOrderList = async (req, res) => {
     const parsedOffset = parseInt(offset) || 0;
 
     // Validate sort field (chống SQL injection)
-    const validSortFields = ['order_code', 'final_amount', 'status', 'created_at', 'payment_status'];
-    const sortField = validSortFields.includes(sort) ? sort : 'created_at';
-    
+    const validSortFields = [
+      "order_code",
+      "final_amount",
+      "status",
+      "created_at",
+      "payment_status",
+    ];
+    const sortField = validSortFields.includes(sort) ? sort : "created_at";
+
     // Validate order direction
-    const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const sortOrder = order.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     // Xây dựng WHERE clause động
     let whereConditions = [];
@@ -57,15 +63,16 @@ const getOrderList = async (req, res) => {
 
     if (search) {
       whereConditions.push(
-        `(fo.order_code ILIKE $${paramIndex} OR dc.full_name ILIKE $${paramIndex})`
+        `(fo.order_code ILIKE $${paramIndex} OR dc.full_name ILIKE $${paramIndex})`,
       );
       queryParams.push(`%${search}%`);
       paramIndex++;
     }
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(' AND ')}` 
-      : '';
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
     // Lấy tổng số đơn hàng
     const countQuery = `
@@ -74,7 +81,7 @@ const getOrderList = async (req, res) => {
       LEFT JOIN dim_customers dc ON fo.customer_id = dc.id
       ${whereClause}
     `;
-    
+
     const countResult = await db.query(countQuery, queryParams);
     const total = parseInt(countResult.rows[0].total);
 
@@ -121,13 +128,13 @@ const getOrderList = async (req, res) => {
     const result = await db.query(listQuery, queryParams);
 
     // Format response
-    const formattedOrders = result.rows.map(order => ({
+    const formattedOrders = result.rows.map((order) => ({
       id: order.id,
       order_code: order.order_code,
       date: order.date_key,
       customer: {
         name: order.customer_name,
-        phone: order.customer_phone
+        phone: order.customer_phone,
       },
       store: order.store_name,
       status: order.status,
@@ -138,43 +145,42 @@ const getOrderList = async (req, res) => {
         discount: parseFloat(order.discount_amount) || 0,
         tax: parseFloat(order.tax_amount) || 0,
         shipping: parseFloat(order.shipping_fee) || 0,
-        total: parseFloat(order.final_amount) || 0
+        total: parseFloat(order.final_amount) || 0,
       },
       items: {
         count: parseInt(order.item_count),
-        total_quantity: parseFloat(order.total_quantity) || 0
+        total_quantity: parseFloat(order.total_quantity) || 0,
       },
       notes: order.customer_note,
       created_by: order.created_by_name,
-      created_at: order.created_at
+      created_at: order.created_at,
     }));
 
     res.json({
-      status: 'OK',
-      message: 'Orders list retrieved successfully',
+      status: "OK",
+      message: "Orders list retrieved successfully",
       data: formattedOrders,
       pagination: {
         total: total,
         limit: parsedLimit,
         offset: parsedOffset,
         pages: Math.ceil(total / parsedLimit),
-        current_page: Math.floor(parsedOffset / parsedLimit) + 1
-      }
+        current_page: Math.floor(parsedOffset / parsedLimit) + 1,
+      },
     });
-
   } catch (error) {
-    console.error('Get orders list error:', error);
+    console.error("Get orders list error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get orders list',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to get orders list",
+      error: error.message,
     });
   }
 };
 
 /**
  * Chi tiết đơn hàng - GET /api/orders/:id
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Chi tiết đơn hàng và các items
@@ -217,9 +223,9 @@ const getOrderDetail = async (req, res) => {
 
     if (orderResult.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'Order not found',
-        data: null
+        status: "ERROR",
+        message: "Order not found",
+        data: null,
       });
     }
 
@@ -247,20 +253,20 @@ const getOrderDetail = async (req, res) => {
 
     const itemsResult = await db.query(itemsQuery, [id]);
 
-    const formattedItems = itemsResult.rows.map(item => ({
+    const formattedItems = itemsResult.rows.map((item) => ({
       id: item.id,
-      product: item.product_name || 'Unknown Product',
+      product: item.product_name || "Unknown Product",
       quantity: parseFloat(item.quantity),
       unit_price: parseFloat(item.unit_price),
       discount_per_item: parseFloat(item.discount_per_item) || 0,
       line_subtotal: parseFloat(item.line_subtotal),
-      line_total: parseFloat(item.line_total)
+      line_total: parseFloat(item.line_total),
     }));
 
     // Format response
     res.json({
-      status: 'OK',
-      message: 'Order detail retrieved successfully',
+      status: "OK",
+      message: "Order detail retrieved successfully",
       data: {
         id: order.id,
         order_code: order.order_code,
@@ -268,7 +274,7 @@ const getOrderDetail = async (req, res) => {
         customer: {
           name: order.customer_name,
           phone: order.customer_phone,
-          email: order.customer_email
+          email: order.customer_email,
         },
         store: order.store_name,
         status: order.status,
@@ -279,25 +285,24 @@ const getOrderDetail = async (req, res) => {
           discount: parseFloat(order.discount_amount) || 0,
           tax: parseFloat(order.tax_amount) || 0,
           shipping: parseFloat(order.shipping_fee) || 0,
-          total: parseFloat(order.final_amount) || 0
+          total: parseFloat(order.final_amount) || 0,
         },
         shipping_address: order.shipping_address,
         items: formattedItems,
         notes: {
           customer: order.customer_note,
-          internal: order.internal_note
+          internal: order.internal_note,
         },
         created_by: order.created_by_name,
-        created_at: order.created_at
-      }
+        created_at: order.created_at,
+      },
     });
-
   } catch (error) {
-    console.error('Get order detail error:', error);
+    console.error("Get order detail error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get order detail',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to get order detail",
+      error: error.message,
     });
   }
 };
@@ -326,33 +331,32 @@ const getOrderStats = async (req, res) => {
     const stats = statsResult.rows[0];
 
     res.json({
-      status: 'OK',
-      message: 'Order statistics retrieved successfully',
+      status: "OK",
+      message: "Order statistics retrieved successfully",
       data: {
         total_orders: parseInt(stats.total_orders),
         by_status: {
           completed: parseInt(stats.completed_orders),
           pending: parseInt(stats.pending_orders),
-          cancelled: parseInt(stats.cancelled_orders)
+          cancelled: parseInt(stats.cancelled_orders),
         },
         by_payment: {
           paid: parseInt(stats.paid_orders),
-          unpaid: parseInt(stats.unpaid_orders)
+          unpaid: parseInt(stats.unpaid_orders),
         },
         revenue: {
           total: parseFloat(stats.total_revenue) || 0,
           average_per_order: parseFloat(stats.avg_order_value) || 0,
-          max_order: parseFloat(stats.max_order_value) || 0
-        }
-      }
+          max_order: parseFloat(stats.max_order_value) || 0,
+        },
+      },
     });
-
   } catch (error) {
-    console.error('Get order stats error:', error);
+    console.error("Get order stats error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get order statistics',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to get order statistics",
+      error: error.message,
     });
   }
 };
@@ -360,7 +364,7 @@ const getOrderStats = async (req, res) => {
 /**
  * Tạo đơn hàng mới - POST /api/orders
  * Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Thông tin đơn hàng vừa tạo
@@ -368,7 +372,7 @@ const getOrderStats = async (req, res) => {
 const createOrder = async (req, res) => {
   // Lấy client từ pool để sử dụng transaction
   const client = await db.pool.connect();
-  
+
   try {
     const {
       customer_id,
@@ -381,23 +385,23 @@ const createOrder = async (req, res) => {
       payment_method,
       shipping_address,
       customer_note,
-      internal_note
+      internal_note,
     } = req.body;
 
     // Validate input bắt buộc
     if (!store_id) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'store_id is required',
-        data: null
+        status: "ERROR",
+        message: "store_id is required",
+        data: null,
       });
     }
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'items array is required and must contain at least one item',
-        data: null
+        status: "ERROR",
+        message: "items array is required and must contain at least one item",
+        data: null,
       });
     }
 
@@ -405,17 +409,17 @@ const createOrder = async (req, res) => {
     for (let item of items) {
       if (!item.variant_id || !item.quantity || !item.unit_price) {
         return res.status(400).json({
-          status: 'ERROR',
-          message: 'Each item must have variant_id, quantity, and unit_price',
-          data: null
+          status: "ERROR",
+          message: "Each item must have variant_id, quantity, and unit_price",
+          data: null,
         });
       }
 
       if (item.quantity <= 0 || item.unit_price <= 0) {
         return res.status(400).json({
-          status: 'ERROR',
-          message: 'quantity and unit_price must be greater than 0',
-          data: null
+          status: "ERROR",
+          message: "quantity and unit_price must be greater than 0",
+          data: null,
         });
       }
     }
@@ -425,60 +429,60 @@ const createOrder = async (req, res) => {
 
     // Lấy date_key (ngày hiện tại)
     const today = new Date();
-    const dateKey = today.toISOString().split('T')[0];
+    const dateKey = today.toISOString().split("T")[0];
 
     // Kiểm tra store tồn tại
     const storeCheck = await client.query(
-      'SELECT id FROM dim_stores WHERE id = $1',
-      [store_id]
+      "SELECT id FROM dim_stores WHERE id = $1",
+      [store_id],
     );
 
     if (storeCheck.rows.length === 0) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'Store not found',
-        data: null
+        status: "ERROR",
+        message: "Store not found",
+        data: null,
       });
     }
 
     // Kiểm tra customer nếu có
     if (customer_id) {
       const customerCheck = await client.query(
-        'SELECT id FROM dim_customers WHERE id = $1',
-        [customer_id]
+        "SELECT id FROM dim_customers WHERE id = $1",
+        [customer_id],
       );
 
       if (customerCheck.rows.length === 0) {
         return res.status(400).json({
-          status: 'ERROR',
-          message: 'Customer not found',
-          data: null
+          status: "ERROR",
+          message: "Customer not found",
+          data: null,
         });
       }
     }
 
     // Kiểm tra tất cả variants tồn tại
-    const variantIds = items.map(item => item.variant_id);
+    const variantIds = items.map((item) => item.variant_id);
     const variantsCheck = await client.query(
       `SELECT id FROM dim_product_variants WHERE id = ANY($1)`,
-      [variantIds]
+      [variantIds],
     );
 
     if (variantsCheck.rows.length !== items.length) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'One or more product variants not found',
-        data: null
+        status: "ERROR",
+        message: "One or more product variants not found",
+        data: null,
       });
     }
 
     // ========== BẮT ĐẦU TRANSACTION ==========
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Tạo order code (ORD-YYYYMMDD-XXXXX)
-    const datePart = dateKey.replace(/-/g, '').substring(2);
+    const datePart = dateKey.replace(/-/g, "").substring(2);
     const orderCodePrefix = `ORD-${datePart}`;
-    
+
     // Lấy max sequence của ngày hôm nay (trong transaction để tránh race condition)
     // order_code format: ORD-260120-00001, ta cần lấy số 00001
     const sequenceResult = await client.query(
@@ -490,10 +494,12 @@ const createOrder = async (req, res) => {
        FROM fact_orders 
        WHERE order_code LIKE $1
        FOR UPDATE`,
-      [`${orderCodePrefix}-%`]
+      [`${orderCodePrefix}-%`],
     );
 
-    const nextSequence = String((sequenceResult.rows[0].max_sequence || 0) + 1).padStart(5, '0');
+    const nextSequence = String(
+      (sequenceResult.rows[0].max_sequence || 0) + 1,
+    ).padStart(5, "0");
     const orderCode = `${orderCodePrefix}-${nextSequence}`;
 
     // Tạo đơn hàng
@@ -505,11 +511,23 @@ const createOrder = async (req, res) => {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
       RETURNING id, order_code, date_key, status, payment_status, created_at`,
       [
-        orderCode, dateKey, customer_id, store_id, 'pending', 'unpaid',
-        subtotal, discount_amount, tax_amount, shipping_fee, final_amount,
-        payment_method || 'cash', shipping_address, customer_note, internal_note, 
-        req.user.id
-      ]
+        orderCode,
+        dateKey,
+        customer_id,
+        store_id,
+        "pending",
+        "unpaid",
+        subtotal,
+        discount_amount,
+        tax_amount,
+        shipping_fee,
+        final_amount,
+        payment_method || "cash",
+        shipping_address,
+        customer_note,
+        internal_note,
+        req.user.id,
+      ],
     );
 
     const orderId = orderResult.rows[0].id;
@@ -520,25 +538,27 @@ const createOrder = async (req, res) => {
     let paramIndex = 1;
 
     for (let item of items) {
-      itemValues.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+      itemValues.push(
+        `($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`,
+      );
       itemParams.push(
-        orderId, 
-        item.variant_id, 
-        item.quantity, 
+        orderId,
+        item.variant_id,
+        item.quantity,
         item.unit_price,
-        item.discount_per_item || 0
+        item.discount_per_item || 0,
       );
     }
 
     await client.query(
       `INSERT INTO fact_order_items (
         order_id, variant_id, quantity, unit_price, discount_per_item
-      ) VALUES ${itemValues.join(', ')}`,
-      itemParams
+      ) VALUES ${itemValues.join(", ")}`,
+      itemParams,
     );
 
     // ========== COMMIT TRANSACTION ==========
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     // Lấy order detail để trả về (sau khi commit)
     const detailResult = await db.query(
@@ -553,12 +573,12 @@ const createOrder = async (req, res) => {
       LEFT JOIN dim_customers dc ON fo.customer_id = dc.id
       LEFT JOIN dim_stores ds ON fo.store_id = ds.id
       WHERE fo.id = $1`,
-      [orderId]
+      [orderId],
     );
 
     res.status(201).json({
-      status: 'OK',
-      message: 'Order created successfully',
+      status: "OK",
+      message: "Order created successfully",
       data: {
         id: detailResult.rows[0].id,
         order_code: detailResult.rows[0].order_code,
@@ -573,21 +593,20 @@ const createOrder = async (req, res) => {
           discount: parseFloat(detailResult.rows[0].discount_amount),
           tax: parseFloat(detailResult.rows[0].tax_amount),
           shipping: parseFloat(detailResult.rows[0].shipping_fee),
-          total: parseFloat(detailResult.rows[0].final_amount)
+          total: parseFloat(detailResult.rows[0].final_amount),
         },
         items_count: items.length,
-        created_at: detailResult.rows[0].created_at
-      }
+        created_at: detailResult.rows[0].created_at,
+      },
     });
-
   } catch (error) {
     // ========== ROLLBACK NẾU CÓ LỖI ==========
-    await client.query('ROLLBACK');
-    console.error('Create order error:', error);
+    await client.query("ROLLBACK");
+    console.error("Create order error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to create order',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to create order",
+      error: error.message,
     });
   } finally {
     // ========== LUÔN RELEASE CLIENT ==========
@@ -597,7 +616,7 @@ const createOrder = async (req, res) => {
 
 /**
  * Cập nhật trạng thái đơn hàng - PUT /api/orders/:id
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Order đã cập nhật
@@ -609,37 +628,43 @@ const updateOrderStatus = async (req, res) => {
 
     // Kiểm tra order tồn tại
     const orderCheck = await db.query(
-      'SELECT id, status, payment_status FROM fact_orders WHERE id = $1',
-      [id]
+      "SELECT id, status, payment_status FROM fact_orders WHERE id = $1",
+      [id],
     );
 
     if (orderCheck.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'Order not found',
-        data: null
+        status: "ERROR",
+        message: "Order not found",
+        data: null,
       });
     }
 
     const order = orderCheck.rows[0];
 
     // Validate status values
-    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-    const validPaymentStatuses = ['unpaid', 'partial', 'paid', 'refunded'];
+    const validStatuses = [
+      "pending",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ];
+    const validPaymentStatuses = ["unpaid", "partial", "paid", "refunded"];
 
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
-        data: null
+        status: "ERROR",
+        message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        data: null,
       });
     }
 
     if (payment_status && !validPaymentStatuses.includes(payment_status)) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: `Invalid payment_status. Must be one of: ${validPaymentStatuses.join(', ')}`,
-        data: null
+        status: "ERROR",
+        message: `Invalid payment_status. Must be one of: ${validPaymentStatuses.join(", ")}`,
+        data: null,
       });
     }
 
@@ -657,37 +682,36 @@ const updateOrderStatus = async (req, res) => {
       status || null,
       payment_status || null,
       payment_method || null,
-      id
+      id,
     ]);
 
     const updatedOrder = result.rows[0];
 
     res.json({
-      status: 'OK',
-      message: 'Order updated successfully',
+      status: "OK",
+      message: "Order updated successfully",
       data: {
         id: updatedOrder.id,
         order_code: updatedOrder.order_code,
         status: updatedOrder.status,
         payment_status: updatedOrder.payment_status,
         payment_method: updatedOrder.payment_method,
-        updated_at: updatedOrder.created_at
-      }
+        updated_at: updatedOrder.created_at,
+      },
     });
-
   } catch (error) {
-    console.error('Update order error:', error);
+    console.error("Update order error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to update order',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to update order",
+      error: error.message,
     });
   }
 };
 
 /**
  * Hủy đơn hàng - DELETE /api/orders/:id
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Order đã hủy
@@ -699,26 +723,26 @@ const cancelOrder = async (req, res) => {
 
     // Kiểm tra order tồn tại
     const orderCheck = await db.query(
-      'SELECT id, status FROM fact_orders WHERE id = $1',
-      [id]
+      "SELECT id, status FROM fact_orders WHERE id = $1",
+      [id],
     );
 
     if (orderCheck.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'Order not found',
-        data: null
+        status: "ERROR",
+        message: "Order not found",
+        data: null,
       });
     }
 
     const order = orderCheck.rows[0];
 
     // Không thể hủy order đã shipped/delivered
-    if (['shipped', 'delivered'].includes(order.status)) {
+    if (["shipped", "delivered"].includes(order.status)) {
       return res.status(400).json({
-        status: 'ERROR',
+        status: "ERROR",
         message: `Cannot cancel order with status: ${order.status}`,
-        data: null
+        data: null,
       });
     }
 
@@ -738,35 +762,37 @@ const cancelOrder = async (req, res) => {
       RETURNING *
     `;
 
-    const result = await db.query(cancelQuery, [id, reason || 'No reason provided']);
+    const result = await db.query(cancelQuery, [
+      id,
+      reason || "No reason provided",
+    ]);
     const cancelledOrder = result.rows[0];
 
     res.json({
-      status: 'OK',
-      message: 'Order cancelled successfully',
+      status: "OK",
+      message: "Order cancelled successfully",
       data: {
         id: cancelledOrder.id,
         order_code: cancelledOrder.order_code,
         status: cancelledOrder.status,
         payment_status: cancelledOrder.payment_status,
         cancelled_at: cancelledOrder.created_at,
-        note: reason
-      }
+        note: reason,
+      },
     });
-
   } catch (error) {
-    console.error('Cancel order error:', error);
+    console.error("Cancel order error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to cancel order',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to cancel order",
+      error: error.message,
     });
   }
 };
 
-/** // đang làm chức năng trạng thái à 
+/** // đang làm chức năng trạng thái à
  * Lấy statistics chi tiết - GET /api/orders/stats/detailed
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Object} - Statistics chi tiết
@@ -809,17 +835,19 @@ const getDetailedStats = async (req, res) => {
     const stats = result.rows[0];
 
     // Tính toán thêm ( làm gì đây ???)
-    const completionRate = stats.total_orders > 0 
-      ? ((stats.delivered_count / stats.total_orders) * 100).toFixed(2)
-      : 0;
+    const completionRate =
+      stats.total_orders > 0
+        ? ((stats.delivered_count / stats.total_orders) * 100).toFixed(2)
+        : 0;
 
-    const paymentRate = stats.total_orders > 0
-      ? ((stats.paid_count / stats.total_orders) * 100).toFixed(2)
-      : 0;
+    const paymentRate =
+      stats.total_orders > 0
+        ? ((stats.paid_count / stats.total_orders) * 100).toFixed(2)
+        : 0;
 
     res.json({
-      status: 'OK',
-      message: 'Detailed statistics retrieved successfully',
+      status: "OK",
+      message: "Detailed statistics retrieved successfully",
       data: {
         orders: {
           total: parseInt(stats.total_orders),
@@ -828,40 +856,41 @@ const getDetailedStats = async (req, res) => {
             processing: parseInt(stats.processing_count),
             shipped: parseInt(stats.shipped_count),
             delivered: parseInt(stats.delivered_count),
-            cancelled: parseInt(stats.cancelled_count)
+            cancelled: parseInt(stats.cancelled_count),
           },
           completion_rate: parseFloat(completionRate),
-          avg_items_per_order: (parseFloat(stats.total_items) / stats.total_orders).toFixed(2)
+          avg_items_per_order: (
+            parseFloat(stats.total_items) / stats.total_orders
+          ).toFixed(2),
         },
         payment: {
           total_orders: parseInt(stats.total_orders),
           by_status: {
             unpaid: parseInt(stats.unpaid_count),
             paid: parseInt(stats.paid_count),
-            refunded: parseInt(stats.refunded_count)
+            refunded: parseInt(stats.refunded_count),
           },
-          payment_rate: parseFloat(paymentRate)
+          payment_rate: parseFloat(paymentRate),
         },
         revenue: {
           total: parseFloat(stats.total_revenue),
           from_delivered: parseFloat(stats.delivered_revenue),
           from_cancelled: parseFloat(stats.cancelled_revenue),
-          avg_per_order: parseFloat(stats.avg_order_value)
+          avg_per_order: parseFloat(stats.avg_order_value),
         },
         financials: {
           total_discount: parseFloat(stats.total_discount),
           total_tax: parseFloat(stats.total_tax),
-          total_items: parseInt(stats.total_items)
-        }
-      }
+          total_items: parseInt(stats.total_items),
+        },
+      },
     });
-
   } catch (error) {
-    console.error('Get detailed stats error:', error);
+    console.error("Get detailed stats error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get detailed statistics',
-      error: error.message
+      status: "ERROR",
+      message: "Failed to get detailed statistics",
+      error: error.message,
     });
   }
 };
@@ -872,10 +901,10 @@ const getDetailedStats = async (req, res) => {
  */
 const returnOrder = async (req, res) => {
   const client = await db.pool.connect();
-  
+
   try {
     const { id } = req.params;
-    const { items, reason, refund_method = 'cash' } = req.body;
+    const { items, reason, refund_method = "cash" } = req.body;
 
     // Check order exists and is delivered
     const orderCheck = await client.query(
@@ -883,22 +912,22 @@ const returnOrder = async (req, res) => {
        FROM fact_orders fo 
        JOIN dim_stores ds ON fo.store_id = ds.id
        WHERE fo.id = $1`,
-      [id]
+      [id],
     );
 
     if (orderCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy đơn hàng'
+        message: "Không tìm thấy đơn hàng",
       });
     }
 
     const order = orderCheck.rows[0];
 
-    if (order.status !== 'delivered' && order.status !== 'completed') {
+    if (order.status !== "delivered" && order.status !== "completed") {
       return res.status(400).json({
         success: false,
-        message: 'Chỉ có thể hoàn trả đơn hàng đã giao'
+        message: "Chỉ có thể hoàn trả đơn hàng đã giao",
       });
     }
 
@@ -906,7 +935,7 @@ const returnOrder = async (req, res) => {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Danh sách sản phẩm hoàn trả không hợp lệ'
+        message: "Danh sách sản phẩm hoàn trả không hợp lệ",
       });
     }
 
@@ -917,7 +946,7 @@ const returnOrder = async (req, res) => {
        JOIN dim_product_variants dpv ON foi.variant_id = dpv.id
        JOIN dim_products dp ON dpv.product_id = dp.id
        WHERE foi.order_id = $1`,
-      [id]
+      [id],
     );
 
     const orderItems = orderItemsResult.rows;
@@ -927,19 +956,21 @@ const returnOrder = async (req, res) => {
     const returnItems = [];
 
     for (const item of items) {
-      const orderItem = orderItems.find(oi => oi.variant_id === item.variant_id);
-      
+      const orderItem = orderItems.find(
+        (oi) => oi.variant_id === item.variant_id,
+      );
+
       if (!orderItem) {
         return res.status(400).json({
           success: false,
-          message: `Sản phẩm variant_id=${item.variant_id} không có trong đơn hàng`
+          message: `Sản phẩm variant_id=${item.variant_id} không có trong đơn hàng`,
         });
       }
 
       if (item.quantity > orderItem.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Số lượng hoàn trả (${item.quantity}) vượt quá số lượng đã mua (${orderItem.quantity})`
+          message: `Số lượng hoàn trả (${item.quantity}) vượt quá số lượng đã mua (${orderItem.quantity})`,
         });
       }
 
@@ -950,28 +981,31 @@ const returnOrder = async (req, res) => {
         unit_price: orderItem.unit_price,
         refund_amount: itemRefund,
         sku: orderItem.sku,
-        product_name: orderItem.product_name
+        product_name: orderItem.product_name,
       });
     }
 
     // ========== BẮT ĐẦU TRANSACTION ==========
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Generate return code
     const today = new Date();
-    const dateKey = today.toISOString().split('T')[0];
-    const datePart = dateKey.replace(/-/g, '').substring(2);
+    const dateKey = today.toISOString().split("T")[0];
+    const datePart = dateKey.replace(/-/g, "").substring(2);
     const returnCodePrefix = `RTN-${datePart}`;
-    
+
     const seqResult = await client.query(
       `SELECT COALESCE(MAX(CAST(RIGHT(order_code, 5) AS INTEGER)), 0) as max_seq
        FROM fact_orders 
        WHERE order_code LIKE $1
        FOR UPDATE`,
-      [`${returnCodePrefix}-%`]
+      [`${returnCodePrefix}-%`],
     );
-    
-    const nextSeq = String((seqResult.rows[0].max_seq || 0) + 1).padStart(5, '0');
+
+    const nextSeq = String((seqResult.rows[0].max_seq || 0) + 1).padStart(
+      5,
+      "0",
+    );
     const returnCode = `${returnCodePrefix}-${nextSeq}`;
 
     // Create return order record
@@ -983,11 +1017,15 @@ const returnOrder = async (req, res) => {
       ) VALUES ($1, $2, $3, $4, 'returned', 'refunded', $5, 0, $5, $6, $7, $8, NOW())
       RETURNING id`,
       [
-        returnCode, dateKey, order.customer_id, order.store_id,
-        -totalRefund, refund_method,
-        `Hoàn trả từ đơn ${order.order_code}. Lý do: ${reason || 'Không có'}`,
-        req.user.id
-      ]
+        returnCode,
+        dateKey,
+        order.customer_id,
+        order.store_id,
+        -totalRefund,
+        refund_method,
+        `Hoàn trả từ đơn ${order.order_code}. Lý do: ${reason || "Không có"}`,
+        req.user.id,
+      ],
     );
 
     const returnOrderId = returnOrderResult.rows[0].id;
@@ -998,7 +1036,7 @@ const returnOrder = async (req, res) => {
       await client.query(
         `INSERT INTO fact_order_items (order_id, variant_id, quantity, unit_price, discount_per_item)
          VALUES ($1, $2, $3, $4, 0)`,
-        [returnOrderId, item.variant_id, -item.quantity, item.unit_price]
+        [returnOrderId, item.variant_id, -item.quantity, item.unit_price],
       );
 
       // Update inventory (add back to stock)
@@ -1006,7 +1044,7 @@ const returnOrder = async (req, res) => {
         `UPDATE fact_inventory_stocks 
          SET quantity_on_hand = quantity_on_hand + $1, last_updated = NOW()
          WHERE store_id = $2 AND variant_id = $3`,
-        [item.quantity, order.store_id, item.variant_id]
+        [item.quantity, order.store_id, item.variant_id],
       );
 
       // Create inventory transaction
@@ -1023,26 +1061,34 @@ const returnOrder = async (req, res) => {
            COALESCE((SELECT quantity_on_hand FROM fact_inventory_stocks WHERE store_id = $3 AND variant_id = $4), 0),
            'ORDER_RETURN', $6, $7, $8`,
         [
-          transactionCode, dateKey, order.store_id, item.variant_id,
-          item.quantity, returnOrderId, req.user.id,
-          `Hoàn trả từ đơn ${order.order_code}: ${item.reason || reason || ''}`
-        ]
+          transactionCode,
+          dateKey,
+          order.store_id,
+          item.variant_id,
+          item.quantity,
+          returnOrderId,
+          req.user.id,
+          `Hoàn trả từ đơn ${order.order_code}: ${item.reason || reason || ""}`,
+        ],
       );
     }
 
     // Update original order status if full return
-    const originalTotal = orderItems.reduce((sum, oi) => sum + parseFloat(oi.quantity), 0);
+    const originalTotal = orderItems.reduce(
+      (sum, oi) => sum + parseFloat(oi.quantity),
+      0,
+    );
     const returnTotal = returnItems.reduce((sum, ri) => sum + ri.quantity, 0);
-    
+
     if (returnTotal >= originalTotal) {
       await client.query(
         `UPDATE fact_orders SET status = 'returned', payment_status = 'refunded' WHERE id = $1`,
-        [id]
+        [id],
       );
     }
 
     // ========== COMMIT TRANSACTION ==========
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     res.status(201).json({
       success: true,
@@ -1052,18 +1098,17 @@ const returnOrder = async (req, res) => {
         return_items: returnItems,
         total_refund: totalRefund,
         refund_method,
-        reason
+        reason,
       },
-      message: 'Hoàn trả đơn hàng thành công'
+      message: "Hoàn trả đơn hàng thành công",
     });
-
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Return order error:', error);
+    await client.query("ROLLBACK");
+    console.error("Return order error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi hoàn trả đơn hàng',
-      error: error.message
+      message: "Lỗi khi hoàn trả đơn hàng",
+      error: error.message,
     });
   } finally {
     client.release();
@@ -1099,7 +1144,7 @@ const getOrderInvoice = async (req, res) => {
     if (orderResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy đơn hàng'
+        message: "Không tìm thấy đơn hàng",
       });
     }
 
@@ -1132,22 +1177,22 @@ const getOrderInvoice = async (req, res) => {
       invoice_number: order.order_code,
       date: order.date_key,
       created_at: order.created_at,
-      
+
       store: {
         name: order.store_name,
         address: order.store_address,
-        phone: order.store_phone
+        phone: order.store_phone,
       },
-      
+
       customer: {
-        name: order.customer_name || 'Khách lẻ',
-        phone: order.customer_phone || '',
-        address: order.customer_address || order.shipping_address || ''
+        name: order.customer_name || "Khách lẻ",
+        phone: order.customer_phone || "",
+        address: order.customer_address || order.shipping_address || "",
       },
-      
+
       staff: order.staff_name,
-      
-      items: itemsResult.rows.map(item => ({
+
+      items: itemsResult.rows.map((item) => ({
         sku: item.sku,
         barcode: item.barcode,
         name: item.product_name,
@@ -1156,40 +1201,39 @@ const getOrderInvoice = async (req, res) => {
         unit_price: parseFloat(item.unit_price),
         discount: parseFloat(item.discount_per_item),
         subtotal: parseFloat(item.line_subtotal),
-        total: parseFloat(item.line_total)
+        total: parseFloat(item.line_total),
       })),
-      
+
       summary: {
         subtotal: parseFloat(order.subtotal),
         discount: parseFloat(order.discount_amount),
         tax: parseFloat(order.tax_amount),
         shipping: parseFloat(order.shipping_fee),
-        total: parseFloat(order.final_amount)
+        total: parseFloat(order.final_amount),
       },
-      
+
       payment: {
         method: order.payment_method,
-        status: order.payment_status
+        status: order.payment_status,
       },
-      
+
       notes: {
         customer: order.customer_note,
-        internal: order.internal_note
-      }
+        internal: order.internal_note,
+      },
     };
 
     res.json({
       success: true,
       data: invoice,
-      message: 'Lấy thông tin hóa đơn thành công'
+      message: "Lấy thông tin hóa đơn thành công",
     });
-
   } catch (error) {
-    console.error('Get order invoice error:', error);
+    console.error("Get order invoice error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy thông tin hóa đơn',
-      error: error.message
+      message: "Lỗi khi lấy thông tin hóa đơn",
+      error: error.message,
     });
   }
 };
@@ -1227,7 +1271,7 @@ const getReturnOrders = async (req, res) => {
     // Count
     const countResult = await db.query(
       `SELECT COUNT(*) as total FROM fact_orders fo ${whereClause}`,
-      params
+      params,
     );
     const total = parseInt(countResult.rows[0].total);
 
@@ -1263,18 +1307,315 @@ const getReturnOrders = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
       },
-      message: 'Lấy danh sách đơn hoàn trả thành công'
+      message: "Lấy danh sách đơn hoàn trả thành công",
     });
-
   } catch (error) {
-    console.error('Get return orders error:', error);
+    console.error("Get return orders error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách đơn hoàn trả',
-      error: error.message
+      message: "Lỗi khi lấy danh sách đơn hoàn trả",
+      error: error.message,
     });
+  }
+};
+
+/**
+ * Danh sách đơn nháp - GET /api/orders/drafts
+ */
+const getDraftOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, from, to } = req.query;
+    const offset = (page - 1) * limit;
+    const params = [];
+    let paramIndex = 1;
+
+    let whereClause = `WHERE fo.status = 'draft'`;
+
+    if (search) {
+      whereClause += ` AND (fo.order_code ILIKE $${paramIndex} OR dc.full_name ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    if (from) {
+      whereClause += ` AND fo.created_at >= $${paramIndex}`;
+      params.push(from);
+      paramIndex++;
+    }
+
+    if (to) {
+      whereClause += ` AND fo.created_at <= $${paramIndex}`;
+      params.push(to + " 23:59:59");
+      paramIndex++;
+    }
+
+    // Count
+    const countResult = await db.query(
+      `SELECT COUNT(*) as total FROM fact_orders fo 
+       LEFT JOIN dim_customers dc ON fo.customer_id = dc.id
+       ${whereClause}`,
+      params,
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    // Get drafts
+    const query = `
+      SELECT 
+        fo.id,
+        fo.order_code,
+        fo.final_amount,
+        fo.customer_note as note,
+        fo.created_at,
+        COALESCE(dc.full_name, 'Khách vãng lai') as customer_name,
+        u.full_name as created_by
+      FROM fact_orders fo
+      LEFT JOIN dim_customers dc ON fo.customer_id = dc.id
+      LEFT JOIN dim_users u ON fo.created_by = u.id
+      ${whereClause}
+      ORDER BY fo.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    params.push(limit, offset);
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Get draft orders error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách đơn nháp",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Tạo đơn nháp - POST /api/orders/drafts
+ */
+const createDraftOrder = async (req, res) => {
+  const client = await db.pool.connect();
+
+  try {
+    const {
+      customer_name,
+      customer_id,
+      store_id = 1,
+      items = [],
+      note,
+    } = req.body;
+
+    await client.query("BEGIN");
+
+    // Generate draft code
+    const today = new Date();
+    const dateStr = today.toISOString().split("T")[0].replace(/-/g, "");
+    const draftCountResult = await client.query(
+      `
+      SELECT COUNT(*) + 1 as next_num
+      FROM fact_orders
+      WHERE date_key = $1 AND status = 'draft'
+    `,
+      [today.toISOString().split("T")[0]],
+    );
+
+    const draftNumber = String(draftCountResult.rows[0].next_num).padStart(
+      5,
+      "0",
+    );
+    const draftCode = `DRAFT-${dateStr}-${draftNumber}`;
+
+    // Calculate totals from items
+    let subtotal = 0;
+    if (items && items.length > 0) {
+      subtotal = items.reduce(
+        (sum, item) => sum + item.quantity * item.unit_price,
+        0,
+      );
+    }
+
+    // Create draft order
+    const orderResult = await client.query(
+      `
+      INSERT INTO fact_orders (
+        order_code, date_key, store_id, customer_id,
+        subtotal, final_amount, status, 
+        customer_note, created_by, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, NOW())
+      RETURNING id, order_code
+    `,
+      [
+        draftCode,
+        today.toISOString().split("T")[0],
+        store_id,
+        customer_id || null,
+        subtotal,
+        subtotal,
+        note || null,
+        req.user?.id || 1,
+      ],
+    );
+
+    const orderId = orderResult.rows[0].id;
+
+    // Insert draft items if provided
+    if (items && items.length > 0) {
+      for (const item of items) {
+        await client.query(
+          `
+          INSERT INTO fact_order_items (
+            order_id, variant_id, quantity, unit_price, 
+            subtotal, total
+          ) VALUES ($1, $2, $3, $4, $5, $6)
+        `,
+          [
+            orderId,
+            item.variant_id,
+            item.quantity,
+            item.unit_price,
+            item.quantity * item.unit_price,
+            item.quantity * item.unit_price,
+          ],
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: orderId,
+        order_code: orderResult.rows[0].order_code,
+        customer_name: customer_name || "Khách vãng lai",
+        total_amount: subtotal,
+        note: note || "",
+      },
+      message: "Tạo đơn nháp thành công",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Create draft order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi tạo đơn nháp",
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Chuyển đổi đơn nháp thành đơn hàng - POST /api/orders/drafts/:id/convert
+ */
+const convertDraftToOrder = async (req, res) => {
+  const client = await db.pool.connect();
+
+  try {
+    const { id } = req.params;
+
+    await client.query("BEGIN");
+
+    // Check if draft exists
+    const draftCheck = await client.query(
+      `SELECT * FROM fact_orders WHERE id = $1 AND status = 'draft'`,
+      [id],
+    );
+
+    if (draftCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn nháp",
+      });
+    }
+
+    // Update status to pending/confirmed
+    await client.query(
+      `UPDATE fact_orders 
+       SET status = 'pending', payment_status = 'unpaid'
+       WHERE id = $1`,
+      [id],
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      message: "Chuyển đổi đơn nháp thành đơn hàng thành công",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Convert draft order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi chuyển đổi đơn nháp",
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Xóa đơn nháp - DELETE /api/orders/drafts/:id
+ */
+const deleteDraftOrder = async (req, res) => {
+  const client = await db.pool.connect();
+
+  try {
+    const { id } = req.params;
+
+    await client.query("BEGIN");
+
+    // Check if draft exists
+    const draftCheck = await client.query(
+      `SELECT * FROM fact_orders WHERE id = $1 AND status = 'draft'`,
+      [id],
+    );
+
+    if (draftCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn nháp",
+      });
+    }
+
+    // Delete order items first
+    await client.query(`DELETE FROM fact_order_items WHERE order_id = $1`, [
+      id,
+    ]);
+
+    // Delete draft order
+    await client.query(`DELETE FROM fact_orders WHERE id = $1`, [id]);
+
+    await client.query("COMMIT");
+
+    res.json({
+      success: true,
+      message: "Xóa đơn nháp thành công",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Delete draft order error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi xóa đơn nháp",
+      error: error.message,
+    });
+  } finally {
+    client.release();
   }
 };
 
@@ -1288,5 +1629,9 @@ module.exports = {
   getDetailedStats,
   returnOrder,
   getOrderInvoice,
-  getReturnOrders
+  getReturnOrders,
+  getDraftOrders,
+  createDraftOrder,
+  convertDraftToOrder,
+  deleteDraftOrder,
 };

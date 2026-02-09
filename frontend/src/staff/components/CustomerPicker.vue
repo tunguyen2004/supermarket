@@ -74,6 +74,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import customerService from "@/services/customerService";
 
 const props = defineProps({
   modelValue: {
@@ -99,12 +100,24 @@ const isSearching = ref(false);
 const searchResults = ref([]);
 const searchTimeout = ref(null);
 
-// Mock recent customers (replace with actual API)
-const recentCustomers = ref([
-  { id: 1, name: "Nguyễn Văn A", phone: "0901234567" },
-  { id: 2, name: "Trần Thị B", phone: "0912345678" },
-  { id: 3, name: "huy do", phone: "0562456488" },
-]);
+// Recent customers (load from API on mount)
+const recentCustomers = ref([]);
+
+// Load recent customers
+const loadRecentCustomers = async () => {
+  try {
+    const response = await customerService.searchCustomers("", 5);
+    if (response.success && response.data) {
+      recentCustomers.value = response.data.map((c) => ({
+        id: c.id,
+        name: c.full_name,
+        phone: c.phone || "",
+      }));
+    }
+  } catch (error) {
+    console.error("Error loading recent customers:", error);
+  }
+};
 
 const handleFocus = () => {
   showDropdown.value = true;
@@ -137,24 +150,26 @@ const handleInput = () => {
 };
 
 const searchCustomers = async (query) => {
-  // TODO: Replace with actual API call
-  // const response = await customerService.search(query, props.branchId);
-  // searchResults.value = response.data;
-
-  // Mock implementation
-  const allCustomers = [
-    { id: 1, name: "Nguyễn Văn A", phone: "0901234567" },
-    { id: 2, name: "Trần Thị B", phone: "0912345678" },
-    { id: 3, name: "huy do", phone: "0562456488" },
-    { id: 4, name: "Lê Văn C", phone: "0923456789" },
-    { id: 5, name: "Phạm Thị D", phone: "0934567890" },
-  ];
-
-  const lowerQuery = query.toLowerCase();
-  searchResults.value = allCustomers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(lowerQuery) || c.phone.includes(lowerQuery),
-  );
+  try {
+    const response = await customerService.searchCustomers(query, 10);
+    if (response.success && response.data) {
+      // Map response để khớp với format UI: id, name, phone
+      searchResults.value = response.data.map((c) => ({
+        id: c.id,
+        name: c.full_name,
+        phone: c.phone || "",
+        email: c.email,
+        address: c.address,
+        group_name: c.group_name,
+        discount_percentage: c.discount_percentage,
+      }));
+    } else {
+      searchResults.value = [];
+    }
+  } catch (error) {
+    console.error("Error searching customers:", error);
+    searchResults.value = [];
+  }
 };
 
 const selectCustomer = (customer) => {
@@ -182,6 +197,7 @@ const handleKeyPress = (e) => {
 
 onMounted(() => {
   window.addEventListener("keydown", handleKeyPress);
+  loadRecentCustomers();
 });
 
 onBeforeUnmount(() => {

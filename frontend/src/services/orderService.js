@@ -44,6 +44,47 @@ const orderService = {
     const response = await apiClient.get("/api/orders/stats/detailed");
     return response.data;
   },
+
+  // DRAFT ORDERS
+  // Danh sách đơn nháp
+  async getDraftOrders(params = {}) {
+    const response = await apiClient.get("/api/orders/drafts", { params });
+    return response.data;
+  },
+
+  // Tạo đơn nháp
+  async createDraftOrder(data) {
+    const response = await apiClient.post("/api/orders/drafts", data);
+    return response.data;
+  },
+
+  // Chuyển đơn nháp thành đơn hàng
+  async convertDraftToOrder(id) {
+    const response = await apiClient.post(`/api/orders/drafts/${id}/convert`);
+    return response.data;
+  },
+
+  // Xóa đơn nháp
+  async deleteDraftOrder(id) {
+    const response = await apiClient.delete(`/api/orders/drafts/${id}`);
+    return response.data;
+  },
+
+  // ORDER RETURNS
+  // Danh sách đơn hoàn trả
+  async getReturnOrders(params = {}) {
+    const response = await apiClient.get("/api/orders/returns", { params });
+    return response.data;
+  },
+
+  // Tạo đơn hoàn trả
+  async createReturnOrder(orderId, data) {
+    const response = await apiClient.post(
+      `/api/orders/${orderId}/return`,
+      data,
+    );
+    return response.data;
+  },
 };
 
 export default orderService;

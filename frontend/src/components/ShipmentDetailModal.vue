@@ -7,20 +7,35 @@
   >
     <div v-if="shipment" class="shipment-details">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="Mã vận đơn">{{ shipment.shipmentCode }}</el-descriptions-item>
-        <el-descriptions-item label="Mã đơn hàng">{{ shipment.orderCode }}</el-descriptions-item>
-        <el-descriptions-item label="Khách hàng">{{ shipment.customerName }}</el-descriptions-item>
-        <el-descriptions-item label="Đối tác vận chuyển">{{ shipment.carrier }}</el-descriptions-item>
+        <el-descriptions-item label="Mã vận đơn">{{
+          shipment.shipmentCode
+        }}</el-descriptions-item>
+        <el-descriptions-item label="Mã đơn hàng">{{
+          shipment.orderCode
+        }}</el-descriptions-item>
+        <el-descriptions-item label="Khách hàng">{{
+          shipment.customerName
+        }}</el-descriptions-item>
+        <el-descriptions-item label="Đối tác vận chuyển">{{
+          shipment.carrier
+        }}</el-descriptions-item>
         <el-descriptions-item label="Phí vận chuyển">
-          <span style="font-weight: bold;">{{ formatCurrency(shipment.shippingFee) }}</span>
+          <span style="font-weight: bold">{{
+            formatCurrency(shipment.shippingFee)
+          }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="Trạng thái">
-          <el-select v-model="editableStatus" placeholder="Cập nhật" size="small" style="width: 150px;">
+          <el-select
+            v-model="editableStatus"
+            placeholder="Cập nhật"
+            size="small"
+            style="width: 180px"
+          >
             <el-option
               v-for="s in availableStatuses"
-              :key="s"
-              :label="s"
-              :value="s"
+              :key="s.code"
+              :label="s.name"
+              :value="s.code"
             />
           </el-select>
         </el-descriptions-item>
@@ -33,7 +48,7 @@
         <el-timeline-item
           v-for="(activity, index) in trackingHistory"
           :key="index"
-          :timestamp="activity.timestamp"
+          :timestamp="new Date(activity.timestamp).toLocaleString('vi-VN')"
           :type="activity.type"
         >
           {{ activity.content }}
@@ -50,7 +65,9 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed, ref, watch } from 'vue';
+import { defineProps, defineEmits, computed, ref, watch } from "vue";
+import { ElMessage, ElLoading } from "element-plus";
+import shipmentService, { mapShipmentStatus } from "@/services/shipmentService";
 
 const props = defineProps({
   modelValue: Boolean,
@@ -60,44 +77,108 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'update:shipment']);
+const emit = defineEmits(["update:modelValue", "update:shipment"]);
 
 const dialogVisible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value),
+  set: (value) => emit("update:modelValue", value),
 });
 
 const handleClose = () => {
   dialogVisible.value = false;
 };
 
-const editableStatus = ref('');
+const editableStatus = ref("");
 const availableStatuses = [
-  'Chờ lấy hàng',
-  'Đang giao',
-  'Giao thành công',
-  'Chuyển hoàn',
+  { code: "pending", name: "Chờ lấy hàng" },
+  { code: "confirmed", name: "Đã xác nhận" },
+  { code: "picking", name: "Đang lấy hàng" },
+  { code: "picked", name: "Đã lấy hàng" },
+  { code: "in_transit", name: "Đang vận chuyển" },
+  { code: "out_for_delivery", name: "Đang giao hàng" },
+  { code: "delivered", name: "Giao thành công" },
+  { code: "failed", name: "Giao thất bại" },
+  { code: "returned", name: "Chuyển hoàn" },
+  { code: "cancelled", name: "Đã hủy" },
 ];
 
-watch(() => props.shipment, (newShipment) => {
-  if (newShipment) {
-    editableStatus.value = newShipment.status;
-  }
-}, { immediate: true });
+watch(
+  () => props.shipment,
+  (newShipment) => {
+    if (newShipment) {
+      editableStatus.value = newShipment.statusCode || newShipment.status_code;
+    }
+  },
+  { immediate: true },
+);
 
-watch(editableStatus, (newStatus) => {
-  if (props.shipment && newStatus !== props.shipment.status) {
-    emit('update:shipment', { ...props.shipment, status: newStatus });
+const updateShipmentStatus = async (newStatusCode) => {
+  if (!props.shipment || newStatusCode === props.shipment.statusCode) return;
+
+  try {
+    const loading = ElLoading.service({
+      lock: true,
+      text: "Đang cập nhật trạng thái...",
+    });
+
+    await shipmentService.updateShipmentStatus(props.shipment.id, {
+      status: newStatusCode,
+      description: `Cập nhật trạng thái thành ${mapShipmentStatus(
+        newStatusCode,
+      )}`,
+    });
+
+    const updatedShipment = {
+      ...props.shipment,
+      statusCode: newStatusCode,
+      status: mapShipmentStatus(newStatusCode),
+    };
+
+    emit("update:shipment", updatedShipment);
+    ElMessage.success("Cập nhật trạng thái thành công");
+
+    loading.close();
+  } catch (error) {
+    ElMessage.error("Lỗi khi cập nhật trạng thái: " + error.message);
+    // Revert status change
+    editableStatus.value = props.shipment.statusCode;
+  }
+};
+
+watch(editableStatus, (newStatusCode) => {
+  if (props.shipment && newStatusCode !== props.shipment.statusCode) {
+    updateShipmentStatus(newStatusCode);
   }
 });
 
-// Dummy data for tracking history
-const trackingHistory = ref([
-    { content: 'Giao hàng thành công', timestamp: '2025-08-09 14:30', type: 'success' },
-    { content: 'Đang giao hàng', timestamp: '2025-08-09 09:15' },
-    { content: 'Đã lấy hàng', timestamp: '2025-08-08 18:00' },
-    { content: 'Đối tác đã tạo vận đơn', timestamp: '2025-08-08 16:00' },
-]);
+// Tracking history with proper mapping
+const trackingHistory = computed(() => {
+  if (!props.shipment?.trackingHistory) {
+    return [
+      {
+        content: "Vận đơn được tạo",
+        timestamp: props.shipment?.createdAt || new Date().toISOString(),
+        type: "info",
+      },
+    ];
+  }
+
+  return props.shipment.trackingHistory.map((item) => ({
+    content: item.description || mapShipmentStatus(item.status_code),
+    timestamp: item.tracked_at || item.created_at,
+    type: getTimelineType(item.status_code),
+  }));
+});
+
+const getTimelineType = (statusCode) => {
+  const typeMap = {
+    delivered: "success",
+    failed: "danger",
+    returned: "warning",
+    cancelled: "info",
+  };
+  return typeMap[statusCode] || "primary";
+};
 
 // Helper functions
 const formatCurrency = (value) => (value || 0).toLocaleString("vi-VN") + "đ";
@@ -105,7 +186,7 @@ const formatCurrency = (value) => (value || 0).toLocaleString("vi-VN") + "đ";
 
 <style scoped>
 .shipment-details h4 {
-    margin-top: 20px;
-    margin-bottom: 15px;
+  margin-top: 20px;
+  margin-bottom: 15px;
 }
 </style>

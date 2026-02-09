@@ -449,6 +449,7 @@ import {
   onBeforeUnmount,
 } from "vue";
 import { ElMessage } from "element-plus";
+import customerService from "@/services/customerService";
 
 const props = defineProps({
   modelValue: {
@@ -649,24 +650,39 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    // TODO: Replace with actual API call
-    // const response = await customerService.create(form);
-
-    // Mock response
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const newCustomer = {
-      id: Date.now(),
-      name: `${form.firstName} ${form.lastName}`.trim() || "Khách hàng mới",
+    // Chuẩn bị data theo format backend: full_name, phone, email, customer_group_id, city_id, address, date_of_birth, gender
+    const customerData = {
+      full_name: `${form.firstName} ${form.lastName}`.trim(),
       phone: form.phoneNumber,
-      email: form.email,
+      email: form.email || null,
+      date_of_birth: form.dob || null,
+      gender: form.gender,
+      city_id: form.provinceId || null,
+      address: form.addressLine || null,
+      customer_group_id: null, // Default group
     };
 
-    ElMessage.success("Thêm khách hàng thành công");
-    emit("created", newCustomer);
-    handleClose();
+    const response = await customerService.createCustomer(customerData);
+
+    if (response.success) {
+      const newCustomer = {
+        id: response.data.id,
+        name: response.data.full_name,
+        phone: response.data.phone,
+        email: response.data.email,
+      };
+
+      ElMessage.success("Thêm khách hàng thành công");
+      emit("created", newCustomer);
+      handleClose();
+    } else {
+      ElMessage.error(response.message || "Có lỗi xảy ra");
+    }
   } catch (error) {
-    ElMessage.error("Có lỗi xảy ra, vui lòng thử lại");
+    console.error("Error creating customer:", error);
+    ElMessage.error(
+      error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại",
+    );
   } finally {
     isSubmitting.value = false;
   }

@@ -240,6 +240,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Search, Message, View, Promotion } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
+import checkoutService from "@/services/checkoutService";
 
 // --- STATE ---
 const isMobile = ref(false);
@@ -248,47 +249,45 @@ const search = ref("");
 const statusFilter = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
+const totalItems = ref(0);
 const checkouts = ref([]);
 
 // Dialog state
 const selectedCheckout = ref(null);
 const detailVisible = ref(false);
 
-// --- DỮ LIỆU MẪU ---
-const sampleCheckouts = [
-  {
-    checkoutCode: "CK105",
-    customerName: "Khách vãng lai",
-    customerContact: "0905******",
-    createdDate: "2025-08-08 10:32",
-    totalAmount: 450000,
-    status: "Chưa liên hệ",
-  },
-  {
-    checkoutCode: "CK104",
-    customerName: "Trần Thị Bích",
-    customerContact: "bich.tt@example.com",
-    createdDate: "2025-08-07 22:15",
-    totalAmount: 120000,
-    status: "Đã gửi email",
-  },
-  {
-    checkoutCode: "CK103",
-    customerName: "Lê Hoàng Cường",
-    customerContact: "0987******",
-    createdDate: "2025-08-07 14:00",
-    totalAmount: 980000,
-    status: "Chưa liên hệ",
-  },
-  {
-    checkoutCode: "CK102",
-    customerName: "Phạm Mỹ Duyên",
-    customerContact: "duyen.pm@example.com",
-    createdDate: "2025-08-06 11:40",
-    totalAmount: 325000,
-    status: "Đã gửi email",
-  },
-];
+// --- FETCH DATA ---
+const fetchCheckouts = async () => {
+  try {
+    isLoading.value = true;
+    const params = {
+      page: currentPage.value,
+      limit: pageSize,
+      search: search.value || undefined,
+      status: statusFilter.value || undefined,
+    };
+
+    const result = await checkoutService.getCheckouts(params);
+
+    // Map API response to display format
+    checkouts.value = result.data.map((item) => ({
+      id: item.id,
+      checkoutCode: item.checkoutCode,
+      customerName: item.customerName,
+      customerContact: item.customerContact,
+      createdDate: new Date(item.createdDate).toLocaleString("vi-VN"),
+      totalAmount: item.totalAmount,
+      status: item.status,
+    }));
+
+    totalItems.value = result.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error fetching checkouts:", error);
+    ElMessage.error("Không thể tải danh sách đơn chưa hoàn tất");
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 // --- HELPERS ---
 const checkScreenSize = () => {
@@ -320,7 +319,7 @@ const pagedCheckouts = computed(() => {
 });
 
 const massTargets = computed(() =>
-  filteredCheckouts.value.filter((c) => c.status !== "Đã gửi email")
+  filteredCheckouts.value.filter((c) => c.status !== "Đã gửi email"),
 );
 const massEmailDisabled = computed(() => massTargets.value.length === 0);
 
@@ -335,10 +334,10 @@ const buildPaymentLink = (row) => {
   return `https://example.com/checkout/${encodeURIComponent(row.checkoutCode)}`;
 };
 
-const markAsEmailed = (codes = []) => {
-  // cập nhật local state (mock) sau khi gửi email thành công
+const markAsEmailed = (ids = []) => {
+  // Refresh data after sending email
   checkouts.value = checkouts.value.map((c) =>
-    codes.includes(c.checkoutCode) ? { ...c, status: "Đã gửi email" } : c
+    ids.includes(c.id) ? { ...c, status: "Đã gửi email" } : c,
   );
 };
 
@@ -366,29 +365,33 @@ const copyToClipboard = async (text) => {
 
 const sendPaymentLink = async (row) => {
   if (!row) return;
-  const link = buildPaymentLink(row);
-  const copied = await copyToClipboard(link);
-  if (copied) {
-    ElNotification({
-      title: "Đã sao chép",
-      message: `Link thanh toán đã được copy: ${link}`,
-      type: "success",
-      duration: 3000,
-    });
-  } else {
-    ElMessageBox.alert(
-      `<div>Trình duyệt không cho phép sao chép tự động. Vui lòng copy thủ công link bên dưới:</div><pre style="margin-top:8px;white-space:break-spaces">${link}</pre>`,
-      "Không thể sao chép",
-      { dangerouslyUseHTMLString: true, confirmButtonText: "Đã hiểu" }
-    );
-  }
-};
+  try {
+    isLoading.value = true;
+    const result = await checkoutService.sendPaymentLink(row.id);
 
-const mockSendEmailAPI = (payload) => {
-  // mô phỏng API gửi email (trả về sau 1s)
-  return new Promise((resolve) =>
-    setTimeout(() => resolve({ ok: true, sent: payload.codes }), 1000)
-  );
+    // Copy link to clipboard
+    const copied = await copyToClipboard(result.payment_link);
+
+    if (copied) {
+      ElNotification({
+        title: "Thành công",
+        message: `Đã copy link thanh toán vào clipboard`,
+        type: "success",
+        duration: 3000,
+      });
+      markAsEmailed([row.id]);
+    } else {
+      ElMessageBox.alert(
+        `Link thanh toán: ${result.payment_link}`,
+        "Link thanh toán",
+      );
+    }
+  } catch (error) {
+    console.error("Error sending payment link:", error);
+    ElMessage.error("Không thể gửi link thanh toán");
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const sendMassEmail = async () => {
@@ -402,7 +405,7 @@ const sendMassEmail = async () => {
     await ElMessageBox.confirm(
       `Gửi email nhắc thanh toán cho ${totalTargets} đơn chưa liên hệ?`,
       "Xác nhận",
-      { confirmButtonText: "Gửi", cancelButtonText: "Huỷ", type: "warning" }
+      { confirmButtonText: "Gửi", cancelButtonText: "Huỷ", type: "warning" },
     );
   } catch {
     return; // user canceled
@@ -410,15 +413,24 @@ const sendMassEmail = async () => {
 
   isLoading.value = true;
   try {
-    // gọi API thật tại đây
-    const payload = { codes: massTargets.value.map((c) => c.checkoutCode) };
-    const res = await mockSendEmailAPI(payload);
-    if (res.ok) {
-      markAsEmailed(res.sent);
-      ElMessage.success(`Đã gửi email cho ${res.sent.length} khách hàng.`);
-    } else {
-      ElMessage.error("Không gửi được email. Vui lòng thử lại.");
-    }
+    const payload = {
+      checkout_ids: massTargets.value.map((c) => c.id),
+      exclude_already_sent: true,
+    };
+    const result = await checkoutService.sendMassEmail(payload);
+
+    ElNotification({
+      title: "Thành công",
+      message: `Đã gửi email cho ${result.sent_count} đơn hàng`,
+      type: "success",
+      duration: 3000,
+    });
+
+    // Refresh data
+    await fetchCheckouts();
+  } catch (error) {
+    console.error("Error sending mass email:", error);
+    ElMessage.error("Không thể gửi email hàng loạt");
   } finally {
     isLoading.value = false;
   }
@@ -426,16 +438,18 @@ const sendMassEmail = async () => {
 
 watch([search, statusFilter], () => {
   currentPage.value = 1;
+  fetchCheckouts();
+});
+
+watch(currentPage, () => {
+  fetchCheckouts();
 });
 
 // --- LIFECYCLE HOOKS ---
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    checkouts.value = sampleCheckouts;
-    isLoading.value = false;
-  }, 500);
+  fetchCheckouts();
 });
 
 onBeforeUnmount(() => {

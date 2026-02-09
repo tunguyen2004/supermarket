@@ -1,8 +1,8 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const db = require('../config/database');
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const db = require("../config/database");
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const TOKEN_EXPIRY_DAYS = 7; // Token hết hạn sau 7 ngày
 
 // ============================================================================
@@ -25,7 +25,7 @@ const addToBlacklist = (token) => {
       tokenBlacklist.set(token, decoded.exp * 1000);
     }
   } catch (error) {
-    console.error('Error adding token to blacklist:', error);
+    console.error("Error adding token to blacklist:", error);
   }
 };
 
@@ -69,7 +69,7 @@ const generateToken = (userId, email, roleId) => {
   return jwt.sign(
     { id: userId, email: email, role_id: roleId },
     JWT_SECRET,
-    { expiresIn: `${TOKEN_EXPIRY_DAYS}d` } // Token hết hạn sau 7 ngày
+    { expiresIn: `${TOKEN_EXPIRY_DAYS}d` }, // Token hết hạn sau 7 ngày
   );
 };
 
@@ -115,7 +115,7 @@ const updateFailedLoginAttempts = async (userId, failedAttempts) => {
     `UPDATE dim_users 
      SET failed_login_attempts = $1, locked_until = $2
      WHERE id = $3`,
-    [failedAttempts, lockedUntil, userId]
+    [failedAttempts, lockedUntil, userId],
   );
 };
 
@@ -128,14 +128,14 @@ const resetFailedLoginAttempts = async (userId) => {
     `UPDATE dim_users 
      SET failed_login_attempts = 0, locked_until = NULL
      WHERE id = $1`,
-    [userId]
+    [userId],
   );
 };
 
 /**
  * Đăng nhập - POST /api/auth/login
  * Body: { username, password }
- * 
+ *
  * Tính năng:
  * - Kiểm tra tài khoản có bị khóa không (quá 5 lần sai mật khẩu)
  * - Ghi lại lần đăng nhập cuối cùng
@@ -148,12 +148,12 @@ const login = async (req, res) => {
     // Kiểm tra input
     if (!username || !password) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'Username and password are required',
+        status: "ERROR",
+        message: "Username and password are required",
       });
     }
 
-    // Tìm user theo username (kèm role_id và failed_login_attempts)
+    // Tìm user theo username (kèm role_id, failed_login_attempts, store_id và store_name)
     const result = await db.query(
       `SELECT 
         u.id, 
@@ -162,20 +162,23 @@ const login = async (req, res) => {
         u.password_hash, 
         u.full_name,
         u.role_id,
+        u.store_id,
         u.is_active,
         u.failed_login_attempts,
         u.locked_until,
-        r.name as role_name
+        r.name as role_name,
+        s.name as store_name
       FROM dim_users u
       LEFT JOIN subdim_roles r ON u.role_id = r.id
+      LEFT JOIN dim_stores s ON u.store_id = s.id
       WHERE u.username = $1`,
-      [username]
+      [username],
     );
 
     if (result.rows.length === 0) {
       return res.status(401).json({
-        status: 'ERROR',
-        message: 'Username or password is incorrect',
+        status: "ERROR",
+        message: "Username or password is incorrect",
       });
     }
 
@@ -185,8 +188,8 @@ const login = async (req, res) => {
     const { isLocked, remainingTime } = checkAccountLock(user);
     if (isLocked) {
       return res.status(403).json({
-        status: 'ERROR',
-        code: 'ACCOUNT_LOCKED',
+        status: "ERROR",
+        code: "ACCOUNT_LOCKED",
         message: `Account is locked due to too many failed login attempts. Please try again in ${remainingTime} seconds`,
         remainingTime,
         lockedUntil: user.locked_until,
@@ -196,7 +199,7 @@ const login = async (req, res) => {
     // ============ KIỂM TRA TÀI KHOẢN CÓ ĐƯỢC KÍCH HOẠT KHÔNG ============
     // Note: Tạm thời không kiểm tra is_active vì nó dùng để track online/offline
     // Sẽ kiểm tra lại nếu cần thêm tính năng "vô hiệu hóa tài khoản bởi Admin"
-    
+
     // if (!user.is_active) {
     //   return res.status(403).json({
     //     status: 'ERROR',
@@ -217,8 +220,8 @@ const login = async (req, res) => {
 
       if (remainingAttempts <= 0) {
         return res.status(403).json({
-          status: 'ERROR',
-          code: 'ACCOUNT_LOCKED',
+          status: "ERROR",
+          code: "ACCOUNT_LOCKED",
           message: `Account has been locked for ${LOCK_TIME_MINUTES} minute(s) due to too many failed login attempts`,
           failedAttempts: newFailedAttempts,
           lockedUntil: new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000),
@@ -226,8 +229,8 @@ const login = async (req, res) => {
       }
 
       return res.status(401).json({
-        status: 'ERROR',
-        message: 'Username or password is incorrect',
+        status: "ERROR",
+        message: "Username or password is incorrect",
         failedAttempts: newFailedAttempts,
         remainingAttempts,
       });
@@ -244,31 +247,33 @@ const login = async (req, res) => {
       `UPDATE dim_users 
        SET is_active = TRUE, last_login = CURRENT_TIMESTAMP
        WHERE id = $1`,
-      [user.id]
+      [user.id],
     );
 
     // Tạo token (kèm role_id)
     const token = generateToken(user.id, user.email, user.role_id);
 
     res.json({
-      status: 'OK',
-      message: 'Login successful',
+      status: "OK",
+      message: "Login successful",
       data: {
         id: user.id,
         username: user.username,
         email: user.email,
         full_name: user.full_name,
         role_id: user.role_id,
-        role_name: user.role_name || 'User',
+        role_name: user.role_name || "User",
+        store_id: user.store_id,
+        store_name: user.store_name,
         is_active: true, // Luôn true vì vừa đăng nhập thành công
         token: token,
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Login failed',
+      status: "ERROR",
+      message: "Login failed",
       error: error.message,
     });
   }
@@ -276,7 +281,7 @@ const login = async (req, res) => {
 
 /**
  * Đăng xuất - POST /api/auth/logout
- * 
+ *
  * Tính năng:
  * - Thêm token hiện tại vào blacklist (vô hiệu hóa)
  * - Cập nhật is_active thành false (người dùng đang offline)
@@ -284,7 +289,7 @@ const login = async (req, res) => {
 const logout = async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Lấy token từ header
     const authHeader = req.headers.authorization;
     const token = authHeader ? authHeader.substring(7) : null;
@@ -299,19 +304,19 @@ const logout = async (req, res) => {
       `UPDATE dim_users 
        SET is_active = FALSE
        WHERE id = $1`,
-      [userId]
+      [userId],
     );
 
     res.json({
-      status: 'OK',
-      message: 'Logout successful',
-      note: 'Token has been invalidated and user status has been set to offline',
+      status: "OK",
+      message: "Logout successful",
+      note: "Token has been invalidated and user status has been set to offline",
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Logout failed',
+      status: "ERROR",
+      message: "Logout failed",
       error: error.message,
     });
   }
@@ -327,8 +332,8 @@ const refreshToken = async (req, res) => {
 
     if (!token) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'Token is required',
+        status: "ERROR",
+        message: "Token is required",
       });
     }
 
@@ -338,13 +343,13 @@ const refreshToken = async (req, res) => {
     // Kiểm tra xem tài khoản còn active không
     const userResult = await db.query(
       `SELECT is_active, locked_until FROM dim_users WHERE id = $1`,
-      [decoded.id]
+      [decoded.id],
     );
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
@@ -353,9 +358,9 @@ const refreshToken = async (req, res) => {
     // Kiểm tra tài khoản có active không
     if (!user.is_active) {
       return res.status(403).json({
-        status: 'ERROR',
-        code: 'ACCOUNT_INACTIVE',
-        message: 'Account is inactive',
+        status: "ERROR",
+        code: "ACCOUNT_INACTIVE",
+        message: "Account is inactive",
       });
     }
 
@@ -363,8 +368,8 @@ const refreshToken = async (req, res) => {
     const { isLocked, remainingTime } = checkAccountLock(user);
     if (isLocked) {
       return res.status(403).json({
-        status: 'ERROR',
-        code: 'ACCOUNT_LOCKED',
+        status: "ERROR",
+        code: "ACCOUNT_LOCKED",
         message: `Account is locked. Please try again in ${remainingTime} seconds`,
         remainingTime,
       });
@@ -377,8 +382,8 @@ const refreshToken = async (req, res) => {
     const newToken = generateToken(decoded.id, decoded.email, decoded.role_id);
 
     res.json({
-      status: 'OK',
-      message: 'Token refreshed successfully',
+      status: "OK",
+      message: "Token refreshed successfully",
       data: {
         token: newToken,
         wasExpired: isExpired,
@@ -386,8 +391,8 @@ const refreshToken = async (req, res) => {
     });
   } catch (error) {
     res.status(401).json({
-      status: 'ERROR',
-      message: 'Invalid token',
+      status: "ERROR",
+      message: "Invalid token",
       error: error.message,
     });
   }
@@ -414,26 +419,26 @@ const getMe = async (req, res) => {
       FROM dim_users u
       LEFT JOIN subdim_roles r ON u.role_id = r.id
       WHERE u.id = $1`,
-      [userId]
+      [userId],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
     res.json({
-      status: 'OK',
-      message: 'User info retrieved',
+      status: "OK",
+      message: "User info retrieved",
       data: result.rows[0],
     });
   } catch (error) {
-    console.error('Get me error:', error);
+    console.error("Get me error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get user info',
+      status: "ERROR",
+      message: "Failed to get user info",
       error: error.message,
     });
   }
@@ -448,57 +453,57 @@ const getRoles = async (req, res) => {
     const rolePermissions = {
       1: {
         id: 1,
-        code: 'ADMIN',
-        name: 'Admin',
-        description: 'Toàn quyền quản lý hệ thống',
+        code: "ADMIN",
+        name: "Admin",
+        description: "Toàn quyền quản lý hệ thống",
         permissions: [
-          'manage_staff', // Quản lý nhân viên
-          'manage_products', // Quản lý sản phẩm
-          'manage_categories', // Quản lý danh mục
-          'manage_orders', // Quản lý đơn hàng
-          'view_reports', // Xem báo cáo
-          'manage_settings', // Quản lý cài đặt
+          "manage_staff", // Quản lý nhân viên
+          "manage_products", // Quản lý sản phẩm
+          "manage_categories", // Quản lý danh mục
+          "manage_orders", // Quản lý đơn hàng
+          "view_reports", // Xem báo cáo
+          "manage_settings", // Quản lý cài đặt
         ],
       },
       3: {
         id: 3,
-        code: 'MANAGER',
-        name: 'Manager',
-        description: 'Quản lý cấp trung',
+        code: "MANAGER",
+        name: "Manager",
+        description: "Quản lý cấp trung",
         permissions: [
-          'manage_products', // Quản lý sản phẩm
-          'manage_categories', // Quản lý danh mục
-          'manage_orders', // Quản lý tất cả đơn hàng
-          'view_reports', // Xem báo cáo chi tiết
+          "manage_products", // Quản lý sản phẩm
+          "manage_categories", // Quản lý danh mục
+          "manage_orders", // Quản lý tất cả đơn hàng
+          "view_reports", // Xem báo cáo chi tiết
         ],
       },
       2: {
         id: 2,
-        code: 'STAFF',
-        name: 'Staff',
-        description: 'Nhân viên thường - quyền cơ bản',
+        code: "STAFF",
+        name: "Staff",
+        description: "Nhân viên thường - quyền cơ bản",
         permissions: [
-          'view_products', // Xem sản phẩm
-          'view_categories', // Xem danh mục
-          'create_orders', // Tạo đơn hàng
-          'view_own_orders', // Xem đơn hàng của mình
+          "view_products", // Xem sản phẩm
+          "view_categories", // Xem danh mục
+          "create_orders", // Tạo đơn hàng
+          "view_own_orders", // Xem đơn hàng của mình
         ],
       },
     };
 
     res.json({
-      status: 'OK',
-      message: 'Roles retrieved successfully',
+      status: "OK",
+      message: "Roles retrieved successfully",
       data: {
         roles: rolePermissions,
         roleList: Object.values(rolePermissions),
       },
     });
   } catch (error) {
-    console.error('Get roles error:', error);
+    console.error("Get roles error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get roles',
+      status: "ERROR",
+      message: "Failed to get roles",
       error: error.message,
     });
   }

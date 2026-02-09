@@ -37,9 +37,12 @@
           placeholder="Đối tác giao hàng"
           clearable
         >
-          <el-option label="GHTK" value="GHTK"></el-option>
-          <el-option label="Viettel Post" value="Viettel Post"></el-option>
-          <el-option label="VNPost" value="VNPost"></el-option>
+          <el-option
+            v-for="carrier in carriers"
+            :key="carrier.id"
+            :label="carrier.name"
+            :value="carrier.id"
+          />
         </el-select>
       </div>
 
@@ -134,13 +137,15 @@
 
     <div class="pagination-container">
       <el-pagination
-        v-if="filteredShipments.length > 0"
+        v-if="totalShipments > 0"
         :small="isMobile"
         background
-        layout="total, prev, pager, next"
-        :total="filteredShipments.length"
+        layout="total, sizes, prev, pager, next, jumper"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="totalShipments"
         :page-size="pageSize"
         v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
       />
     </div>
 
@@ -229,8 +234,13 @@ import {
   Download,
   UploadFilled,
 } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElLoading } from "element-plus";
 import ShipmentDetailModal from "@/components/ShipmentDetailModal.vue";
+import shipmentService, {
+  mapShipmentStatus,
+  getStatusType,
+  mapStatusToTab,
+} from "@/services/shipmentService";
 
 // --- ROUTER & RESPONSIVE ---
 const router = useRouter();
@@ -253,57 +263,102 @@ const search = ref("");
 const activeTab = ref("all");
 const carrierFilter = ref("");
 const currentPage = ref(1);
-const pageSize = 10;
+const pageSize = ref(20);
 const shipments = ref([]);
-const sampleShipments = [
-  {
-    shipmentCode: "GHTK819237123",
-    orderCode: "DH1234",
-    customerName: "Trần Văn An",
-    carrier: "GHTK",
-    shippingFee: 35000,
-    status: "Đang giao",
-  },
-  {
-    shipmentCode: "VTP293842344",
-    orderCode: "DH1235",
-    customerName: "Phạm Mỹ Duyên",
-    carrier: "Viettel Post",
-    shippingFee: 40000,
-    status: "Giao thành công",
-  },
-  {
-    shipmentCode: "GHTK819237124",
-    orderCode: "DH1233",
-    customerName: "Nguyễn Thị Bình",
-    carrier: "GHTK",
-    shippingFee: 25000,
-    status: "Chờ lấy hàng",
-  },
-  {
-    shipmentCode: "VNPOST2384723",
-    orderCode: "DH1231",
-    customerName: "Võ Thành Danh",
-    carrier: "VNPost",
-    shippingFee: 30000,
-    status: "Chuyển hoàn",
-  },
-];
+const totalShipments = ref(0);
+const totalPages = ref(0);
+const carriers = ref([]);
+const shipmentStatuses = ref([]);
+const error = ref(null);
+
+// --- API FUNCTIONS ---
+const fetchShipments = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+
+    const params = {
+      page: currentPage.value,
+      limit: pageSize.value,
+      search: search.value || undefined,
+      carrier_id: carrierFilter.value || undefined,
+      sortBy: "created_at",
+      order: "DESC",
+    };
+
+    // Map tab status to backend status
+    if (activeTab.value !== "all") {
+      const statusMap = {
+        pending: "pending",
+        shipping: "in_transit",
+        delivered: "delivered",
+        returning: "returned",
+      };
+      params.status = statusMap[activeTab.value];
+    }
+
+    const response = await shipmentService.getShipments(params);
+
+    if (response.success) {
+      // Map backend data to frontend format
+      shipments.value = response.data.map((item) => ({
+        id: item.id,
+        shipmentCode: item.shipment_code,
+        orderCode: item.order_code,
+        customerName: item.recipient_name,
+        carrier: item.carrier_name || "N/A",
+        carrierId: item.carrier_id,
+        shippingFee: item.shipping_fee,
+        totalFee: item.total_fee,
+        status: mapShipmentStatus(item.status_code),
+        statusCode: item.status_code,
+        trackingCode: item.tracking_code,
+        recipientPhone: item.recipient_phone,
+        recipientAddress: item.recipient_address,
+        createdAt: item.created_at,
+        estimatedDeliveryDate: item.estimated_delivery_date,
+        actualDeliveryDate: item.actual_delivery_date,
+      }));
+
+      totalShipments.value = response.pagination.total;
+      totalPages.value = response.pagination.totalPages;
+    }
+  } catch (err) {
+    error.value = err.message;
+    ElMessage.error(err.message);
+    shipments.value = [];
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const fetchCarriers = async () => {
+  try {
+    const response = await shipmentService.getCarriers();
+    if (response.success) {
+      carriers.value = response.data;
+    }
+  } catch (err) {
+    console.error("Error fetching carriers:", err);
+  }
+};
+
+const fetchShipmentStatuses = async () => {
+  try {
+    const response = await shipmentService.getShipmentStatuses();
+    if (response.success) {
+      shipmentStatuses.value = response.data;
+    }
+  } catch (err) {
+    console.error("Error fetching statuses:", err);
+  }
+};
 
 // --- HELPER FUNCTIONS ---
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
 };
 const formatCurrency = (value) => (value || 0).toLocaleString("vi-VN") + "đ";
-const getStatusType = (status) => {
-  const statusMap = {
-    "Giao thành công": "success",
-    "Đang giao": "primary",
-    "Chờ lấy hàng": "warning",
-    "Chuyển hoàn": "danger",
-  };
-  return statusMap[status] || "info";
-};
 const getStatusFromTab = (tabName) => {
   const statusMap = {
     pending: "Chờ lấy hàng",
@@ -315,26 +370,12 @@ const getStatusFromTab = (tabName) => {
 };
 
 // --- COMPUTED PROPERTIES ---
-const filteredShipments = computed(() => {
-  return shipments.value.filter((item) => {
-    const searchMatch = search.value
-      ? item.shipmentCode.toLowerCase().includes(search.value.toLowerCase()) ||
-        item.orderCode.toLowerCase().includes(search.value.toLowerCase())
-      : true;
-    const carrierMatch = carrierFilter.value
-      ? item.carrier === carrierFilter.value
-      : true;
-    const tabMatch =
-      activeTab.value === "all"
-        ? true
-        : item.status === getStatusFromTab(activeTab.value);
-    return searchMatch && carrierMatch && tabMatch;
-  });
+const pagedShipments = computed(() => {
+  return shipments.value;
 });
 
-const pagedShipments = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredShipments.value.slice(start, start + pageSize);
+const filteredShipmentsCount = computed(() => {
+  return totalShipments.value;
 });
 
 // --- EVENT HANDLERS ---
@@ -342,18 +383,30 @@ const createShipment = () => {
   router.push({ name: "CreateShipment" });
 };
 
-const viewShipment = (shipment) => {
-  selectedShipment.value = shipment;
-  isDetailModalVisible.value = true;
+const viewShipment = async (shipment) => {
+  try {
+    const response = await shipmentService.getShipmentById(shipment.id);
+    if (response.success) {
+      selectedShipment.value = {
+        ...shipment,
+        ...response.data,
+        trackingHistory: response.data.tracking_history || [],
+      };
+      isDetailModalVisible.value = true;
+    }
+  } catch (err) {
+    ElMessage.error("Lỗi khi lấy chi tiết vận đơn: " + err.message);
+  }
 };
 
-const handleShipmentUpdate = (updatedShipment) => {
-  const index = shipments.value.findIndex(
-    (s) => s.shipmentCode === updatedShipment.shipmentCode
-  );
-  if (index !== -1) {
-    shipments.value[index] = updatedShipment;
+const handleShipmentUpdate = async (updatedShipment) => {
+  try {
+    // Refresh the shipments list to get latest data
+    await fetchShipments();
     selectedShipment.value = updatedShipment;
+    ElMessage.success("Cập nhật vận đơn thành công");
+  } catch (err) {
+    ElMessage.error("Lỗi khi cập nhật vận đơn: " + err.message);
   }
 };
 
@@ -361,35 +414,109 @@ const handleFileChange = (uploadFile) => {
   fileToImport.value = uploadFile.raw;
 };
 
-const handleImport = () => {
+const handleImport = async () => {
   if (!fileToImport.value) {
     ElMessage.error("Bạn chưa chọn file để nhập.");
     return;
   }
-  console.log("Đang xử lý nhập file:", fileToImport.value.name);
-  ElMessage.success("File đã được tải lên và đang chờ xử lý.");
-  importDialogVisible.value = false;
-  fileToImport.value = null;
+
+  try {
+    const loading = ElLoading.service({
+      lock: true,
+      text: "Đang xử lý file import...",
+    });
+
+    const response = await shipmentService.importShipments(fileToImport.value);
+
+    if (response.success) {
+      ElMessage.success(response.message || "Import file thành công");
+      await fetchShipments(); // Refresh data
+    }
+
+    loading.close();
+    importDialogVisible.value = false;
+    fileToImport.value = null;
+  } catch (err) {
+    ElMessage.error("Lỗi khi import file: " + err.message);
+  }
 };
 
-const handleExport = () => {
-  console.log(`Xuất file: ${exportScope.value} - ${exportFormat.value}`);
-  ElMessage.info("Đang chuẩn bị file để xuất...");
-  exportDialogVisible.value = false;
+const handleExport = async () => {
+  try {
+    const loading = ElLoading.service({
+      lock: true,
+      text: "Đang chuẩn bị file export...",
+    });
+
+    const params = {
+      search: search.value || undefined,
+      carrier_id: carrierFilter.value || undefined,
+    };
+
+    if (activeTab.value !== "all") {
+      const statusMap = {
+        pending: "pending",
+        shipping: "in_transit",
+        delivered: "delivered",
+        returning: "returned",
+      };
+      params.status = statusMap[activeTab.value];
+    }
+
+    if (exportScope.value === "current_page") {
+      params.page = currentPage.value;
+      params.limit = pageSize.value;
+    }
+
+    const blob = await shipmentService.exportShipments(
+      params,
+      exportFormat.value,
+    );
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `shipments_${new Date().toISOString().split("T")[0]}.${
+      exportFormat.value === "excel" ? "xlsx" : exportFormat.value
+    }`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    loading.close();
+    ElMessage.success("Export file thành công");
+    exportDialogVisible.value = false;
+  } catch (err) {
+    ElMessage.error("Lỗi khi export file: " + err.message);
+  }
 };
 
 // --- LIFECYCLE & WATCHERS ---
-watch([search, activeTab, carrierFilter], () => {
-  currentPage.value = 1;
+watch(
+  [search, activeTab, carrierFilter],
+  () => {
+    currentPage.value = 1;
+    fetchShipments();
+  },
+  { debounce: 500 },
+);
+
+watch(currentPage, () => {
+  fetchShipments();
 });
 
-onMounted(() => {
+onMounted(async () => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    shipments.value = sampleShipments;
-    isLoading.value = false;
-  }, 500);
+
+  // Load initial data
+  await Promise.all([
+    fetchShipments(),
+    fetchCarriers(),
+    fetchShipmentStatuses(),
+  ]);
 });
 
 onUnmounted(() => {

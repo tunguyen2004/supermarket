@@ -29,6 +29,19 @@ class CustomerService {
     }
   }
 
+  // Tìm kiếm khách hàng nhanh cho POS
+  async searchCustomers(query, limit = 10) {
+    try {
+      const response = await axios.get("/api/customers/search", {
+        params: { q: query, limit },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error searching customers:", error);
+      throw error;
+    }
+  }
+
   // Lấy chi tiết khách hàng
   async getCustomerById(id) {
     try {

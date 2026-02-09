@@ -3,18 +3,22 @@
  * @module routes/orderRoutes
  */
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const orderService = require('../services/orderService');
-const { verifyToken } = require('../middleware/auth');
-const { validateBody, validateParams, validateQuery } = require('../middleware/validate');
-const { 
-  createOrderSchema, 
-  updateOrderStatusSchema, 
+const orderService = require("../services/orderService");
+const { verifyToken } = require("../middleware/auth");
+const {
+  validateBody,
+  validateParams,
+  validateQuery,
+} = require("../middleware/validate");
+const {
+  createOrderSchema,
+  updateOrderStatusSchema,
   cancelOrderSchema,
-  orderListQuerySchema
-} = require('../validators/orderValidator');
-const { idParamSchema } = require('../validators/commonValidator');
+  orderListQuerySchema,
+} = require("../validators/orderValidator");
+const { idParamSchema } = require("../validators/commonValidator");
 
 /**
  * @swagger
@@ -61,7 +65,12 @@ const { idParamSchema } = require('../validators/commonValidator');
  *       200:
  *         description: Danh sách đơn hàng
  */
-router.get('/', verifyToken, validateQuery(orderListQuerySchema), orderService.getOrderList);
+router.get(
+  "/",
+  verifyToken,
+  validateQuery(orderListQuerySchema),
+  orderService.getOrderList,
+);
 
 /**
  * @swagger
@@ -81,7 +90,12 @@ router.get('/', verifyToken, validateQuery(orderListQuerySchema), orderService.g
  *       201:
  *         description: Tạo đơn hàng thành công
  */
-router.post('/', verifyToken, validateBody(createOrderSchema), orderService.createOrder);
+router.post(
+  "/",
+  verifyToken,
+  validateBody(createOrderSchema),
+  orderService.createOrder,
+);
 
 /**
  * @swagger
@@ -95,7 +109,7 @@ router.post('/', verifyToken, validateBody(createOrderSchema), orderService.crea
  *       200:
  *         description: Thống kê đơn hàng
  */
-router.get('/stats/summary', verifyToken, orderService.getOrderStats);
+router.get("/stats/summary", verifyToken, orderService.getOrderStats);
 
 /**
  * @swagger
@@ -109,7 +123,7 @@ router.get('/stats/summary', verifyToken, orderService.getOrderStats);
  *       200:
  *         description: Thống kê chi tiết
  */
-router.get('/stats/detailed', verifyToken, orderService.getDetailedStats);
+router.get("/stats/detailed", verifyToken, orderService.getDetailedStats);
 
 /**
  * @swagger
@@ -138,7 +152,117 @@ router.get('/stats/detailed', verifyToken, orderService.getDetailedStats);
  *       200:
  *         description: Danh sách đơn hoàn trả
  */
-router.get('/returns', verifyToken, orderService.getReturnOrders);
+router.get("/returns", verifyToken, orderService.getReturnOrders);
+
+/**
+ * @swagger
+ * /api/orders/drafts:
+ *   get:
+ *     tags: [Orders]
+ *     summary: Danh sách đơn nháp
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách đơn nháp
+ */
+router.get("/drafts", verifyToken, orderService.getDraftOrders);
+
+/**
+ * @swagger
+ * /api/orders/drafts:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Tạo đơn nháp
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customer_name:
+ *                 type: string
+ *               customer_id:
+ *                 type: integer
+ *               store_id:
+ *                 type: integer
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *               note:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Tạo đơn nháp thành công
+ */
+router.post("/drafts", verifyToken, orderService.createDraftOrder);
+
+/**
+ * @swagger
+ * /api/orders/drafts/{id}/convert:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Chuyển đơn nháp thành đơn hàng
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Chuyển đổi thành công
+ */
+router.post(
+  "/drafts/:id/convert",
+  verifyToken,
+  validateParams(idParamSchema),
+  orderService.convertDraftToOrder,
+);
+
+/**
+ * @swagger
+ * /api/orders/drafts/{id}:
+ *   delete:
+ *     tags: [Orders]
+ *     summary: Xóa đơn nháp
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Xóa thành công
+ */
+router.delete(
+  "/drafts/:id",
+  verifyToken,
+  validateParams(idParamSchema),
+  orderService.deleteDraftOrder,
+);
 
 /**
  * @swagger
@@ -158,7 +282,12 @@ router.get('/returns', verifyToken, orderService.getReturnOrders);
  *       200:
  *         description: Chi tiết đơn hàng
  */
-router.get('/:id', verifyToken, validateParams(idParamSchema), orderService.getOrderDetail);
+router.get(
+  "/:id",
+  verifyToken,
+  validateParams(idParamSchema),
+  orderService.getOrderDetail,
+);
 
 /**
  * @swagger
@@ -193,7 +322,13 @@ router.get('/:id', verifyToken, validateParams(idParamSchema), orderService.getO
  *       200:
  *         description: Cập nhật thành công
  */
-router.put('/:id', verifyToken, validateParams(idParamSchema), validateBody(updateOrderStatusSchema), orderService.updateOrderStatus);
+router.put(
+  "/:id",
+  verifyToken,
+  validateParams(idParamSchema),
+  validateBody(updateOrderStatusSchema),
+  orderService.updateOrderStatus,
+);
 
 /**
  * @swagger
@@ -221,7 +356,13 @@ router.put('/:id', verifyToken, validateParams(idParamSchema), validateBody(upda
  *       200:
  *         description: Hủy thành công
  */
-router.delete('/:id', verifyToken, validateParams(idParamSchema), validateBody(cancelOrderSchema), orderService.cancelOrder);
+router.delete(
+  "/:id",
+  verifyToken,
+  validateParams(idParamSchema),
+  validateBody(cancelOrderSchema),
+  orderService.cancelOrder,
+);
 
 /**
  * @swagger
@@ -266,7 +407,12 @@ router.delete('/:id', verifyToken, validateParams(idParamSchema), validateBody(c
  *       201:
  *         description: Hoàn trả thành công
  */
-router.post('/:id/return', verifyToken, validateParams(idParamSchema), orderService.returnOrder);
+router.post(
+  "/:id/return",
+  verifyToken,
+  validateParams(idParamSchema),
+  orderService.returnOrder,
+);
 
 /**
  * @swagger
@@ -286,6 +432,11 @@ router.post('/:id/return', verifyToken, validateParams(idParamSchema), orderServ
  *       200:
  *         description: Thông tin hóa đơn
  */
-router.get('/:id/invoice', verifyToken, validateParams(idParamSchema), orderService.getOrderInvoice);
+router.get(
+  "/:id/invoice",
+  verifyToken,
+  validateParams(idParamSchema),
+  orderService.getOrderInvoice,
+);
 
 module.exports = router;

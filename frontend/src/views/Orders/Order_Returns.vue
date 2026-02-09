@@ -270,19 +270,13 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { Search, Plus, View } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
+import orderService from "@/services/orderService";
 
 // --- RESPONSIVE STATE ---
 const isMobile = ref(false);
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
 };
-onMounted(() => {
-  checkScreenSize();
-  window.addEventListener("resize", checkScreenSize);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", checkScreenSize);
-});
 
 // --- LOADING ---
 const isLoading = ref(true);
@@ -292,52 +286,51 @@ const search = ref("");
 const statusFilter = ref("");
 const currentPage = ref(1);
 const pageSize = 10;
+const totalItems = ref(0);
+const returns = ref([]);
 
-// --- DATA ---
-const returns = ref([
-  {
-    returnCode: "RT001",
-    originalOrderCode: "DH1234",
-    customerName: "Trần Văn An",
-    returnDate: "2025-08-01",
-    refundAmount: 250000,
-    status: "Đã hoàn tiền",
-    note: "",
-  },
-  {
-    returnCode: "RT002",
-    originalOrderCode: "DH1230",
-    customerName: "Nguyễn Thị Bình",
-    returnDate: "2025-07-30",
-    refundAmount: 180000,
-    status: "Chờ xử lý",
-    note: "",
-  },
-  {
-    returnCode: "RT003",
-    originalOrderCode: "DH1225",
-    customerName: "Lê Hoàng Cường",
-    returnDate: "2025-07-28",
-    refundAmount: 500000,
-    status: "Đã nhập kho",
-    note: "",
-  },
-  {
-    returnCode: "RT004",
-    originalOrderCode: "DH1220",
-    customerName: "Phạm Mỹ Duyên",
-    returnDate: "2025-07-25",
-    refundAmount: 95000,
-    status: "Đã từ chối",
-    note: "Không đúng điều kiện đổi trả",
-  },
-]);
+// --- FETCH DATA ---
+const fetchReturns = async () => {
+  try {
+    isLoading.value = true;
+    const params = {
+      page: currentPage.value,
+      limit: pageSize,
+      search: search.value || undefined,
+      status: statusFilter.value || undefined,
+    };
 
-// simulate initial loading
-onMounted(() => {
-  setTimeout(() => {
+    const result = await orderService.getReturnOrders(params);
+
+    // Map API response
+    returns.value = result.data.map((item) => ({
+      id: item.id,
+      returnCode: item.return_code,
+      originalOrderCode: item.original_order_code,
+      customerName: item.customer_name,
+      returnDate: new Date(item.return_date).toLocaleDateString("vi-VN"),
+      refundAmount: item.refund_amount,
+      status: item.status,
+      note: item.note || "",
+    }));
+
+    totalItems.value = result.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error fetching returns:", error);
+    ElMessage.error("Không thể tải danh sách đơn trả hàng");
+  } finally {
     isLoading.value = false;
-  }, 500);
+  }
+};
+
+// --- MOUNT ---
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener("resize", checkScreenSize);
+  fetchReturns();
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkScreenSize);
 });
 
 // --- UTILS ---
@@ -387,7 +380,11 @@ const markAsRefunded = async (row) => {
     await ElMessageBox.confirm(
       `Xác nhận đã hoàn tiền cho phiếu ${row.returnCode}?`,
       "Xác nhận",
-      { type: "warning", confirmButtonText: "Đã hoàn", cancelButtonText: "Huỷ" }
+      {
+        type: "warning",
+        confirmButtonText: "Đã hoàn",
+        cancelButtonText: "Huỷ",
+      },
     );
   } catch {
     return;
@@ -414,7 +411,7 @@ const markAsWarehoused = async (row) => {
         type: "warning",
         confirmButtonText: "Nhập kho",
         cancelButtonText: "Huỷ",
-      }
+      },
     );
   } catch {
     return;
@@ -436,7 +433,7 @@ const rejectReturn = async (row) => {
         confirmButtonText: "Từ chối",
         cancelButtonText: "Huỷ",
         inputPlaceholder: "VD: Hết thời hạn đổi trả",
-      }
+      },
     );
     if (action === "confirm") {
       isLoading.value = true;
@@ -501,35 +498,42 @@ const createReturnOrder = () => {
 
 const generateNextCode = () => {
   const nums = returns.value.map(
-    (r) => Number(r.returnCode.replace(/\D/g, "")) || 0
+    (r) => Number(r.returnCode.replace(/\D/g, "")) || 0,
   );
   const next = Math.max(0, ...nums) + 1;
   return "RT" + String(next).padStart(3, "0");
 };
 
 const submitCreate = () => {
-  createFormRef.value.validate((valid) => {
+  createFormRef.value.validate(async (valid) => {
     if (!valid) return;
-    creating.value = true;
-    // mock API
-    setTimeout(() => {
-      returns.value.unshift({
-        returnCode: generateNextCode(),
-        originalOrderCode: form.value.originalOrderCode.trim(),
-        customerName: form.value.customerName.trim(),
+
+    try {
+      creating.value = true;
+
+      const returnData = {
+        orderId: null, // Would need to lookup order by code
         returnDate: form.value.returnDate,
         refundAmount: Number(form.value.refundAmount) || 0,
-        status: "Chờ xử lý",
         note: form.value.note?.trim() || "",
-      });
+      };
+
+      await orderService.createReturnOrder(returnData);
+
       ElNotification({
         title: "Đã tạo",
         message: "Tạo đơn trả hàng thành công",
         type: "success",
       });
-      creating.value = false;
+
       createVisible.value = false;
-    }, 700);
+      await fetchReturns();
+    } catch (error) {
+      console.error("Error creating return:", error);
+      ElMessage.error("Không thể tạo đơn trả hàng");
+    } finally {
+      creating.value = false;
+    }
   });
 };
 </script>

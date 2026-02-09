@@ -44,7 +44,7 @@
     </div>
 
     <!-- Search - Large -->
-    <div class="flex-1 max-w-xl mr-4">
+    <div class="flex-1 max-w-xl mr-4 relative">
       <div
         class="bg-white rounded-[50px] px-4 py-2 flex items-center gap-3 h-[45px] shadow-sm focus-within:outline-none focus-within:ring-0"
       >
@@ -53,11 +53,57 @@
         ></span>
 
         <input
+          v-model="searchQuery"
+          @input="handleSearchInput"
+          @keydown.enter="handleSearchEnter"
+          @focus="showDropdown = true"
+          @blur="handleSearchBlur"
           class="bg-transparent border-none outline-none focus:outline-none focus:ring-0 w-full placeholder-slate-400 text-slate-700 text-sm font-medium"
           placeholder="Nhập tên sản phẩm hoặc mã SKU"
         />
 
         <kbd class="search-kbd">F3</kbd>
+      </div>
+
+      <!-- Search Results Dropdown -->
+      <div
+        v-if="showDropdown && (searchResults.length > 0 || isSearching)"
+        class="search-dropdown"
+      >
+        <!-- Loading State -->
+        <div v-if="isSearching" class="search-item">
+          <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+          Đang tìm kiếm...
+        </div>
+
+        <!-- Search Results -->
+        <div
+          v-else-if="searchResults.length > 0"
+          v-for="product in searchResults.slice(0, 5)"
+          :key="product.id"
+          class="search-item"
+          @mousedown="selectProduct(product)"
+        >
+          <div class="flex-1">
+            <div class="product-name">{{ product.name }}</div>
+            <div class="product-meta">
+              <span class="product-sku">{{ product.sku }}</span> •
+              <span class="product-price">{{
+                formatPrice(product.price)
+              }}</span>
+              •
+              <span class="product-stock">Tồn: {{ product.stock }}</span>
+            </div>
+          </div>
+          <div class="add-icon">
+            <i class="fa-solid fa-plus"></i>
+          </div>
+        </div>
+
+        <!-- No Results -->
+        <div v-else class="search-item text-gray-500">
+          Không tìm thấy sản phẩm nào
+        </div>
       </div>
     </div>
 
@@ -148,16 +194,71 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 
 defineProps({
   tabs: { type: Array, required: true },
   activeId: { type: [String, Number], required: true },
+  searchResults: { type: Array, default: () => [] },
+  isSearching: { type: Boolean, default: false },
 });
 
-defineEmits(["add", "select", "close"]);
+const emit = defineEmits([
+  "add",
+  "select",
+  "close",
+  "search",
+  "selectProduct",
+  "clearSearch",
+]);
+
+// Search functionality
+const searchQuery = ref("");
+const showDropdown = ref(false);
+let searchTimeout = null;
+
+const handleSearchInput = () => {
+  // Debounce search input
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    if (searchQuery.value.trim()) {
+      emit("search", searchQuery.value.trim());
+    } else {
+      emit("clearSearch");
+    }
+  }, 500); // Wait 500ms after user stops typing
+};
+
+const handleSearchEnter = () => {
+  // Immediate search on Enter
+  clearTimeout(searchTimeout);
+  if (searchQuery.value.trim()) {
+    emit("search", searchQuery.value.trim());
+  }
+};
+
+const handleSearchBlur = () => {
+  // Hide dropdown after a small delay to allow for click
+  setTimeout(() => {
+    showDropdown.value = false;
+  }, 200);
+};
+
+const selectProduct = (product) => {
+  emit("selectProduct", product);
+  searchQuery.value = ""; // Clear search
+  showDropdown.value = false;
+  emit("clearSearch");
+};
+
+const formatPrice = (price) => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(price);
+};
 
 const router = useRouter();
 const go = (path) => router.push(path);
@@ -346,5 +447,76 @@ header {
   background: rgba(30, 58, 138, 0.8);
   transform: scale(1.05);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== SEARCH DROPDOWN ===== */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.search-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item:hover {
+  background: #f8fafc;
+}
+
+.product-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.875rem;
+  margin-bottom: 2px;
+}
+
+.product-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.product-sku {
+  color: #7c3aed;
+}
+
+.product-price {
+  color: #059669;
+  font-weight: 600;
+}
+
+.product-stock {
+  color: #dc2626;
+}
+
+.add-icon {
+  width: 24px;
+  height: 24px;
+  background: #1e40af;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
 }
 </style>
