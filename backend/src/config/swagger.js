@@ -4,22 +4,22 @@
  * @description API Documentation với Swagger/OpenAPI 3.0
  * @version 3.1.0
  * @updated 05/02/2026
- *
+ * 
  * Tổng cộng: 129+ APIs - 21 Modules
  * Database: PostgreSQL
  * Authentication: JWT Bearer Token
  * Rate Limiting: Enabled
  */
 
-const swaggerJsdoc = require("swagger-jsdoc");
-const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 const options = {
   definition: {
-    openapi: "3.0.0",
+    openapi: '3.0.0',
     info: {
-      title: "Supermarket Management System API",
-      version: "3.1.0",
+      title: 'Supermarket Management System API',
+      version: '3.1.0',
       description: `
 # 🛒 Supermarket Management System API Documentation
 
@@ -97,1574 +97,1369 @@ Sử dụng JWT Bearer Token. Lấy token từ endpoint \`POST /api/auth/login\`
 - \`500\`: Internal Server Error - Lỗi server
       `,
       contact: {
-        name: "API Support Team",
-        email: "support@supermarket.com",
-        url: "https://supermarket.com/support",
+        name: 'API Support Team',
+        email: 'support@supermarket.com',
+        url: 'https://supermarket.com/support'
       },
       license: {
-        name: "MIT License",
-        url: "https://opensource.org/licenses/MIT",
-      },
+        name: 'MIT License',
+        url: 'https://opensource.org/licenses/MIT'
+      }
     },
     servers: [
       {
-        url: "http://localhost:5000",
-        description: "Development Server",
+        url: 'http://localhost:5000',
+        description: 'Development Server'
       },
       {
-        url: "https://api.supermarket.com",
-        description: "Production Server",
-      },
+        url: 'https://api.supermarket.com',
+        description: 'Production Server'
+      }
     ],
     tags: [
-      { name: "Auth", description: "Authentication - Xác thực người dùng" },
-      { name: "Staff", description: "Staff Management - Quản lý nhân viên" },
-      { name: "Profile", description: "Profile Management - Hồ sơ cá nhân" },
-      {
-        name: "Products",
-        description: "Product Management - Quản lý sản phẩm",
-      },
-      {
-        name: "Collections",
-        description: "Category Management - Quản lý danh mục",
-      },
-      { name: "Dashboard", description: "Dashboard - Tổng quan & thống kê" },
-      { name: "Catalogs", description: "Price Catalog - Bảng giá sản phẩm" },
-      {
-        name: "Inventory",
-        description: "Inventory Management - Quản lý tồn kho",
-      },
-      { name: "Product Images", description: "Product Images - Ảnh sản phẩm" },
-      { name: "Orders", description: "Order Management - Quản lý đơn hàng" },
-      {
-        name: "Customers",
-        description: "Customer Management - Quản lý khách hàng",
-      },
-      {
-        name: "Customer Groups",
-        description: "Customer Groups - Nhóm khách hàng",
-      },
-      {
-        name: "Suppliers",
-        description: "Supplier Management - Quản lý nhà cung cấp",
-      },
-      {
-        name: "Discounts",
-        description: "Discount Management - Quản lý khuyến mại",
-      },
-      {
-        name: "Transactions",
-        description: "Cashbook - Quản lý sổ quỹ & giao dịch",
-      },
-      {
-        name: "Shipments",
-        description: "Shipment Management - Quản lý vận chuyển",
-      },
-      {
-        name: "Order Returns",
-        description: "Order Returns - Quản lý hoàn trả",
-      },
-      {
-        name: "Reports",
-        description: "Reports - Báo cáo doanh thu & thống kê",
-      },
-      { name: "POS", description: "Point of Sale - Bán hàng tại quầy" },
-      {
-        name: "Bank Accounts",
-        description: "Bank Account Management - Tài khoản ngân hàng",
-      },
-      { name: "Checkouts", description: "Checkouts - Đơn chưa hoàn tất" },
+      { name: 'Auth', description: 'Authentication - Xác thực người dùng' },
+      { name: 'Staff', description: 'Staff Management - Quản lý nhân viên' },
+      { name: 'Profile', description: 'Profile Management - Hồ sơ cá nhân' },
+      { name: 'Products', description: 'Product Management - Quản lý sản phẩm' },
+      { name: 'Collections', description: 'Category Management - Quản lý danh mục' },
+      { name: 'Dashboard', description: 'Dashboard - Tổng quan & thống kê' },
+      { name: 'Catalogs', description: 'Price Catalog - Bảng giá sản phẩm' },
+      { name: 'Inventory', description: 'Inventory Management - Quản lý tồn kho' },
+      { name: 'Product Images', description: 'Product Images - Ảnh sản phẩm' },
+      { name: 'Orders', description: 'Order Management - Quản lý đơn hàng' },
+      { name: 'Customers', description: 'Customer Management - Quản lý khách hàng' },
+      { name: 'Customer Groups', description: 'Customer Groups - Nhóm khách hàng' },
+      { name: 'Suppliers', description: 'Supplier Management - Quản lý nhà cung cấp' },
+      { name: 'Discounts', description: 'Discount Management - Quản lý khuyến mại' },
+      { name: 'Transactions', description: 'Cashbook - Quản lý sổ quỹ & giao dịch' },
+      { name: 'Shipments', description: 'Shipment Management - Quản lý vận chuyển' },
+      { name: 'Order Returns', description: 'Order Returns - Quản lý hoàn trả' },
+      { name: 'Reports', description: 'Reports - Báo cáo doanh thu & thống kê' },
+      { name: 'POS', description: 'Point of Sale - Bán hàng tại quầy' },
+      { name: 'Bank Accounts', description: 'Bank Account Management - Tài khoản ngân hàng' },
+      { name: 'Checkouts', description: 'Checkouts - Đơn chưa hoàn tất' }
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description:
-            "Nhập JWT token. Lấy token từ endpoint POST /api/auth/login",
-        },
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Nhập JWT token. Lấy token từ endpoint POST /api/auth/login'
+        }
       },
       schemas: {
         // ==================== COMMON SCHEMAS ====================
         SuccessResponse: {
-          type: "object",
+          type: 'object',
           properties: {
-            success: { type: "boolean", example: true },
-            message: { type: "string", example: "Operation successful" },
-            data: { type: "object", description: "Response data" },
-          },
+            success: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Operation successful' },
+            data: { type: 'object', description: 'Response data' }
+          }
         },
         PaginatedResponse: {
-          type: "object",
+          type: 'object',
           properties: {
-            success: { type: "boolean", example: true },
-            message: { type: "string", example: "Retrieved successfully" },
+            success: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Retrieved successfully' },
             data: {
-              type: "array",
-              items: { type: "object" },
+              type: 'array',
+              items: { type: 'object' }
             },
-            pagination: { $ref: "#/components/schemas/Pagination" },
-          },
+            pagination: { $ref: '#/components/schemas/Pagination' }
+          }
         },
         Pagination: {
-          type: "object",
+          type: 'object',
           properties: {
-            page: {
-              type: "integer",
-              example: 1,
-              description: "Current page number",
-            },
-            limit: {
-              type: "integer",
-              example: 20,
-              description: "Items per page",
-            },
-            total: {
-              type: "integer",
-              example: 100,
-              description: "Total items",
-            },
-            totalPages: {
-              type: "integer",
-              example: 5,
-              description: "Total pages",
-            },
-          },
+            page: { type: 'integer', example: 1, description: 'Current page number' },
+            limit: { type: 'integer', example: 20, description: 'Items per page' },
+            total: { type: 'integer', example: 100, description: 'Total items' },
+            totalPages: { type: 'integer', example: 5, description: 'Total pages' }
+          }
         },
         Error: {
-          type: "object",
+          type: 'object',
           properties: {
-            success: { type: "boolean", example: false },
-            message: { type: "string", example: "An error occurred" },
+            success: { type: 'boolean', example: false },
+            message: { type: 'string', example: 'An error occurred' },
             errors: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  field: { type: "string", description: "Field name" },
-                  message: { type: "string", description: "Error message" },
-                },
-              },
+                  field: { type: 'string', description: 'Field name' },
+                  message: { type: 'string', description: 'Error message' }
+                }
+              }
             },
-            timestamp: {
-              type: "string",
-              format: "date-time",
-              description: "Error timestamp",
-            },
-          },
+            timestamp: { type: 'string', format: 'date-time', description: 'Error timestamp' }
+          }
         },
         ValidationError: {
-          type: "object",
+          type: 'object',
           properties: {
-            success: { type: "boolean", example: false },
-            message: { type: "string", example: "Validation failed" },
+            success: { type: 'boolean', example: false },
+            message: { type: 'string', example: 'Validation failed' },
             errors: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  field: { type: "string" },
-                  message: { type: "string" },
-                  value: { type: "string" },
-                },
-              },
-            },
-          },
+                  field: { type: 'string' },
+                  message: { type: 'string' },
+                  value: { type: 'string' }
+                }
+              }
+            }
+          }
         },
 
         // ==================== AUTH SCHEMAS ====================
         LoginRequest: {
-          type: "object",
-          required: ["username", "password"],
+          type: 'object',
+          required: ['username', 'password'],
           properties: {
-            username: {
-              type: "string",
-              example: "admin",
-              minLength: 3,
-              maxLength: 50,
-              description: "Tên đăng nhập",
-            },
-            password: {
-              type: "string",
-              example: "password123",
-              minLength: 6,
-              description: "Mật khẩu",
-            },
-          },
+            username: { type: 'string', example: 'admin', minLength: 3, maxLength: 50, description: 'Tên đăng nhập' },
+            password: { type: 'string', example: 'password123', minLength: 6, description: 'Mật khẩu' }
+          }
         },
         LoginResponse: {
-          type: "object",
+          type: 'object',
           properties: {
-            success: { type: "boolean", example: true },
-            message: { type: "string", example: "Login successful" },
+            success: { type: 'boolean', example: true },
+            message: { type: 'string', example: 'Login successful' },
             data: {
-              type: "object",
+              type: 'object',
               properties: {
-                id: { type: "integer", example: 1 },
-                username: { type: "string", example: "admin" },
-                email: {
-                  type: "string",
-                  example: "admin@supermarket.com",
-                  format: "email",
-                },
-                full_name: { type: "string", example: "Administrator" },
-                role_id: {
-                  type: "integer",
-                  example: 1,
-                  description: "1=Admin, 2=Manager, 3=Staff",
-                },
-                role_name: { type: "string", example: "Admin" },
-                is_active: { type: "boolean", example: true },
-                avatar_url: {
-                  type: "string",
-                  nullable: true,
-                  description: "URL ảnh đại diện",
-                },
-                token: {
-                  type: "string",
-                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                  description: "JWT Bearer Token (hết hạn sau 24h)",
-                },
-                refreshToken: {
-                  type: "string",
-                  description: "Token để làm mới access token",
-                },
-                tokenExpires: {
-                  type: "string",
-                  format: "date-time",
-                  example: "2026-02-06T05:30:00Z",
-                  description: "Thời gian token hết hạn",
-                },
-              },
-            },
-          },
+                id: { type: 'integer', example: 1 },
+                username: { type: 'string', example: 'admin' },
+                email: { type: 'string', example: 'admin@supermarket.com', format: 'email' },
+                full_name: { type: 'string', example: 'Administrator' },
+                role_id: { type: 'integer', example: 1, description: '1=Admin, 2=Manager, 3=Staff' },
+                role_name: { type: 'string', example: 'Admin' },
+                is_active: { type: 'boolean', example: true },
+                avatar_url: { type: 'string', nullable: true, description: 'URL ảnh đại diện' },
+                token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', description: 'JWT Bearer Token (hết hạn sau 24h)' },
+                refreshToken: { type: 'string', description: 'Token để làm mới access token' },
+                tokenExpires: { type: 'string', format: 'date-time', example: '2026-02-06T05:30:00Z', description: 'Thời gian token hết hạn' }
+              }
+            }
+          }
         },
         RefreshTokenRequest: {
-          type: "object",
-          required: ["token"],
+          type: 'object',
+          required: ['token'],
           properties: {
-            token: { type: "string", description: "JWT token cần refresh" },
-          },
+            token: { type: 'string', description: 'JWT token cần refresh' }
+          }
         },
         Role: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string", example: "ADMIN" },
-            name: { type: "string", example: "Admin" },
-            description: { type: "string" },
+            id: { type: 'integer' },
+            code: { type: 'string', example: 'ADMIN' },
+            name: { type: 'string', example: 'Admin' },
+            description: { type: 'string' },
             permissions: {
-              type: "array",
-              items: { type: "string" },
-            },
-          },
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
         },
 
         // ==================== STAFF SCHEMAS ====================
         CreateStaffRequest: {
-          type: "object",
-          required: ["username", "email", "password", "full_name", "role_id"],
+          type: 'object',
+          required: ['username', 'email', 'password', 'full_name', 'role_id'],
           properties: {
-            username: {
-              type: "string",
-              example: "staff1",
-              minLength: 3,
-              maxLength: 50,
-            },
-            email: {
-              type: "string",
-              format: "email",
-              example: "staff1@supermarket.com",
-            },
-            password: { type: "string", minLength: 6, example: "password123" },
-            full_name: { type: "string", example: "Nguyễn Văn A" },
-            phone: { type: "string", example: "0912345678" },
-            role_id: {
-              type: "integer",
-              example: 2,
-              description: "1=Admin, 2=Staff, 3=Manager",
-            },
-          },
+            username: { type: 'string', example: 'staff1', minLength: 3, maxLength: 50 },
+            email: { type: 'string', format: 'email', example: 'staff1@supermarket.com' },
+            password: { type: 'string', minLength: 6, example: 'password123' },
+            full_name: { type: 'string', example: 'Nguyễn Văn A' },
+            phone: { type: 'string', example: '0912345678' },
+            role_id: { type: 'integer', example: 2, description: '1=Admin, 2=Staff, 3=Manager' }
+          }
         },
         UpdateStaffRequest: {
-          type: "object",
+          type: 'object',
           properties: {
-            full_name: { type: "string" },
-            phone: { type: "string" },
-            role_id: { type: "integer" },
-            is_active: { type: "boolean" },
-          },
+            full_name: { type: 'string' },
+            phone: { type: 'string' },
+            role_id: { type: 'integer' },
+            is_active: { type: 'boolean' }
+          }
         },
         Staff: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            username: { type: "string" },
-            email: { type: "string" },
-            full_name: { type: "string" },
-            phone: { type: "string" },
-            avatar_url: { type: "string" },
-            is_active: { type: "boolean" },
-            role_id: { type: "integer" },
-            role_name: { type: "string" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            username: { type: 'string' },
+            email: { type: 'string' },
+            full_name: { type: 'string' },
+            phone: { type: 'string' },
+            avatar_url: { type: 'string' },
+            is_active: { type: 'boolean' },
+            role_id: { type: 'integer' },
+            role_name: { type: 'string' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
 
         // ==================== PROFILE SCHEMAS ====================
         UpdateProfileRequest: {
-          type: "object",
-          required: ["full_name"],
+          type: 'object',
+          required: ['full_name'],
           properties: {
-            full_name: { type: "string", example: "Admin Supermarket" },
-            phone: { type: "string", example: "0987654321" },
-            date_of_birth: {
-              type: "string",
-              format: "date",
-              example: "1990-01-15",
-            },
-            gender: { type: "string", enum: ["male", "female", "other"] },
-            address: {
-              type: "string",
-              example: "123 Đường ABC, Quận 1, TP.HCM",
-            },
-          },
+            full_name: { type: 'string', example: 'Admin Supermarket' },
+            phone: { type: 'string', example: '0987654321' },
+            date_of_birth: { type: 'string', format: 'date', example: '1990-01-15' },
+            gender: { type: 'string', enum: ['male', 'female', 'other'] },
+            address: { type: 'string', example: '123 Đường ABC, Quận 1, TP.HCM' }
+          }
         },
         ChangePasswordRequest: {
-          type: "object",
-          required: ["oldPassword", "newPassword", "confirmPassword"],
+          type: 'object',
+          required: ['oldPassword', 'newPassword', 'confirmPassword'],
           properties: {
-            oldPassword: { type: "string" },
-            newPassword: { type: "string", minLength: 6 },
-            confirmPassword: { type: "string" },
-          },
+            oldPassword: { type: 'string' },
+            newPassword: { type: 'string', minLength: 6 },
+            confirmPassword: { type: 'string' }
+          }
         },
 
         // ==================== PRODUCT SCHEMAS ====================
         CreateProductRequest: {
-          type: "object",
-          required: ["code", "name", "category_id", "unit_id"],
+          type: 'object',
+          required: ['code', 'name', 'category_id', 'unit_id'],
           properties: {
-            code: { type: "string", example: "MILK002" },
-            name: { type: "string", example: "Sữa chua Vinamilk" },
-            category_id: { type: "integer", example: 1 },
-            brand_id: { type: "integer", example: 1 },
-            unit_id: { type: "integer", example: 1 },
-            description: { type: "string", example: "Sữa chua hộp 100g" },
-            is_active: { type: "boolean", default: true },
-            sku: { type: "string", example: "MILK002-SKU" },
-            barcode: { type: "string", example: "8934567890789" },
-            cost_price: { type: "number", example: 8000 },
-            selling_price: { type: "number", example: 12000 },
-          },
+            code: { type: 'string', example: 'MILK002' },
+            name: { type: 'string', example: 'Sữa chua Vinamilk' },
+            category_id: { type: 'integer', example: 1 },
+            brand_id: { type: 'integer', example: 1 },
+            unit_id: { type: 'integer', example: 1 },
+            description: { type: 'string', example: 'Sữa chua hộp 100g' },
+            is_active: { type: 'boolean', default: true },
+            sku: { type: 'string', example: 'MILK002-SKU' },
+            barcode: { type: 'string', example: '8934567890789' },
+            cost_price: { type: 'number', example: 8000 },
+            selling_price: { type: 'number', example: 12000 }
+          }
         },
         UpdateProductRequest: {
-          type: "object",
+          type: 'object',
           properties: {
-            name: { type: "string" },
-            description: { type: "string" },
-            category_id: { type: "integer" },
-            brand_id: { type: "integer" },
-            is_active: { type: "boolean" },
-          },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            category_id: { type: 'integer' },
+            brand_id: { type: 'integer' },
+            is_active: { type: 'boolean' }
+          }
         },
         Product: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            category_name: { type: "string" },
-            brand_name: { type: "string" },
-            unit_name: { type: "string" },
-            is_active: { type: "boolean" },
-            price: { type: "string" },
-            image_url: { type: "string" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            category_name: { type: 'string' },
+            brand_name: { type: 'string' },
+            unit_name: { type: 'string' },
+            is_active: { type: 'boolean' },
+            price: { type: 'string' },
+            image_url: { type: 'string' }
+          }
         },
         ProductDetail: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            description: { type: "string" },
-            category_name: { type: "string" },
-            brand_name: { type: "string" },
-            unit_name: { type: "string" },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            category_name: { type: 'string' },
+            brand_name: { type: 'string' },
+            unit_name: { type: 'string' },
             variants: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  id: { type: "integer" },
-                  sku: { type: "string" },
-                  barcode: { type: "string" },
-                  selling_price: { type: "string" },
-                },
-              },
-            },
-          },
+                  id: { type: 'integer' },
+                  sku: { type: 'string' },
+                  barcode: { type: 'string' },
+                  selling_price: { type: 'string' }
+                }
+              }
+            }
+          }
         },
         BulkStatusRequest: {
-          type: "object",
-          required: ["product_ids", "is_active"],
+          type: 'object',
+          required: ['product_ids', 'is_active'],
           properties: {
             product_ids: {
-              type: "array",
-              items: { type: "integer" },
-              example: [1, 2, 3],
+              type: 'array',
+              items: { type: 'integer' },
+              example: [1, 2, 3]
             },
-            is_active: { type: "boolean", example: false },
-          },
+            is_active: { type: 'boolean', example: false }
+          }
         },
         Brand: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' }
+          }
         },
         Unit: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' }
+          }
         },
 
         // ==================== COLLECTION SCHEMAS ====================
         CreateCollectionRequest: {
-          type: "object",
-          required: ["code", "name"],
+          type: 'object',
+          required: ['code', 'name'],
           properties: {
-            code: { type: "string", example: "SNACK" },
-            name: { type: "string", example: "Bánh kẹo" },
-            parent_id: {
-              type: "integer",
-              nullable: true,
-              description: "ID danh mục cha",
-            },
-          },
+            code: { type: 'string', example: 'SNACK' },
+            name: { type: 'string', example: 'Bánh kẹo' },
+            parent_id: { type: 'integer', nullable: true, description: 'ID danh mục cha' }
+          }
         },
         Collection: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            parent_id: { type: "integer" },
-            level: { type: "integer" },
-            product_count: { type: "string" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            parent_id: { type: 'integer' },
+            level: { type: 'integer' },
+            product_count: { type: 'string' }
+          }
         },
         CollectionTree: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
             children: {
-              type: "array",
-              items: { $ref: "#/components/schemas/CollectionTree" },
-            },
-          },
+              type: 'array',
+              items: { $ref: '#/components/schemas/CollectionTree' }
+            }
+          }
         },
 
         // ==================== DASHBOARD SCHEMAS ====================
         DashboardOverview: {
-          type: "object",
+          type: 'object',
           properties: {
-            totalOrders: { type: "integer" },
-            totalProducts: { type: "integer" },
-            totalCustomers: { type: "integer" },
+            totalOrders: { type: 'integer' },
+            totalProducts: { type: 'integer' },
+            totalCustomers: { type: 'integer' },
             recentOrders: {
-              type: "array",
-              items: { $ref: "#/components/schemas/OrderSummary" },
-            },
-          },
+              type: 'array',
+              items: { $ref: '#/components/schemas/OrderSummary' }
+            }
+          }
         },
         DashboardStats: {
-          type: "object",
+          type: 'object',
           properties: {
             revenue: {
-              type: "object",
+              type: 'object',
               properties: {
-                current: { type: "number" },
-                previous: { type: "number" },
-                change: { type: "number" },
-              },
+                current: { type: 'number' },
+                previous: { type: 'number' },
+                change: { type: 'number' }
+              }
             },
             orders: {
-              type: "object",
+              type: 'object',
               properties: {
-                current: { type: "integer" },
-                previous: { type: "integer" },
-                change: { type: "number" },
-              },
+                current: { type: 'integer' },
+                previous: { type: 'integer' },
+                change: { type: 'number' }
+              }
             },
             newCustomers: {
-              type: "object",
+              type: 'object',
               properties: {
-                current: { type: "integer" },
-                previous: { type: "integer" },
-                change: { type: "number" },
-              },
+                current: { type: 'integer' },
+                previous: { type: 'integer' },
+                change: { type: 'number' }
+              }
             },
             avgOrderValue: {
-              type: "object",
+              type: 'object',
               properties: {
-                current: { type: "number" },
-                previous: { type: "number" },
-                change: { type: "number" },
-              },
-            },
-          },
+                current: { type: 'number' },
+                previous: { type: 'number' },
+                change: { type: 'number' }
+              }
+            }
+          }
         },
         RevenueChart: {
-          type: "object",
+          type: 'object',
           properties: {
-            labels: { type: "array", items: { type: "string" } },
+            labels: { type: 'array', items: { type: 'string' } },
             datasets: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  label: { type: "string" },
-                  data: { type: "array", items: { type: "number" } },
-                },
-              },
+                  label: { type: 'string' },
+                  data: { type: 'array', items: { type: 'number' } }
+                }
+              }
             },
             summary: {
-              type: "object",
+              type: 'object',
               properties: {
-                totalRevenue: { type: "number" },
-                totalOrders: { type: "integer" },
-                avgDaily: { type: "number" },
-              },
-            },
-          },
+                totalRevenue: { type: 'number' },
+                totalOrders: { type: 'integer' },
+                avgDaily: { type: 'number' }
+              }
+            }
+          }
         },
         TopProduct: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            name: { type: "string" },
-            code: { type: "string" },
-            totalSold: { type: "integer" },
-            revenue: { type: "number" },
-            image_url: { type: "string" },
-          },
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            code: { type: 'string' },
+            totalSold: { type: 'integer' },
+            revenue: { type: 'number' },
+            image_url: { type: 'string' }
+          }
         },
         SalesChannel: {
-          type: "object",
+          type: 'object',
           properties: {
-            channel: { type: "string" },
-            orders: { type: "integer" },
-            revenue: { type: "number" },
-            percentage: { type: "number" },
-          },
+            channel: { type: 'string' },
+            orders: { type: 'integer' },
+            revenue: { type: 'number' },
+            percentage: { type: 'number' }
+          }
         },
         TopCustomer: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            name: { type: "string" },
-            phone: { type: "string" },
-            totalOrders: { type: "integer" },
-            totalSpent: { type: "number" },
-            lastOrder: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            phone: { type: 'string' },
+            totalOrders: { type: 'integer' },
+            totalSpent: { type: 'number' },
+            lastOrder: { type: 'string', format: 'date-time' }
+          }
         },
         LowStockProduct: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            name: { type: "string" },
-            code: { type: "string" },
-            currentStock: { type: "integer" },
-            threshold: { type: "integer" },
-            status: { type: "string", enum: ["critical", "warning"] },
-          },
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            code: { type: 'string' },
+            currentStock: { type: 'integer' },
+            threshold: { type: 'integer' },
+            status: { type: 'string', enum: ['critical', 'warning'] }
+          }
         },
 
         // ==================== CATALOG SCHEMAS ====================
         Catalog: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            sku: { type: "string" },
-            barcode: { type: "string" },
-            cost_price: { type: "string" },
-            price: { type: "string" },
-            unit: { type: "string" },
-            is_active: { type: "boolean" },
-            product_id: { type: "integer" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            sku: { type: 'string' },
+            barcode: { type: 'string' },
+            cost_price: { type: 'string' },
+            price: { type: 'string' },
+            unit: { type: 'string' },
+            is_active: { type: 'boolean' },
+            product_id: { type: 'integer' }
+          }
         },
         UpdateCatalogRequest: {
-          type: "object",
+          type: 'object',
           properties: {
-            cost_price: { type: "number" },
-            selling_price: { type: "number" },
-            is_active: { type: "boolean" },
-          },
+            cost_price: { type: 'number' },
+            selling_price: { type: 'number' },
+            is_active: { type: 'boolean' }
+          }
         },
         BulkUpdateCatalogRequest: {
-          type: "object",
-          required: ["variant_ids", "price_change_type", "price_change_value"],
+          type: 'object',
+          required: ['variant_ids', 'price_change_type', 'price_change_value'],
           properties: {
             variant_ids: {
-              type: "array",
-              items: { type: "integer" },
+              type: 'array',
+              items: { type: 'integer' }
             },
             price_change_type: {
-              type: "string",
-              enum: ["fixed", "percent"],
-              description: "fixed = đặt giá cố định, percent = tăng/giảm %",
+              type: 'string',
+              enum: ['fixed', 'percent'],
+              description: 'fixed = đặt giá cố định, percent = tăng/giảm %'
             },
             price_change_value: {
-              type: "number",
-              description:
-                "Giá trị (số dương = tăng, số âm = giảm khi type=percent)",
-            },
-          },
+              type: 'number',
+              description: 'Giá trị (số dương = tăng, số âm = giảm khi type=percent)'
+            }
+          }
         },
 
         // ==================== INVENTORY SCHEMAS ====================
         Store: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            store_type: { type: "string" },
-            address: { type: "string" },
-            is_active: { type: "boolean" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            store_type: { type: 'string' },
+            address: { type: 'string' },
+            is_active: { type: 'boolean' }
+          }
         },
         TransactionType: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            affects_stock: {
-              type: "integer",
-              description: "1=tăng, -1=giảm, 0=không đổi",
-            },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            affects_stock: { type: 'integer', description: '1=tăng, -1=giảm, 0=không đổi' }
+          }
         },
         Inventory: {
-          type: "object",
+          type: 'object',
           properties: {
-            store_id: { type: "integer" },
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            sku: { type: "string" },
-            barcode: { type: "string" },
-            unit: { type: "string" },
-            location: { type: "string" },
-            store_code: { type: "string" },
-            stock: { type: "string" },
-            quantity_reserved: { type: "string" },
-            quantity_available: { type: "string" },
-            min_stock_level: { type: "string" },
-            max_stock_level: { type: "string" },
-            stock_status: {
-              type: "string",
-              enum: ["out", "low", "normal", "high"],
-            },
-          },
+            store_id: { type: 'integer' },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            sku: { type: 'string' },
+            barcode: { type: 'string' },
+            unit: { type: 'string' },
+            location: { type: 'string' },
+            store_code: { type: 'string' },
+            stock: { type: 'string' },
+            quantity_reserved: { type: 'string' },
+            quantity_available: { type: 'string' },
+            min_stock_level: { type: 'string' },
+            max_stock_level: { type: 'string' },
+            stock_status: { type: 'string', enum: ['out', 'low', 'normal', 'high'] }
+          }
         },
         ReceiveInventoryRequest: {
-          type: "object",
-          required: ["store_id", "items"],
+          type: 'object',
+          required: ['store_id', 'items'],
           properties: {
-            store_id: { type: "integer" },
+            store_id: { type: 'integer' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
-                required: ["variant_id", "quantity"],
+                type: 'object',
+                required: ['variant_id', 'quantity'],
                 properties: {
-                  variant_id: { type: "integer" },
-                  quantity: { type: "integer", minimum: 1 },
-                  unit_cost: { type: "number" },
-                },
-              },
+                  variant_id: { type: 'integer' },
+                  quantity: { type: 'integer', minimum: 1 },
+                  unit_cost: { type: 'number' }
+                }
+              }
             },
-            notes: { type: "string" },
-          },
+            notes: { type: 'string' }
+          }
         },
         TransferStockRequest: {
-          type: "object",
-          required: ["from_store_id", "to_store_id", "items"],
+          type: 'object',
+          required: ['from_store_id', 'to_store_id', 'items'],
           properties: {
-            from_store_id: { type: "integer" },
-            to_store_id: { type: "integer" },
+            from_store_id: { type: 'integer' },
+            to_store_id: { type: 'integer' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  variant_id: { type: "integer" },
-                  quantity: { type: "integer" },
-                },
-              },
+                  variant_id: { type: 'integer' },
+                  quantity: { type: 'integer' }
+                }
+              }
             },
-            notes: { type: "string" },
-          },
+            notes: { type: 'string' }
+          }
         },
         AdjustInventoryRequest: {
-          type: "object",
-          required: ["store_id", "quantity", "adjustment_type"],
+          type: 'object',
+          required: ['store_id', 'quantity', 'adjustment_type'],
           properties: {
-            store_id: { type: "integer" },
-            quantity: { type: "integer" },
+            store_id: { type: 'integer' },
+            quantity: { type: 'integer' },
             adjustment_type: {
-              type: "string",
-              enum: ["set", "add", "subtract"],
-              description: "set=đặt số lượng, add=cộng thêm, subtract=trừ đi",
+              type: 'string',
+              enum: ['set', 'add', 'subtract'],
+              description: 'set=đặt số lượng, add=cộng thêm, subtract=trừ đi'
             },
-            notes: { type: "string" },
-          },
+            notes: { type: 'string' }
+          }
         },
         InventoryHistory: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "string" },
-            transaction_code: { type: "string" },
-            date_key: { type: "string", format: "date-time" },
-            created_at: { type: "string", format: "date-time" },
-            transaction_type: { type: "string" },
-            transaction_type_code: { type: "string" },
-            store_name: { type: "string" },
-            quantity_change: { type: "string" },
-            balance_before: { type: "string" },
-            balance_after: { type: "string" },
-            reference_type: { type: "string" },
-            unit_cost: { type: "string" },
-            total_value: { type: "string" },
-            notes: { type: "string" },
-            created_by_name: { type: "string" },
-          },
+            id: { type: 'string' },
+            transaction_code: { type: 'string' },
+            date_key: { type: 'string', format: 'date-time' },
+            created_at: { type: 'string', format: 'date-time' },
+            transaction_type: { type: 'string' },
+            transaction_type_code: { type: 'string' },
+            store_name: { type: 'string' },
+            quantity_change: { type: 'string' },
+            balance_before: { type: 'string' },
+            balance_after: { type: 'string' },
+            reference_type: { type: 'string' },
+            unit_cost: { type: 'string' },
+            total_value: { type: 'string' },
+            notes: { type: 'string' },
+            created_by_name: { type: 'string' }
+          }
         },
 
         // ==================== ORDER SCHEMAS ====================
         CreateOrderRequest: {
-          type: "object",
-          required: ["store_id", "items", "subtotal"],
+          type: 'object',
+          required: ['store_id', 'items', 'subtotal'],
           properties: {
-            store_id: { type: "integer" },
-            customer_id: { type: "integer" },
+            store_id: { type: 'integer' },
+            customer_id: { type: 'integer' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
-                required: ["variant_id", "quantity", "unit_price"],
+                type: 'object',
+                required: ['variant_id', 'quantity', 'unit_price'],
                 properties: {
-                  variant_id: { type: "integer" },
-                  quantity: { type: "integer", minimum: 1 },
-                  unit_price: { type: "number" },
-                  discount_per_item: { type: "number", default: 0 },
-                },
-              },
+                  variant_id: { type: 'integer' },
+                  quantity: { type: 'integer', minimum: 1 },
+                  unit_price: { type: 'number' },
+                  discount_per_item: { type: 'number', default: 0 }
+                }
+              }
             },
-            subtotal: { type: "number" },
-            discount_amount: { type: "number", default: 0 },
-            tax_amount: { type: "number", default: 0 },
-            shipping_fee: { type: "number", default: 0 },
-            payment_method: {
-              type: "string",
-              enum: ["cash", "card", "bank transfer"],
-            },
-            shipping_address: { type: "string" },
-            customer_note: { type: "string" },
-            internal_note: { type: "string" },
-          },
+            subtotal: { type: 'number' },
+            discount_amount: { type: 'number', default: 0 },
+            tax_amount: { type: 'number', default: 0 },
+            shipping_fee: { type: 'number', default: 0 },
+            payment_method: { type: 'string', enum: ['cash', 'card', 'bank transfer'] },
+            shipping_address: { type: 'string' },
+            customer_note: { type: 'string' },
+            internal_note: { type: 'string' }
+          }
         },
         UpdateOrderStatusRequest: {
-          type: "object",
+          type: 'object',
           properties: {
-            status: {
-              type: "string",
-              enum: ["pending", "completed", "cancelled"],
-            },
-            payment_status: { type: "string", enum: ["paid", "unpaid"] },
-            payment_method: {
-              type: "string",
-              enum: ["cash", "card", "bank transfer"],
-            },
-          },
+            status: { type: 'string', enum: ['pending', 'completed', 'cancelled'] },
+            payment_status: { type: 'string', enum: ['paid', 'unpaid'] },
+            payment_method: { type: 'string', enum: ['cash', 'card', 'bank transfer'] }
+          }
         },
         CancelOrderRequest: {
-          type: "object",
+          type: 'object',
           properties: {
-            reason: { type: "string" },
-          },
+            reason: { type: 'string' }
+          }
         },
         Order: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            order_code: { type: "string" },
-            date: { type: "string", format: "date-time" },
+            id: { type: 'integer' },
+            order_code: { type: 'string' },
+            date: { type: 'string', format: 'date-time' },
             customer: {
-              type: "object",
+              type: 'object',
               properties: {
-                id: { type: "integer" },
-                name: { type: "string" },
-                phone: { type: "string" },
-              },
+                id: { type: 'integer' },
+                name: { type: 'string' },
+                phone: { type: 'string' }
+              }
             },
             store: {
-              type: "object",
+              type: 'object',
               properties: {
-                id: { type: "integer" },
-                name: { type: "string" },
-              },
+                id: { type: 'integer' },
+                name: { type: 'string' }
+              }
             },
-            status: {
-              type: "string",
-              enum: ["pending", "completed", "cancelled"],
-            },
-            payment_status: { type: "string", enum: ["paid", "unpaid"] },
-            payment_method: { type: "string" },
+            status: { type: 'string', enum: ['pending', 'completed', 'cancelled'] },
+            payment_status: { type: 'string', enum: ['paid', 'unpaid'] },
+            payment_method: { type: 'string' },
             amount: {
-              type: "object",
+              type: 'object',
               properties: {
-                subtotal: { type: "number" },
-                discount: { type: "number" },
-                tax: { type: "number" },
-                shipping: { type: "number" },
-                final: { type: "number" },
-              },
+                subtotal: { type: 'number' },
+                discount: { type: 'number' },
+                tax: { type: 'number' },
+                shipping: { type: 'number' },
+                final: { type: 'number' }
+              }
             },
-            items: { type: "integer" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            items: { type: 'integer' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         OrderSummary: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            order_code: { type: "string" },
-            customer_name: { type: "string" },
-            total_amount: { type: "number" },
-            status: { type: "string" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            order_code: { type: 'string' },
+            customer_name: { type: 'string' },
+            total_amount: { type: 'number' },
+            status: { type: 'string' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         OrderStats: {
-          type: "object",
+          type: 'object',
           properties: {
-            total_orders: { type: "integer" },
+            total_orders: { type: 'integer' },
             by_status: {
-              type: "object",
+              type: 'object',
               properties: {
-                pending: { type: "integer" },
-                completed: { type: "integer" },
-                cancelled: { type: "integer" },
-              },
+                pending: { type: 'integer' },
+                completed: { type: 'integer' },
+                cancelled: { type: 'integer' }
+              }
             },
             by_payment: {
-              type: "object",
+              type: 'object',
               properties: {
-                paid: { type: "integer" },
-                unpaid: { type: "integer" },
-              },
+                paid: { type: 'integer' },
+                unpaid: { type: 'integer' }
+              }
             },
             revenue: {
-              type: "object",
+              type: 'object',
               properties: {
-                total: { type: "number" },
-                average: { type: "number" },
-              },
-            },
-          },
+                total: { type: 'number' },
+                average: { type: 'number' }
+              }
+            }
+          }
         },
 
         // ==================== CUSTOMER SCHEMAS ====================
         CreateCustomerRequest: {
-          type: "object",
-          required: ["name"],
+          type: 'object',
+          required: ['name'],
           properties: {
-            name: { type: "string", example: "Nguyễn Văn An" },
-            phone: { type: "string", example: "0901234567" },
-            email: { type: "string", format: "email" },
-            address: { type: "string" },
-            group_id: { type: "integer" },
-            notes: { type: "string" },
-          },
+            name: { type: 'string', example: 'Nguyễn Văn An' },
+            phone: { type: 'string', example: '0901234567' },
+            email: { type: 'string', format: 'email' },
+            address: { type: 'string' },
+            group_id: { type: 'integer' },
+            notes: { type: 'string' }
+          }
         },
         Customer: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            name: { type: "string" },
-            phone: { type: "string" },
-            email: { type: "string" },
-            address: { type: "string" },
-            group_id: { type: "integer" },
-            group_name: { type: "string" },
-            total_orders: { type: "integer" },
-            total_spent: { type: "number" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            phone: { type: 'string' },
+            email: { type: 'string' },
+            address: { type: 'string' },
+            group_id: { type: 'integer' },
+            group_name: { type: 'string' },
+            total_orders: { type: 'integer' },
+            total_spent: { type: 'number' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         CustomerGroup: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            discount_percent: { type: "number" },
-            customer_count: { type: "integer" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            discount_percent: { type: 'number' },
+            customer_count: { type: 'integer' }
+          }
         },
 
         // ==================== SUPPLIER SCHEMAS ====================
         CreateSupplierRequest: {
-          type: "object",
-          required: ["name"],
+          type: 'object',
+          required: ['name'],
           properties: {
-            code: { type: "string" },
-            name: { type: "string", example: "Công ty ABC" },
-            phone: { type: "string" },
-            email: { type: "string", format: "email" },
-            address: { type: "string" },
-            tax_code: { type: "string" },
-            contact_person: { type: "string" },
-            notes: { type: "string" },
-          },
+            code: { type: 'string' },
+            name: { type: 'string', example: 'Công ty ABC' },
+            phone: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            address: { type: 'string' },
+            tax_code: { type: 'string' },
+            contact_person: { type: 'string' },
+            notes: { type: 'string' }
+          }
         },
         Supplier: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            phone: { type: "string" },
-            email: { type: "string" },
-            address: { type: "string" },
-            tax_code: { type: "string" },
-            contact_person: { type: "string" },
-            is_active: { type: "boolean" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            phone: { type: 'string' },
+            email: { type: 'string' },
+            address: { type: 'string' },
+            tax_code: { type: 'string' },
+            contact_person: { type: 'string' },
+            is_active: { type: 'boolean' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
 
         // ==================== DISCOUNT SCHEMAS ====================
         CreateDiscountRequest: {
-          type: "object",
-          required: [
-            "code",
-            "name",
-            "discount_type",
-            "discount_value",
-            "start_date",
-            "end_date",
-          ],
+          type: 'object',
+          required: ['code', 'name', 'discount_type', 'discount_value', 'start_date', 'end_date'],
           properties: {
-            code: { type: "string", example: "SALE10" },
-            name: { type: "string", example: "Giảm 10%" },
-            discount_type: {
-              type: "string",
-              enum: [
-                "PERCENTAGE",
-                "FIXED_AMOUNT",
-                "BUY_X_GET_Y",
-                "FREE_SHIPPING",
-              ],
-            },
-            discount_value: { type: "number" },
-            start_date: { type: "string", format: "date-time" },
-            end_date: { type: "string", format: "date-time" },
-            min_order_amount: { type: "number" },
-            max_discount_amount: { type: "number" },
-            max_uses: { type: "integer" },
-            is_active: { type: "boolean", default: true },
-          },
+            code: { type: 'string', example: 'SALE10' },
+            name: { type: 'string', example: 'Giảm 10%' },
+            discount_type: { type: 'string', enum: ['PERCENTAGE', 'FIXED_AMOUNT', 'BUY_X_GET_Y', 'FREE_SHIPPING'] },
+            discount_value: { type: 'number' },
+            start_date: { type: 'string', format: 'date-time' },
+            end_date: { type: 'string', format: 'date-time' },
+            min_order_amount: { type: 'number' },
+            max_discount_amount: { type: 'number' },
+            max_uses: { type: 'integer' },
+            is_active: { type: 'boolean', default: true }
+          }
         },
         Discount: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            discount_type: { type: "string" },
-            discount_value: { type: "number" },
-            start_date: { type: "string", format: "date-time" },
-            end_date: { type: "string", format: "date-time" },
-            min_order_amount: { type: "number" },
-            max_discount_amount: { type: "number" },
-            max_uses: { type: "integer" },
-            used_count: { type: "integer" },
-            is_active: { type: "boolean" },
-            status: {
-              type: "string",
-              enum: ["active", "expired", "upcoming", "inactive"],
-            },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            discount_type: { type: 'string' },
+            discount_value: { type: 'number' },
+            start_date: { type: 'string', format: 'date-time' },
+            end_date: { type: 'string', format: 'date-time' },
+            min_order_amount: { type: 'number' },
+            max_discount_amount: { type: 'number' },
+            max_uses: { type: 'integer' },
+            used_count: { type: 'integer' },
+            is_active: { type: 'boolean' },
+            status: { type: 'string', enum: ['active', 'expired', 'upcoming', 'inactive'] }
+          }
         },
         DiscountType: {
-          type: "object",
+          type: 'object',
           properties: {
-            code: { type: "string" },
-            name: { type: "string" },
-            description: { type: "string" },
-          },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' }
+          }
         },
         ValidateDiscountRequest: {
-          type: "object",
-          required: ["code"],
+          type: 'object',
+          required: ['code'],
           properties: {
-            code: { type: "string" },
-            order_amount: { type: "number" },
-            customer_id: { type: "integer" },
+            code: { type: 'string' },
+            order_amount: { type: 'number' },
+            customer_id: { type: 'integer' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  product_id: { type: "integer" },
-                  quantity: { type: "integer" },
-                  price: { type: "number" },
-                },
-              },
-            },
-          },
+                  product_id: { type: 'integer' },
+                  quantity: { type: 'integer' },
+                  price: { type: 'number' }
+                }
+              }
+            }
+          }
         },
 
         // ==================== TRANSACTION/CASHBOOK SCHEMAS ====================
         CreateTransactionRequest: {
-          type: "object",
-          required: ["store_id", "cashbook_type", "amount"],
+          type: 'object',
+          required: ['store_id', 'cashbook_type', 'amount'],
           properties: {
-            store_id: { type: "integer" },
+            store_id: { type: 'integer' },
             cashbook_type: {
-              type: "string",
-              description:
-                "Code: SALES_INCOME, OTHER_INCOME, PURCHASE_EXPENSE, SALARY_EXPENSE, etc.",
+              type: 'string',
+              description: 'Code: SALES_INCOME, OTHER_INCOME, PURCHASE_EXPENSE, SALARY_EXPENSE, etc.'
             },
             payment_method: {
-              type: "string",
-              description: "Code: CASH, BANK_TRANSFER, CARD, MOMO, etc.",
+              type: 'string',
+              description: 'Code: CASH, BANK_TRANSFER, CARD, MOMO, etc.'
             },
-            amount: { type: "number", minimum: 0.01 },
-            date_key: { type: "string", format: "date" },
-            reference_id: { type: "integer" },
-            reference_type: { type: "string" },
-            counterparty_name: { type: "string" },
-            description: { type: "string" },
-            notes: { type: "string" },
-          },
+            amount: { type: 'number', minimum: 0.01 },
+            date_key: { type: 'string', format: 'date' },
+            reference_id: { type: 'integer' },
+            reference_type: { type: 'string' },
+            counterparty_name: { type: 'string' },
+            description: { type: 'string' },
+            notes: { type: 'string' }
+          }
         },
         Transaction: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            transaction_code: { type: "string" },
-            store_id: { type: "integer" },
-            store_name: { type: "string" },
-            cashbook_type: { type: "string" },
-            type_name: { type: "string" },
-            direction: { type: "string", enum: ["thu", "chi"] },
-            payment_method: { type: "string" },
-            amount: { type: "number" },
-            status: {
-              type: "string",
-              enum: ["pending", "approved", "rejected", "cancelled"],
-            },
-            date_key: { type: "string", format: "date" },
-            description: { type: "string" },
-            created_by: { type: "string" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            transaction_code: { type: 'string' },
+            store_id: { type: 'integer' },
+            store_name: { type: 'string' },
+            cashbook_type: { type: 'string' },
+            type_name: { type: 'string' },
+            direction: { type: 'string', enum: ['thu', 'chi'] },
+            payment_method: { type: 'string' },
+            amount: { type: 'number' },
+            status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'cancelled'] },
+            date_key: { type: 'string', format: 'date' },
+            description: { type: 'string' },
+            created_by: { type: 'string' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         TransactionSummary: {
-          type: "object",
+          type: 'object',
           properties: {
             totals: {
-              type: "object",
+              type: 'object',
               properties: {
-                total_income: { type: "number" },
-                total_expense: { type: "number" },
-                net_amount: { type: "number" },
-              },
+                total_income: { type: 'number' },
+                total_expense: { type: 'number' },
+                net_amount: { type: 'number' }
+              }
             },
-            by_store: { type: "array" },
-            by_type: { type: "array" },
-          },
+            by_store: { type: 'array' },
+            by_type: { type: 'array' }
+          }
         },
 
         // ==================== SHIPMENT SCHEMAS ====================
         CreateShipmentRequest: {
-          type: "object",
-          required: [
-            "order_id",
-            "sender_store_id",
-            "recipient_name",
-            "recipient_phone",
-            "recipient_address",
-          ],
+          type: 'object',
+          required: ['order_id', 'sender_store_id', 'recipient_name', 'recipient_phone', 'recipient_address'],
           properties: {
-            order_id: { type: "integer" },
-            carrier_id: { type: "integer" },
-            tracking_code: { type: "string" },
-            sender_store_id: { type: "integer" },
-            recipient_name: { type: "string" },
-            recipient_phone: { type: "string" },
-            recipient_address: { type: "string" },
-            recipient_city_id: { type: "integer" },
-            recipient_district: { type: "string" },
-            recipient_ward: { type: "string" },
-            package_weight: { type: "number" },
-            shipping_fee: { type: "number" },
-            cod_amount: { type: "number" },
-            insurance_fee: { type: "number" },
-            estimated_delivery_date: { type: "string", format: "date" },
-            notes: { type: "string" },
-          },
+            order_id: { type: 'integer' },
+            carrier_id: { type: 'integer' },
+            tracking_code: { type: 'string' },
+            sender_store_id: { type: 'integer' },
+            recipient_name: { type: 'string' },
+            recipient_phone: { type: 'string' },
+            recipient_address: { type: 'string' },
+            recipient_city_id: { type: 'integer' },
+            recipient_district: { type: 'string' },
+            recipient_ward: { type: 'string' },
+            package_weight: { type: 'number' },
+            shipping_fee: { type: 'number' },
+            cod_amount: { type: 'number' },
+            insurance_fee: { type: 'number' },
+            estimated_delivery_date: { type: 'string', format: 'date' },
+            notes: { type: 'string' }
+          }
         },
         Shipment: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            shipment_code: { type: "string" },
-            tracking_code: { type: "string" },
-            order_id: { type: "integer" },
-            order_code: { type: "string" },
-            carrier_id: { type: "integer" },
-            carrier_name: { type: "string" },
+            id: { type: 'integer' },
+            shipment_code: { type: 'string' },
+            tracking_code: { type: 'string' },
+            order_id: { type: 'integer' },
+            order_code: { type: 'string' },
+            carrier_id: { type: 'integer' },
+            carrier_name: { type: 'string' },
             status: {
-              type: "string",
-              enum: [
-                "pending",
-                "confirmed",
-                "picking",
-                "picked",
-                "in_transit",
-                "out_for_delivery",
-                "delivered",
-                "failed",
-                "returned",
-                "cancelled",
-              ],
+              type: 'string',
+              enum: ['pending', 'confirmed', 'picking', 'picked', 'in_transit', 'out_for_delivery', 'delivered', 'failed', 'returned', 'cancelled']
             },
-            recipient_name: { type: "string" },
-            recipient_phone: { type: "string" },
-            recipient_address: { type: "string" },
-            shipping_fee: { type: "number" },
-            cod_amount: { type: "number" },
-            estimated_delivery_date: { type: "string", format: "date" },
-            actual_delivery_date: { type: "string", format: "date" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            recipient_name: { type: 'string' },
+            recipient_phone: { type: 'string' },
+            recipient_address: { type: 'string' },
+            shipping_fee: { type: 'number' },
+            cod_amount: { type: 'number' },
+            estimated_delivery_date: { type: 'string', format: 'date' },
+            actual_delivery_date: { type: 'string', format: 'date' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         ShipmentStatus: {
-          type: "object",
+          type: 'object',
           properties: {
-            code: { type: "string" },
-            name: { type: "string" },
-            description: { type: "string" },
-          },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' }
+          }
         },
         Carrier: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            is_active: { type: "boolean" },
-          },
+            id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            is_active: { type: 'boolean' }
+          }
         },
 
         // ==================== REPORT SCHEMAS ====================
         DailyReportSummary: {
-          type: "object",
+          type: 'object',
           properties: {
-            total_orders: { type: "integer" },
-            total_revenue: { type: "number" },
-            total_items_sold: { type: "integer" },
-            average_order_value: { type: "number" },
-            total_discount: { type: "number" },
-          },
+            total_orders: { type: 'integer' },
+            total_revenue: { type: 'number' },
+            total_items_sold: { type: 'integer' },
+            average_order_value: { type: 'number' },
+            total_discount: { type: 'number' }
+          }
         },
         ActualRevenueReport: {
-          type: "object",
+          type: 'object',
           properties: {
             summary: {
-              type: "object",
+              type: 'object',
               properties: {
-                total_received: { type: "number" },
-                total_pending: { type: "number" },
-                total_refunded: { type: "number" },
-              },
+                total_received: { type: 'number' },
+                total_pending: { type: 'number' },
+                total_refunded: { type: 'number' }
+              }
             },
-            by_method: { type: "array" },
-            pending: { type: "object" },
-            refunds: { type: "object" },
-          },
+            by_method: { type: 'array' },
+            pending: { type: 'object' },
+            refunds: { type: 'object' }
+          }
         },
 
         // ==================== POS SCHEMAS ====================
         POSCheckoutRequest: {
-          type: "object",
-          required: ["store_id", "items", "subtotal", "payment_method"],
+          type: 'object',
+          required: ['store_id', 'items', 'subtotal', 'payment_method'],
           properties: {
-            store_id: { type: "integer" },
-            customer_id: { type: "integer" },
+            store_id: { type: 'integer' },
+            customer_id: { type: 'integer' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  variant_id: { type: "integer" },
-                  quantity: { type: "integer" },
-                  unit_price: { type: "number" },
-                  discount: { type: "number" },
-                },
-              },
+                  variant_id: { type: 'integer' },
+                  quantity: { type: 'integer' },
+                  unit_price: { type: 'number' },
+                  discount: { type: 'number' }
+                }
+              }
             },
-            subtotal: { type: "number" },
-            discount_code: { type: "string" },
-            discount_amount: { type: "number" },
-            tax_amount: { type: "number" },
-            payment_method: {
-              type: "string",
-              enum: ["cash", "card", "bank_transfer", "momo", "vnpay"],
-            },
-            amount_paid: { type: "number" },
-            notes: { type: "string" },
-          },
+            subtotal: { type: 'number' },
+            discount_code: { type: 'string' },
+            discount_amount: { type: 'number' },
+            tax_amount: { type: 'number' },
+            payment_method: { type: 'string', enum: ['cash', 'card', 'bank_transfer', 'momo', 'vnpay'] },
+            amount_paid: { type: 'number' },
+            notes: { type: 'string' }
+          }
         },
         POSProduct: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            variant_id: { type: "integer" },
-            code: { type: "string" },
-            name: { type: "string" },
-            sku: { type: "string" },
-            barcode: { type: "string" },
-            price: { type: "number" },
-            stock: { type: "number" },
-            image_url: { type: "string" },
-          },
+            id: { type: 'integer' },
+            variant_id: { type: 'integer' },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            sku: { type: 'string' },
+            barcode: { type: 'string' },
+            price: { type: 'number' },
+            stock: { type: 'number' },
+            image_url: { type: 'string' }
+          }
         },
         POSDraftRequest: {
-          type: "object",
-          required: ["store_id", "items"],
+          type: 'object',
+          required: ['store_id', 'items'],
           properties: {
-            store_id: { type: "integer" },
-            customer_id: { type: "integer" },
+            store_id: { type: 'integer' },
+            customer_id: { type: 'integer' },
             items: {
-              type: "array",
+              type: 'array',
               items: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  variant_id: { type: "integer" },
-                  quantity: { type: "integer" },
-                  unit_price: { type: "number" },
-                },
-              },
+                  variant_id: { type: 'integer' },
+                  quantity: { type: 'integer' },
+                  unit_price: { type: 'number' }
+                }
+              }
             },
-            notes: { type: "string" },
-          },
+            notes: { type: 'string' }
+          }
         },
         PaymentMethod: {
-          type: "object",
+          type: 'object',
           properties: {
-            code: { type: "string" },
-            name: { type: "string" },
-            is_active: { type: "boolean" },
-          },
+            code: { type: 'string' },
+            name: { type: 'string' },
+            is_active: { type: 'boolean' }
+          }
         },
 
         // ==================== BANK ACCOUNT SCHEMAS ====================
         CreateBankAccountRequest: {
-          type: "object",
-          required: [
-            "account_name",
-            "account_number",
-            "bank_name",
-            "bank_code",
-          ],
+          type: 'object',
+          required: ['account_name', 'account_number', 'bank_name', 'bank_code'],
           properties: {
-            account_name: { type: "string", example: "Siêu Thị Mini" },
-            account_number: { type: "string", example: "1234567890" },
-            bank_name: { type: "string", example: "Vietcombank" },
-            bank_code: { type: "string", example: "VCB" },
-            branch: { type: "string", example: "Chi nhánh Quận 1" },
-            store_id: { type: "integer", nullable: true },
-            is_default: { type: "boolean", default: false },
-            notes: { type: "string" },
-          },
+            account_name: { type: 'string', example: 'Siêu Thị Mini' },
+            account_number: { type: 'string', example: '1234567890' },
+            bank_name: { type: 'string', example: 'Vietcombank' },
+            bank_code: { type: 'string', example: 'VCB' },
+            branch: { type: 'string', example: 'Chi nhánh Quận 1' },
+            store_id: { type: 'integer', nullable: true },
+            is_default: { type: 'boolean', default: false },
+            notes: { type: 'string' }
+          }
         },
         BankAccount: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            account_name: { type: "string" },
-            account_number: { type: "string" },
-            bank_name: { type: "string" },
-            bank_code: { type: "string" },
-            branch: { type: "string" },
-            store_id: { type: "integer" },
-            store_name: { type: "string" },
-            is_default: { type: "boolean" },
-            is_active: { type: "boolean" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            account_name: { type: 'string' },
+            account_number: { type: 'string' },
+            bank_name: { type: 'string' },
+            bank_code: { type: 'string' },
+            branch: { type: 'string' },
+            store_id: { type: 'integer' },
+            store_name: { type: 'string' },
+            is_default: { type: 'boolean' },
+            is_active: { type: 'boolean' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         PaymentQR: {
-          type: "object",
+          type: 'object',
           properties: {
-            bank_code: { type: "string" },
-            bank_name: { type: "string" },
-            account_number: { type: "string" },
-            account_name: { type: "string" },
-            amount: { type: "number" },
-            description: { type: "string" },
-            qr_url: { type: "string" },
-            napas_qr: { type: "string" },
-          },
+            bank_code: { type: 'string' },
+            bank_name: { type: 'string' },
+            account_number: { type: 'string' },
+            account_name: { type: 'string' },
+            amount: { type: 'number' },
+            description: { type: 'string' },
+            qr_url: { type: 'string' },
+            napas_qr: { type: 'string' }
+          }
         },
 
         // ==================== CHECKOUT (ABANDONED) SCHEMAS ====================
         Checkout: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            checkoutCode: { type: "string" },
-            customerName: { type: "string" },
-            customerContact: { type: "string" },
-            storeId: { type: "integer" },
-            storeName: { type: "string" },
-            createdDate: { type: "string", format: "date-time" },
-            totalAmount: { type: "number" },
-            status: { type: "string" },
-            itemCount: { type: "integer" },
-          },
+            id: { type: 'integer' },
+            checkoutCode: { type: 'string' },
+            customerName: { type: 'string' },
+            customerContact: { type: 'string' },
+            storeId: { type: 'integer' },
+            storeName: { type: 'string' },
+            createdDate: { type: 'string', format: 'date-time' },
+            totalAmount: { type: 'number' },
+            status: { type: 'string' },
+            itemCount: { type: 'integer' }
+          }
         },
         SendPaymentLinkRequest: {
-          type: "object",
+          type: 'object',
           properties: {
-            custom_message: { type: "string" },
-          },
+            custom_message: { type: 'string' }
+          }
         },
         MassEmailRequest: {
-          type: "object",
+          type: 'object',
           properties: {
             checkout_ids: {
-              type: "array",
-              items: { type: "integer" },
+              type: 'array',
+              items: { type: 'integer' }
             },
-            store_id: { type: "integer" },
-            exclude_already_sent: { type: "boolean", default: true },
-            custom_message: { type: "string" },
-          },
+            store_id: { type: 'integer' },
+            exclude_already_sent: { type: 'boolean', default: true },
+            custom_message: { type: 'string' }
+          }
         },
 
         // ==================== PRODUCT IMAGE SCHEMAS ====================
         ProductImage: {
-          type: "object",
+          type: 'object',
           properties: {
-            id: { type: "integer" },
-            product_id: { type: "integer" },
-            image_url: { type: "string" },
-            alt_text: { type: "string" },
-            sort_order: { type: "integer" },
-            is_primary: { type: "boolean" },
-            created_at: { type: "string", format: "date-time" },
-          },
+            id: { type: 'integer' },
+            product_id: { type: 'integer' },
+            image_url: { type: 'string' },
+            alt_text: { type: 'string' },
+            sort_order: { type: 'integer' },
+            is_primary: { type: 'boolean' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
         },
         ReorderImagesRequest: {
-          type: "object",
-          required: ["imageIds"],
+          type: 'object',
+          required: ['imageIds'],
           properties: {
             imageIds: {
-              type: "array",
-              items: { type: "integer" },
-              description: "Mảng ID ảnh theo thứ tự mong muốn",
-            },
-          },
-        },
+              type: 'array',
+              items: { type: 'integer' },
+              description: 'Mảng ID ảnh theo thứ tự mong muốn'
+            }
+          }
+        }
       },
       responses: {
         Success200: {
-          description: "Success - Operation completed successfully",
+          description: 'Success - Operation completed successfully',
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/SuccessResponse" },
-            },
-          },
+            'application/json': {
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+            }
+          }
         },
         Success201: {
-          description: "Created - Resource created successfully",
+          description: 'Created - Resource created successfully',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: true },
-                  message: {
-                    type: "string",
-                    example: "Resource created successfully",
-                  },
-                  data: { type: "object", description: "Created resource" },
-                },
-              },
-            },
-          },
+                  success: { type: 'boolean', example: true },
+                  message: { type: 'string', example: 'Resource created successfully' },
+                  data: { type: 'object', description: 'Created resource' }
+                }
+              }
+            }
+          }
         },
         ListSuccess: {
-          description: "Success - Retrieved list",
+          description: 'Success - Retrieved list',
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/PaginatedResponse" },
-            },
-          },
+            'application/json': {
+              schema: { $ref: '#/components/schemas/PaginatedResponse' }
+            }
+          }
         },
         BadRequest400: {
-          description: "Bad Request - Invalid input data",
+          description: 'Bad Request - Invalid input data',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: false },
-                  message: { type: "string", example: "Invalid request data" },
-                  timestamp: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Invalid request data' },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
         },
         UnauthorizedError: {
-          description: "Unauthorized - Token không hợp lệ hoặc hết hạn",
+          description: 'Unauthorized - Token không hợp lệ hoặc hết hạn',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: false },
-                  message: {
-                    type: "string",
-                    example: "Unauthorized: Token không hợp lệ hoặc đã hết hạn",
-                  },
-                  timestamp: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Unauthorized: Token không hợp lệ hoặc đã hết hạn' },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
         },
         ForbiddenError: {
-          description: "Forbidden - Không có quyền thực hiện hành động",
+          description: 'Forbidden - Không có quyền thực hiện hành động',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: false },
-                  message: {
-                    type: "string",
-                    example:
-                      "Forbidden: Bạn không có quyền thực hiện hành động này",
-                  },
-                  timestamp: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Forbidden: Bạn không có quyền thực hiện hành động này' },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
         },
         NotFoundError: {
-          description: "Not Found - Không tìm thấy resource",
+          description: 'Not Found - Không tìm thấy resource',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: false },
-                  message: {
-                    type: "string",
-                    example: "Not Found: Không tìm thấy dữ liệu",
-                  },
-                  timestamp: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Not Found: Không tìm thấy dữ liệu' },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
         },
         ValidationError: {
-          description: "Unprocessable Entity - Validation error",
+          description: 'Unprocessable Entity - Validation error',
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/ValidationError" },
-            },
-          },
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ValidationError' }
+            }
+          }
         },
         RateLimitError: {
-          description:
-            "Too Many Requests - Vượt quá rate limit (100 requests/15 min)",
+          description: 'Too Many Requests - Vượt quá rate limit (100 requests/15 min)',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: false },
-                  message: {
-                    type: "string",
-                    example:
-                      "Too many requests. Please try again after 15 minutes.",
-                  },
-                  retryAfter: {
-                    type: "integer",
-                    example: 900,
-                    description: "Seconds to wait",
-                  },
-                },
-              },
-            },
-          },
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Too many requests. Please try again after 15 minutes.' },
+                  retryAfter: { type: 'integer', example: 900, description: 'Seconds to wait' }
+                }
+              }
+            }
+          }
         },
         ServerError: {
-          description: "Internal Server Error - Lỗi server",
+          description: 'Internal Server Error - Lỗi server',
           content: {
-            "application/json": {
+            'application/json': {
               schema: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  success: { type: "boolean", example: false },
-                  message: {
-                    type: "string",
-                    example:
-                      "Internal Server Error: Đã xảy ra lỗi, vui lòng thử lại sau",
-                  },
-                  errorId: { type: "string", description: "Error tracking ID" },
-                  timestamp: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
-        },
-      },
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Internal Server Error: Đã xảy ra lỗi, vui lòng thử lại sau' },
+                  errorId: { type: 'string', description: 'Error tracking ID' },
+                  timestamp: { type: 'string', format: 'date-time' }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     security: [
       {
-        bearerAuth: [],
-      },
-    ],
+        bearerAuth: []
+      }
+    ]
   },
-  apis: ["./src/routes/*.js", "./src/services/*.js"],
+  apis: [
+    './src/routes/*.js',
+    './src/services/*.js'
+  ]
 };
 
 const specs = swaggerJsdoc(options);
@@ -1709,56 +1504,48 @@ const setupSwagger = (app) => {
         background-color: #2d6a4f;
       }
     `,
-    customSiteTitle: "Supermarket Management System - API Documentation",
-    customfavIcon: "/favicon.ico",
+    customSiteTitle: 'Supermarket Management System - API Documentation',
+    customfavIcon: '/favicon.ico',
     swaggerOptions: {
       persistAuthorization: true,
       filter: true,
       showExtensions: true,
       showCommonExtensions: true,
-      docExpansion: "list",
+      docExpansion: 'list',
       defaultModelsExpandDepth: 1,
       defaultModelExpandDepth: 2,
-      tagsSorter: "alpha",
-      operationsSorter: "method",
+      tagsSorter: 'alpha',
+      operationsSorter: 'method',
       displayOperationId: false,
       deepLinking: true,
-    },
+    }
   };
 
   // Serve swagger docs
-  app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(specs, swaggerUiOptions),
-  );
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
   // Serve swagger JSON spec
-  app.get("/api-docs.json", (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Cache-Control", "public, max-age=3600");
+  app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(specs);
   });
 
   // Health check for documentation
-  app.get("/api-docs/health", (req, res) => {
+  app.get('/api-docs/health', (req, res) => {
     res.json({
-      status: "ok",
-      message: "API Documentation is available",
-      docs_url: "/api-docs",
-      spec_url: "/api-docs.json",
+      status: 'ok',
+      message: 'API Documentation is available',
+      docs_url: '/api-docs',
+      spec_url: '/api-docs.json'
     });
   });
 
-  console.log(
-    "📚 Swagger documentation available at: http://localhost:5000/api-docs",
-  );
-  console.log(
-    "📋 OpenAPI spec available at: http://localhost:5000/api-docs.json",
-  );
+  console.log('📚 Swagger documentation available at: http://localhost:5000/api-docs');
+  console.log('📋 OpenAPI spec available at: http://localhost:5000/api-docs.json');
 };
 
 module.exports = {
   specs,
-  setupSwagger,
+  setupSwagger
 };

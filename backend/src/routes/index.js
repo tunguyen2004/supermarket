@@ -25,6 +25,7 @@ const reportRoutes = require('./reportRoutes');
 const posRoutes = require('./posRoutes');
 const bankAccountRoutes = require('./bankAccountRoutes');
 const checkoutRoutes = require('./checkoutRoutes');
+const chatbotRoutes = require('./chatbotRoutes');
 
 // Import services for routes not yet modularized
 const dashboardService = require('../services/dashboardService');
@@ -87,6 +88,9 @@ router.use('/bank-accounts', bankAccountRoutes);
 
 // Checkout routes: /api/checkouts/*
 router.use('/checkouts', checkoutRoutes);
+
+// Chatbot routes: /api/chatbot/*
+router.use('/chatbot', chatbotRoutes);
 
 // Brands & Units
 router.get('/brands', verifyToken, productService.getBrands);

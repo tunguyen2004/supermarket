@@ -20,6 +20,7 @@ const reportValidator = require('./reportValidator');
 const posValidator = require('./posValidator');
 const bankAccountValidator = require('./bankAccountValidator');
 const checkoutValidator = require('./checkoutValidator');
+const chatbotValidator = require('./chatbotValidator');
 
 module.exports = {
   ...authValidator,
@@ -40,4 +41,5 @@ module.exports = {
   posValidator,
   bankAccountValidator,
   checkoutValidator,
+  chatbotValidator: chatbotValidator.chatbotValidator,
 };

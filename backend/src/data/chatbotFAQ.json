@@ -1,0 +1,314 @@
+{
+  "version": "2.0.0",
+  "description": "FAQ — Câu hỏi thường gặp về hệ thống quản lý siêu thị MiniMart (đầy đủ)",
+  "faqs": [
+    {
+      "id": 1,
+      "category": "Sản phẩm",
+      "question": "Làm sao để thêm sản phẩm mới?",
+      "answer": "Để thêm sản phẩm mới:\n1. Vào menu **Sản phẩm** → **Thêm sản phẩm**\n2. Điền thông tin: Tên, mã sản phẩm, thương hiệu, đơn vị tính\n3. Thêm biến thể (size, màu sắc) với giá bán và giá nhập\n4. Upload hình ảnh sản phẩm\n5. Chọn danh mục → Nhấn **Lưu**",
+      "keywords": ["thêm sản phẩm", "tạo sản phẩm", "sản phẩm mới", "add product"]
+    },
+    {
+      "id": 2,
+      "category": "Sản phẩm",
+      "question": "Cách nhập sản phẩm hàng loạt bằng CSV?",
+      "answer": "Nhập hàng loạt qua CSV:\n1. Tải file mẫu CSV từ trang **Sản phẩm** → **Xuất CSV**\n2. Điền thông tin theo format: name, code, brand, unit, variant_name, sku, cost_price, selling_price, weight, min_stock\n3. Vào **Sản phẩm** → **Nhập CSV** → Chọn file\n4. Hệ thống sẽ tự tạo sản phẩm và biến thể\n\n⚠️ File phải dùng encoding UTF-8.",
+      "keywords": ["nhập csv", "import", "hàng loạt", "excel", "csv"]
+    },
+    {
+      "id": 3,
+      "category": "Sản phẩm",
+      "question": "Cách chỉnh sửa thông tin sản phẩm?",
+      "answer": "Chỉnh sửa sản phẩm:\n1. Vào **Sản phẩm** → Tìm sản phẩm cần sửa\n2. Click vào tên sản phẩm hoặc nút **Sửa** (biểu tượng bút chì)\n3. Thay đổi thông tin: tên, mã, thương hiệu, mô tả, hình ảnh\n4. Cập nhật biến thể: giá bán, giá nhập, trọng lượng\n5. Nhấn **Cập nhật** để lưu\n\n⚠️ Mã sản phẩm (code) không được trùng với sản phẩm khác.",
+      "keywords": ["sửa sản phẩm", "chỉnh sửa", "cập nhật sản phẩm", "edit product"]
+    },
+    {
+      "id": 4,
+      "category": "Sản phẩm",
+      "question": "Làm sao xóa hoặc ẩn sản phẩm?",
+      "answer": "Ẩn/xóa sản phẩm:\n• **Ẩn sản phẩm**: Vào sản phẩm → Tắt trạng thái **Đang bán** → Sản phẩm sẽ không hiện trên POS nhưng vẫn giữ dữ liệu.\n• **Xóa sản phẩm**: Vào sản phẩm → Nhấn **Xóa** → Xác nhận.\n\n⚠️ Sản phẩm đã có trong đơn hàng chỉ nên ẩn, không xóa.\n⚠️ Xóa sản phẩm sẽ xóa luôn các biến thể và tồn kho liên quan.",
+      "keywords": ["xóa sản phẩm", "ẩn sản phẩm", "delete product", "ngừng bán"]
+    },
+    {
+      "id": 5,
+      "category": "Sản phẩm",
+      "question": "Biến thể sản phẩm là gì?",
+      "answer": "**Biến thể (Variant)** là các phiên bản khác nhau của cùng 1 sản phẩm:\n• VD: Sữa Vinamilk → Biến thể: Hộp 180ml, Hộp 1L, Thùng 48 hộp\n• Mỗi biến thể có: SKU riêng, giá bán riêng, giá nhập riêng, trọng lượng riêng\n• Tồn kho được quản lý theo từng biến thể\n\nKhi thêm sản phẩm, bạn phải tạo ít nhất 1 biến thể.",
+      "keywords": ["biến thể", "variant", "sku", "phiên bản sản phẩm"]
+    },
+    {
+      "id": 6,
+      "category": "Sản phẩm",
+      "question": "Cách upload hình ảnh sản phẩm?",
+      "answer": "Upload hình ảnh:\n1. Vào trang chi tiết sản phẩm\n2. Kéo thả hình ảnh hoặc click vào vùng upload\n3. Chọn file ảnh (JPG, PNG, max 5MB)\n4. Có thể upload nhiều ảnh cho 1 sản phẩm\n5. Nhấn **Lưu** để cập nhật\n\n✅ Hình ảnh sẽ được resize tự động.\n✅ Hỗ trợ format: JPG, JPEG, PNG, GIF, WebP.",
+      "keywords": ["hình ảnh", "upload", "ảnh sản phẩm", "image", "photo"]
+    },
+    {
+      "id": 7,
+      "category": "Đơn hàng",
+      "question": "Quy trình tạo đơn hàng?",
+      "answer": "Tạo đơn hàng tại POS:\n1. Vào **Bán hàng (POS)** → Chọn cửa hàng\n2. Tìm và thêm sản phẩm vào giỏ hàng (quét mã hoặc tìm tên)\n3. Chọn khách hàng (hoặc bỏ qua = khách lẻ)\n4. Áp dụng mã giảm giá (nếu có)\n5. Chọn phương thức thanh toán: Tiền mặt, Chuyển khoản, Thẻ\n6. Nhấn **Thanh toán** → In hóa đơn\n\n✅ Đơn hàng sẽ tự động trừ tồn kho.\n✅ Mã đơn tự động: DH000001, DH000002...",
+      "keywords": ["tạo đơn hàng", "bán hàng", "pos", "thanh toán", "order"]
+    },
+    {
+      "id": 8,
+      "category": "Đơn hàng",
+      "question": "Làm sao hủy đơn hàng?",
+      "answer": "Hủy đơn hàng:\n1. Vào **Đơn hàng** → Tìm đơn cần hủy\n2. Click vào đơn → Nhấn **Hủy đơn**\n3. Nhập lý do hủy → **Xác nhận**\n\n⚠️ Chỉ đơn trạng thái 'pending' mới hủy được.\n⚠️ Đơn đã hoàn thành (completed) không thể hủy.\n✅ Tồn kho sẽ tự động hoàn lại khi hủy đơn.",
+      "keywords": ["hủy đơn", "cancel order", "hủy đơn hàng"]
+    },
+    {
+      "id": 9,
+      "category": "Đơn hàng",
+      "question": "Trả hàng / hoàn tiền như thế nào?",
+      "answer": "Trả hàng (Return):\n1. Vào **Đơn hàng** → Tìm đơn hàng gốc\n2. Click **Trả hàng** → Chọn sản phẩm và số lượng trả\n3. Nhập lý do trả hàng\n4. Chọn hình thức hoàn tiền: Tiền mặt hoặc Chuyển khoản\n5. Nhấn **Xác nhận trả hàng**\n\n✅ Tồn kho sẽ tự động cộng lại.\n✅ Phiếu chi hoàn tiền tự động tạo trong Sổ quỹ.",
+      "keywords": ["trả hàng", "hoàn tiền", "return", "refund"]
+    },
+    {
+      "id": 10,
+      "category": "Đơn hàng",
+      "question": "Các trạng thái đơn hàng?",
+      "answer": "Hệ thống có 3 trạng thái đơn hàng:\n\n⏳ **Pending** (Chờ xử lý): Đơn vừa tạo, chưa thanh toán xong\n✅ **Completed** (Hoàn thành): Đã thanh toán và giao hàng thành công\n❌ **Cancelled** (Đã hủy): Đơn bị hủy, tồn kho đã hoàn lại\n\nLuồng: Pending → Completed hoặc Pending → Cancelled.",
+      "keywords": ["trạng thái đơn", "order status", "pending", "completed", "cancelled"]
+    },
+    {
+      "id": 11,
+      "category": "Đơn hàng",
+      "question": "Phương thức thanh toán có những loại nào?",
+      "answer": "Hệ thống hỗ trợ các phương thức thanh toán:\n\n💵 **cash** — Tiền mặt: Khách trả tiền trực tiếp tại quầy\n🏦 **bank_transfer** — Chuyển khoản: Qua tài khoản ngân hàng\n💳 **credit_card** — Thẻ tín dụng/ghi nợ: Quẹt thẻ tại POS\n\nKhi tạo đơn hàng, nhân viên chọn phương thức tương ứng.",
+      "keywords": ["thanh toán", "payment", "tiền mặt", "chuyển khoản", "thẻ"]
+    },
+    {
+      "id": 12,
+      "category": "Tồn kho",
+      "question": "Cách nhập hàng vào kho?",
+      "answer": "Nhập hàng vào kho:\n1. Vào **Tồn kho** → **Nhập hàng**\n2. Chọn cửa hàng nhập\n3. Chọn nhà cung cấp\n4. Thêm sản phẩm: chọn biến thể, nhập số lượng, giá nhập\n5. Nhấn **Xác nhận nhập hàng**\n\n✅ Hệ thống sẽ tự động cập nhật tồn kho và ghi lịch sử.\n✅ Mỗi lần nhập hàng tạo 1 phiếu nhập (inventory_transaction).",
+      "keywords": ["nhập hàng", "nhập kho", "receive", "nhập inventory"]
+    },
+    {
+      "id": 13,
+      "category": "Tồn kho",
+      "question": "Chuyển hàng giữa các cửa hàng như thế nào?",
+      "answer": "Chuyển hàng giữa cửa hàng:\n1. Vào **Tồn kho** → **Chuyển hàng**\n2. Chọn cửa hàng xuất và cửa hàng nhận\n3. Chọn sản phẩm và số lượng chuyển\n4. Nhấn **Xác nhận chuyển**\n\n✅ Tồn kho sẽ tự động trừ ở kho xuất và cộng ở kho nhận.\n⚠️ Số lượng chuyển không được vượt quá tồn kho hiện tại.",
+      "keywords": ["chuyển hàng", "transfer", "chuyển kho"]
+    },
+    {
+      "id": 14,
+      "category": "Tồn kho",
+      "question": "Kiểm kê tồn kho như thế nào?",
+      "answer": "Kiểm kê tồn kho:\n1. Vào **Tồn kho** → **Tra cứu tồn kho**\n2. Lọc theo cửa hàng, sản phẩm, hoặc trạng thái\n3. Xem thông tin: Số lượng tồn, số lượng đặt trước, tồn kho tối thiểu\n4. Sản phẩm có tồn dưới mức tối thiểu sẽ được đánh dấu ⚠️\n\n✅ Hỗ trợ xuất báo cáo tồn kho ra CSV.\n✅ Lọc nhanh sản phẩm sắp hết hàng.",
+      "keywords": ["kiểm kê", "tra cứu tồn", "stocktake", "inventory check"]
+    },
+    {
+      "id": 15,
+      "category": "Tồn kho",
+      "question": "Mức tồn kho tối thiểu (min stock) là gì?",
+      "answer": "**Min Stock Level** là mức tồn kho tối thiểu:\n• Khi tồn kho <= min stock → hệ thống cảnh báo ⚠️ sắp hết hàng\n• Giúp nhắc nhở nhập thêm hàng kịp thời\n\nThiết lập:\n1. Vào sản phẩm → Tab biến thể\n2. Điền giá trị **Tồn kho tối thiểu** cho từng biến thể tại từng cửa hàng\n3. Nhấn **Lưu**\n\nMặc định: min_stock = 10 cho tất cả biến thể.",
+      "keywords": ["min stock", "tồn tối thiểu", "mức tối thiểu", "cảnh báo hết hàng"]
+    },
+    {
+      "id": 16,
+      "category": "Sổ quỹ",
+      "question": "Quy trình duyệt phiếu thu chi?",
+      "answer": "Duyệt phiếu thu chi:\n1. Khi nhân viên tạo phiếu, trạng thái mặc định là **Chờ duyệt (pending)**\n2. Quản lý/Admin vào **Sổ quỹ** → Lọc trạng thái **Chờ duyệt**\n3. Click vào phiếu → Kiểm tra thông tin\n4. Nhấn **Duyệt** hoặc **Từ chối**\n\n⚠️ Phiếu đã duyệt không thể xóa cứng, chỉ xóa mềm.\n⚠️ Chỉ Admin và Manager mới có quyền duyệt.\n✅ Phiếu được duyệt sẽ chuyển sang trạng thái 'completed'.",
+      "keywords": ["duyệt phiếu", "phiếu thu", "phiếu chi", "approve", "thu chi", "cashbook"]
+    },
+    {
+      "id": 17,
+      "category": "Sổ quỹ",
+      "question": "Tạo phiếu thu chi như thế nào?",
+      "answer": "Tạo phiếu thu/chi:\n1. Vào **Sổ quỹ** → **Tạo phiếu mới**\n2. Chọn loại: **Phiếu thu** (direction=1) hoặc **Phiếu chi** (direction=-1)\n3. Chọn danh mục:\n   • Thu: Thu tiền bán hàng, Thu khác\n   • Chi: Chi mua hàng, Chi lương, Chi thuê mặt bằng, Chi khác\n4. Nhập số tiền, chọn phương thức thanh toán\n5. Chọn cửa hàng, nhập mô tả\n6. Nhấn **Lưu**\n\n✅ Mã phiếu tự động: PT-xxx (thu), PC-xxx (chi).\n✅ Phiếu mới luôn ở trạng thái 'pending', chờ duyệt.",
+      "keywords": ["tạo phiếu", "phiếu thu chi", "tạo thu chi", "create transaction"]
+    },
+    {
+      "id": 18,
+      "category": "Sổ quỹ",
+      "question": "Các loại phiếu thu chi?",
+      "answer": "Hệ thống có các loại phiếu:\n\n📈 **Phiếu thu** (transaction_direction = 1):\n• Thu tiền bán hàng\n• Thu tiền mặt từ khách\n• Thu khác\n\n📉 **Phiếu chi** (transaction_direction = -1):\n• Chi mua hàng / nhập hàng\n• Chi lương nhân viên\n• Chi thuê mặt bằng\n• Chi vận chuyển\n• Chi khác\n\nMỗi loại phiếu có mã danh mục riêng (cashbook_type).",
+      "keywords": ["loại phiếu", "danh mục thu chi", "cashbook type", "thu chi"]
+    },
+    {
+      "id": 19,
+      "category": "Khách hàng",
+      "question": "Cách thêm khách hàng mới?",
+      "answer": "Thêm khách hàng:\n1. Vào **Khách hàng** → **Thêm khách hàng**\n2. Điền thông tin:\n   • Họ tên, Số điện thoại (bắt buộc)\n   • Email, Giới tính, Ngày sinh\n   • Địa chỉ, Thành phố\n3. Chọn nhóm khách hàng (VIP, Thường...)\n4. Nhấn **Lưu**\n\n✅ Mã khách hàng tự động: KH000001, KH000002...\n⚠️ Số điện thoại và email không được trùng.",
+      "keywords": ["thêm khách", "tạo khách hàng", "customer mới", "add customer"]
+    },
+    {
+      "id": 20,
+      "category": "Khách hàng",
+      "question": "Quản lý nhóm khách hàng?",
+      "answer": "Nhóm khách hàng giúp phân loại và áp dụng ưu đãi:\n1. Vào **Khách hàng** → **Nhóm khách hàng**\n2. Tạo nhóm mới: VIP, Thân thiết, Thường...\n3. Thiết lập % giảm giá cho nhóm (VD: VIP giảm 10%)\n4. Gán khách hàng vào nhóm\n\n✅ Khi tạo đơn, hệ thống tự áp dụng giảm giá theo nhóm.\n✅ Bảng: subdim_customer_groups (id, name, discount_percentage).",
+      "keywords": ["nhóm khách", "customer group", "vip", "phân loại khách"]
+    },
+    {
+      "id": 21,
+      "category": "Khách hàng",
+      "question": "Tìm kiếm và lọc khách hàng?",
+      "answer": "Tìm kiếm khách hàng:\n1. Vào **Khách hàng** → Ô tìm kiếm\n2. Tìm theo: Tên, Số điện thoại, Email, Mã khách hàng\n3. Lọc nâng cao:\n   • Theo nhóm khách (VIP, Thường...)\n   • Theo thành phố\n   • Theo giới tính\n4. Sắp xếp: Tên, Ngày tạo, Số đơn hàng\n\n✅ Hỗ trợ tìm kiếm không dấu tiếng Việt (ILIKE).",
+      "keywords": ["tìm khách", "lọc khách", "search customer", "tra cứu khách"]
+    },
+    {
+      "id": 22,
+      "category": "Danh mục",
+      "question": "Cách tạo danh mục sản phẩm?",
+      "answer": "Tạo danh mục (Collection):\n1. Vào **Danh mục** → **Thêm danh mục**\n2. Nhập tên danh mục\n3. Chọn danh mục cha (nếu là danh mục con)\n4. Nhấn **Lưu**\n\n✅ Hệ thống hỗ trợ danh mục nhiều cấp (cây phân cấp).\nVD: Đồ uống → Nước ngọt → Nước có ga\n✅ Một sản phẩm có thể thuộc nhiều danh mục.",
+      "keywords": ["danh mục", "collection", "category", "tạo danh mục"]
+    },
+    {
+      "id": 23,
+      "category": "Danh mục",
+      "question": "Gán sản phẩm vào danh mục?",
+      "answer": "Gán sản phẩm vào danh mục:\n1. **Cách 1** — Từ trang sản phẩm:\n   • Vào sản phẩm → Chọn danh mục trong dropdown\n2. **Cách 2** — Từ trang danh mục:\n   • Vào danh mục → **Gán sản phẩm** → Chọn sản phẩm → Lưu\n\n✅ Mỗi sản phẩm có thể thuộc nhiều danh mục.\n✅ Bảng trung gian: bridge_product_collection(product_id, collection_id).",
+      "keywords": ["gán sản phẩm", "assign product", "thêm vào danh mục"]
+    },
+    {
+      "id": 24,
+      "category": "Bảng giá",
+      "question": "Cập nhật giá hàng loạt?",
+      "answer": "Cập nhật giá hàng loạt qua Bảng giá:\n1. Vào **Bảng giá (Catalog)**\n2. Lọc sản phẩm cần cập nhật\n3. Chọn nhiều sản phẩm → **Cập nhật hàng loạt**\n4. Chọn cách cập nhật:\n   • **Giá cố định**: Nhập giá mới cho tất cả\n   • **Theo phần trăm**: Tăng/giảm % so với giá hiện tại\n5. Nhấn **Áp dụng**\n\n⚠️ Giá bán phải lớn hơn giá nhập.",
+      "keywords": ["cập nhật giá", "bảng giá", "catalog", "giá hàng loạt", "price"]
+    },
+    {
+      "id": 25,
+      "category": "Bảng giá",
+      "question": "Sự khác nhau giữa giá nhập và giá bán?",
+      "answer": "Hai loại giá trong hệ thống:\n\n💰 **Giá nhập (cost_price)**: Giá mua từ nhà cung cấp, dùng để tính lợi nhuận.\n💰 **Giá bán (selling_price)**: Giá bán cho khách hàng, hiển thị trên POS.\n\n📊 **Lợi nhuận** = Giá bán - Giá nhập\n📊 **Biên lợi nhuận** = (Giá bán - Giá nhập) / Giá bán × 100%\n\n⚠️ Giá nhập chỉ Admin/Manager xem được, Staff không thấy.",
+      "keywords": ["giá nhập", "giá bán", "cost price", "selling price", "lợi nhuận"]
+    },
+    {
+      "id": 26,
+      "category": "Giảm giá",
+      "question": "Tạo chương trình giảm giá?",
+      "answer": "Tạo mã giảm giá:\n1. Vào **Giảm giá** → **Tạo mới**\n2. Nhập mã code (VD: SALE50, TETHOLIDAY)\n3. Chọn loại:\n   • **percentage**: Giảm theo % (VD: 10%)\n   • **fixed_amount**: Giảm số tiền cố định (VD: 50.000đ)\n4. Thiết lập: giá trị giảm, đơn tối thiểu, số lần sử dụng tối đa\n5. Chọn thời gian hiệu lực (ngày bắt đầu - ngày kết thúc)\n6. Nhấn **Lưu**\n\n✅ Khách hàng nhập mã khi thanh toán tại POS.",
+      "keywords": ["giảm giá", "discount", "mã giảm", "coupon", "khuyến mãi"]
+    },
+    {
+      "id": 27,
+      "category": "Giảm giá",
+      "question": "Giảm giá có áp dụng chồng được không?",
+      "answer": "Quy tắc giảm giá:\n• **Mã giảm giá (Discount Code)**: Chỉ áp dụng 1 mã cho 1 đơn hàng.\n• **Giảm giá nhóm khách hàng**: Tự động áp dụng theo nhóm VIP/Thân thiết.\n• **Chồng giảm giá**: Mã giảm giá + Giảm giá nhóm KH CÓ THỂ cộng dồn.\n\nVD: Khách VIP (giảm 10%) + Mã SALE50 (giảm 50.000đ)\n→ Giảm 10% tổng đơn, sau đó trừ thêm 50.000đ.",
+      "keywords": ["chồng giảm giá", "cộng dồn", "nhiều mã giảm"]
+    },
+    {
+      "id": 28,
+      "category": "Phân quyền",
+      "question": "Hệ thống có những vai trò nào?",
+      "answer": "Hệ thống có 3 vai trò:\n\n👑 **Administrator** (role_id=1):\n• Toàn quyền quản lý hệ thống\n• Quản lý nhân viên, phân quyền\n• Xem doanh thu, báo cáo, sổ quỹ\n• Duyệt phiếu thu chi\n\n👔 **Manager** (role_id=3):\n• Quản lý sản phẩm, tồn kho\n• Xem doanh thu, báo cáo, sổ quỹ\n• Duyệt phiếu thu chi\n• Không quản lý nhân viên\n\n🧑‍💼 **Sales Staff** (role_id=2):\n• Bán hàng tại POS\n• Tạo phiếu thu chi (chờ duyệt)\n• Xem sản phẩm, tồn kho, khách hàng\n• ❌ Không xem được doanh thu, sổ quỹ, xếp hạng",
+      "keywords": ["vai trò", "role", "quyền", "admin", "staff", "manager", "phân quyền"]
+    },
+    {
+      "id": 29,
+      "category": "Phân quyền",
+      "question": "Staff không xem được gì trong chatbot?",
+      "answer": "Nhân viên bán hàng (Staff) bị giới hạn:\n\n❌ **Không xem được** (cần Manager/Admin):\n• Doanh thu hôm nay / Tổng quan doanh thu\n• Top sản phẩm bán chạy\n• Top khách hàng mua nhiều\n• Tổng kết thu chi / Giao dịch sổ quỹ\n\n✅ **Xem được bình thường**:\n• Tìm kiếm sản phẩm, xem thông tin SP\n• Kiểm tra tồn kho\n• Tra cứu khách hàng\n• Xem đơn hàng, thống kê đơn\n• Danh sách cửa hàng\n• Hướng dẫn sử dụng (FAQ)",
+      "keywords": ["quyền staff", "giới hạn", "không xem được", "staff permission"]
+    },
+    {
+      "id": 30,
+      "category": "Cửa hàng",
+      "question": "Cách thêm cửa hàng / chi nhánh?",
+      "answer": "Thêm cửa hàng mới:\n1. Đăng nhập bằng tài khoản Admin\n2. Vào **Cài đặt** → **Cửa hàng** → **Thêm cửa hàng**\n3. Điền thông tin:\n   • Tên cửa hàng, Mã cửa hàng\n   • Địa chỉ, Thành phố\n   • Số điện thoại\n4. Nhấn **Lưu**\n\n✅ Mỗi cửa hàng có tồn kho riêng.\n✅ Nhân viên được gán vào cửa hàng qua store_id.",
+      "keywords": ["thêm cửa hàng", "chi nhánh mới", "add store", "tạo cửa hàng"]
+    },
+    {
+      "id": 31,
+      "category": "Cửa hàng",
+      "question": "Nhân viên được gán vào cửa hàng nào?",
+      "answer": "Gán nhân viên vào cửa hàng:\n• Mỗi nhân viên có 1 **store_id** xác định cửa hàng làm việc\n• Admin gán khi tạo tài khoản nhân viên\n• Nhân viên chỉ thao tác trên dữ liệu của cửa hàng được gán\n\nDanh sách hiện tại:\n• staff_hn1 → MiniMart Cầu Giấy (store 1)\n• staff_hn2 → MiniMart Hoàng Mai (store 2)\n• staff_hcm1 → SuperMart Quận 1 (store 3)\n• staff_hcm2 → MiniMart Quận 7 (store 4)\n• staff_wh → Kho Tổng TP.HCM (store 5)",
+      "keywords": ["gán nhân viên", "store assignment", "cửa hàng nhân viên"]
+    },
+    {
+      "id": 32,
+      "category": "Nhà cung cấp",
+      "question": "Quản lý nhà cung cấp?",
+      "answer": "Quản lý nhà cung cấp:\n1. Vào **Nhà cung cấp** → **Thêm mới**\n2. Điền thông tin:\n   • Tên công ty, Mã NCC\n   • Người liên hệ, SĐT, Email\n   • Địa chỉ, Mã số thuế\n   • Tài khoản ngân hàng\n3. Nhấn **Lưu**\n\n✅ NCC liên kết với phiếu nhập hàng.\n✅ Theo dõi lịch sử nhập hàng theo từng NCC.\n✅ Bảng: dim_suppliers(id, company_name, contact_name, phone, email...).",
+      "keywords": ["nhà cung cấp", "supplier", "NCC", "thêm nhà cung cấp"]
+    },
+    {
+      "id": 33,
+      "category": "Nhà cung cấp",
+      "question": "Tài khoản ngân hàng của nhà cung cấp?",
+      "answer": "Quản lý tài khoản ngân hàng:\n1. Vào **Ngân hàng** → **Thêm tài khoản**\n2. Điền: Tên ngân hàng, Số tài khoản, Chủ tài khoản, Chi nhánh\n3. Liên kết với Nhà cung cấp hoặc Cửa hàng\n4. Nhấn **Lưu**\n\n✅ Dùng để thanh toán chuyển khoản cho NCC.\n✅ Bảng: dim_bank_accounts(id, bank_name, account_number, account_holder...).",
+      "keywords": ["ngân hàng", "bank account", "tài khoản", "chuyển khoản NCC"]
+    },
+    {
+      "id": 34,
+      "category": "Báo cáo",
+      "question": "Xem báo cáo doanh thu ở đâu?",
+      "answer": "Xem báo cáo:\n1. **Dashboard**: Tổng quan doanh thu, biểu đồ xu hướng, top sản phẩm\n2. **Chatbot**: Hỏi trực tiếp:\n   • \"Doanh thu hôm nay bao nhiêu?\"\n   • \"Top 5 sản phẩm bán chạy\"\n   • \"Thống kê đơn hàng\"\n\n📊 Dashboard hiển thị:\n• Biểu đồ doanh thu theo ngày\n• Top sản phẩm bán chạy\n• Top khách hàng\n• Sản phẩm sắp hết hàng\n• Kênh bán hàng\n\n⚠️ Chỉ Admin và Manager mới xem được báo cáo doanh thu.",
+      "keywords": ["báo cáo", "report", "doanh thu", "dashboard", "thống kê"]
+    },
+    {
+      "id": 35,
+      "category": "Báo cáo",
+      "question": "Xuất dữ liệu ra file?",
+      "answer": "Xuất dữ liệu:\n1. Vào trang danh sách (Sản phẩm, Đơn hàng, Khách hàng...)\n2. Nhấn nút **Xuất CSV** hoặc **Xuất Excel**\n3. File sẽ tự động download\n\n✅ Hỗ trợ xuất:\n• Danh sách sản phẩm + biến thể\n• Danh sách đơn hàng\n• Báo cáo tồn kho\n• Danh sách khách hàng\n• Lịch sử thu chi\n\n⚠️ File CSV dùng encoding UTF-8 BOM để hiển thị tiếng Việt đúng trên Excel.",
+      "keywords": ["xuất file", "export", "csv", "excel", "download"]
+    },
+    {
+      "id": 36,
+      "category": "Hệ thống",
+      "question": "Quên mật khẩu thì làm sao?",
+      "answer": "Hiện tại hệ thống chưa hỗ trợ quên mật khẩu tự động.\n\n🔑 Liên hệ **Admin** để được reset mật khẩu.\n\nĐổi mật khẩu (khi đã đăng nhập):\n1. Click avatar góc phải → **Hồ sơ**\n2. Chọn **Đổi mật khẩu**\n3. Nhập mật khẩu cũ và mật khẩu mới (tối thiểu 6 ký tự)\n4. Nhấn **Cập nhật**\n\n⚠️ Mật khẩu được hash bằng bcrypt, không thể xem mật khẩu gốc.",
+      "keywords": ["mật khẩu", "password", "quên mật khẩu", "đổi mật khẩu", "reset"]
+    },
+    {
+      "id": 37,
+      "category": "Hệ thống",
+      "question": "Cách đăng nhập hệ thống?",
+      "answer": "Đăng nhập:\n1. Truy cập http://localhost:8080\n2. Nhập **Tên đăng nhập** và **Mật khẩu**\n3. Nhấn **Đăng nhập**\n\nTài khoản mặc định:\n• Admin: username = **admin**, password = **1**\n• Staff: username = **staff_hn1**, password = **1**\n\n⚠️ Sau 5 lần đăng nhập sai, tài khoản bị khóa 30 phút.\n✅ Token JWT hết hạn sau 24 giờ, cần đăng nhập lại.",
+      "keywords": ["đăng nhập", "login", "tài khoản", "username", "password"]
+    },
+    {
+      "id": 38,
+      "category": "Hệ thống",
+      "question": "Thêm nhân viên mới?",
+      "answer": "Thêm nhân viên (chỉ Admin):\n1. Vào **Quản lý nhân viên** → **Thêm mới**\n2. Điền thông tin:\n   • Username, Email (bắt buộc, không trùng)\n   • Họ tên, SĐT, Ngày sinh, Giới tính\n   • Chọn vai trò: Sales Staff hoặc Manager\n   • Chọn cửa hàng làm việc\n3. Mật khẩu mặc định: **1** (nhân viên nên đổi ngay)\n4. Nhấn **Lưu**\n\n⚠️ Chỉ Admin mới thêm được nhân viên.",
+      "keywords": ["thêm nhân viên", "tạo tài khoản", "add user", "employee"]
+    },
+    {
+      "id": 39,
+      "category": "Hệ thống",
+      "question": "Hệ thống chạy trên công nghệ gì?",
+      "answer": "Công nghệ sử dụng:\n\n🔧 **Backend**: Node.js 18 + Express.js\n🎨 **Frontend**: Vue 3 + Element Plus + Tailwind CSS\n🗄️ **Database**: PostgreSQL 14 (Snowflake Schema, 30 bảng)\n🐳 **Deploy**: Docker Compose (4 containers)\n📡 **API**: RESTful, 129 endpoints, JWT Auth\n📖 **Docs**: Swagger UI tại /api-docs\n\nPorts:\n• Frontend: 8080\n• Backend API: 5000\n• PostgreSQL: 5432\n• pgAdmin: 5050",
+      "keywords": ["công nghệ", "tech stack", "framework", "kiến trúc"]
+    },
+    {
+      "id": 40,
+      "category": "Hệ thống",
+      "question": "API documentation ở đâu?",
+      "answer": "Xem API documentation:\n1. Truy cập **http://localhost:5000/api-docs**\n2. Swagger UI hiển thị tất cả 129 API endpoints\n3. Có thể test API trực tiếp trên Swagger\n\nCấu trúc API:\n• Base URL: http://localhost:5000/api\n• Auth: Bearer Token (JWT)\n• Format: JSON\n• Endpoints chính: /auth, /products, /orders, /inventory, /customers, /chatbot...",
+      "keywords": ["api", "swagger", "documentation", "api-docs", "endpoint"]
+    },
+    {
+      "id": 41,
+      "category": "POS",
+      "question": "Cách sử dụng POS bán hàng?",
+      "answer": "Sử dụng POS:\n1. Vào **Bán hàng** → Chọn cửa hàng\n2. Giao diện POS gồm:\n   • **Bên trái**: Danh sách sản phẩm (tìm, lọc, quét mã)\n   • **Bên phải**: Giỏ hàng\n3. Click sản phẩm để thêm vào giỏ\n4. Điều chỉnh số lượng, xóa sản phẩm\n5. Chọn khách hàng (tùy chọn)\n6. Nhập mã giảm giá (tùy chọn)\n7. Chọn thanh toán → Hoàn tất\n\n✅ Hỗ trợ quét barcode bằng scanner.",
+      "keywords": ["pos", "bán hàng", "quầy thu ngân", "point of sale"]
+    },
+    {
+      "id": 42,
+      "category": "POS",
+      "question": "In hóa đơn sau khi bán hàng?",
+      "answer": "In hóa đơn:\n1. Sau khi thanh toán thành công, popup **In hóa đơn** tự động hiện\n2. Click **In** → Hóa đơn gửi đến máy in\n3. Nội dung hóa đơn:\n   • Tên cửa hàng, địa chỉ\n   • Mã đơn hàng\n   • Danh sách sản phẩm, số lượng, đơn giá\n   • Tổng tiền, giảm giá, thanh toán\n   • Ngày giờ, nhân viên phụ trách\n\n✅ Có thể in lại từ trang Chi tiết đơn hàng.",
+      "keywords": ["in hóa đơn", "print receipt", "hóa đơn", "invoice"]
+    },
+    {
+      "id": 43,
+      "category": "Chatbot",
+      "question": "Chatbot có thể làm gì?",
+      "answer": "Chatbot MiniMart hỗ trợ:\n\n📦 **Sản phẩm**: Tìm kiếm, đếm SP, xem chi tiết, cảnh báo hết hàng\n💰 **Doanh thu**: Doanh thu hôm nay, tổng quan, top bán chạy (Admin/Manager)\n📋 **Tồn kho**: Kiểm tra tồn, tồn theo cửa hàng\n🧾 **Đơn hàng**: Đơn gần đây, thống kê đơn\n👥 **Khách hàng**: Đếm, tìm kiếm, top KH (Admin/Manager)\n💵 **Sổ quỹ**: Tổng kết thu chi, giao dịch gần đây (Admin/Manager)\n🏪 **Cửa hàng**: Danh sách cửa hàng\n📖 **FAQ**: Hướng dẫn sử dụng hệ thống\n\n✅ Hỗ trợ tiếng Việt có dấu và không dấu.",
+      "keywords": ["chatbot", "trợ lý", "chức năng chatbot", "bot"]
+    },
+    {
+      "id": 44,
+      "category": "Chatbot",
+      "question": "Chatbot có dùng AI không?",
+      "answer": "Chatbot hoạt động **offline 100%**, không cần kết nối AI bên ngoài:\n\n🔍 **Nhận diện ý định**: Dùng keyword matching (regex tiếng Việt)\n🗄️ **Dữ liệu**: Truy vấn trực tiếp PostgreSQL (real-time)\n🔒 **Phân quyền**: RBAC — Staff không xem được doanh thu, sổ quỹ\n⚡ **Tốc độ**: 1-10ms mỗi câu hỏi (không cần chờ API)\n\nChatbot xử lý 20 loại câu hỏi khác nhau, trả dữ liệu thật từ cơ sở dữ liệu.",
+      "keywords": ["AI", "offline", "cách hoạt động", "keyword matching"]
+    }
+  ]
+}

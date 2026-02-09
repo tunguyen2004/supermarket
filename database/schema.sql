@@ -661,6 +661,26 @@ WHERE ct.status = 'approved'
 GROUP BY ct.date_key, ct.store_id, s.name;
 
 -- =========================
+-- CHATBOT: CHAT HISTORY
+-- =========================
+CREATE TABLE fact_chat_history (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES dim_users(id) ON DELETE CASCADE,
+    session_id      VARCHAR(100) NOT NULL,
+    user_message    TEXT NOT NULL,
+    bot_reply       TEXT NOT NULL,
+    intent          VARCHAR(50),
+    response_type   VARCHAR(50),
+    processing_time_ms INTEGER DEFAULT 0,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_chat_history_user_id ON fact_chat_history(user_id);
+CREATE INDEX idx_chat_history_session_id ON fact_chat_history(session_id);
+CREATE INDEX idx_chat_history_created_at ON fact_chat_history(created_at DESC);
+CREATE INDEX idx_chat_history_intent ON fact_chat_history(intent);
+
+-- =========================
 -- COMPLETION MESSAGE
 -- =========================
 DO $$ 
@@ -668,7 +688,7 @@ BEGIN
     RAISE NOTICE '✅ Schema created successfully!';
     RAISE NOTICE '   📊 Sub-dimensions: 11 tables (regions, cities, categories, brands, units, etc.)';
     RAISE NOTICE '   📦 Dimensions: 10 tables (stores, suppliers, customers, products, users, etc.)';
-    RAISE NOTICE '   📈 Fact tables: 8 tables (orders, inventory, cashbook, shipments, etc.)';
+    RAISE NOTICE '   📈 Fact tables: 9 tables (orders, inventory, cashbook, shipments, chat_history, etc.)';
     RAISE NOTICE '   👁️  Views: 1 (vw_daily_cashbook_summary)';
-    RAISE NOTICE '   🔗 Total: 30 tables + indexes';
+    RAISE NOTICE '   🔗 Total: 31 tables + indexes';
 END $$;

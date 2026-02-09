@@ -40,6 +40,7 @@ services:
       DB_SSL: "false"
       JWT_SECRET: your_jwt_secret_key_change_in_production
       JWT_EXPIRE: 7d
+      GEMINI_API_KEY: AIzaSyB_pT_WxXhlXxVRbbUPQgyLpOCR0YRtTHc
     ports:
       - "5000:5000"
     volumes:

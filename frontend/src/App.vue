@@ -1,9 +1,14 @@
 <!-- src/App.vue -->
 <template>
-  <router-view />
+  <div>
+    <router-view />
+    <!-- Chatbot Widget - hiển thị ở mọi trang -->
+    <ChatbotWidget />
+  </div>
 </template>
 
 <script setup>
+import ChatbotWidget from './components/ChatbotWidget.vue'
 // Không cần logic ở đây vì router sẽ xử lý layout và view
 // Các global state hoặc logic (nếu có) nên được quản lý trong store hoặc composables
 </script>
