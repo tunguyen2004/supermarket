@@ -1,11 +1,11 @@
-const db = require('../config/database');
+const db = require("../config/database");
 
 /**
  * ============================================================================
  *                    REPORT SERVICE - BÁO CÁO CUỐI NGÀY
  * ============================================================================
  * Service xử lý các API báo cáo doanh thu và dữ liệu bán hàng
- * 
+ *
  * Endpoints:
  * - GET /api/reports/daily - Doanh thu theo ngày
  * - GET /api/reports/actual-revenue - Thống kê thực thu
@@ -16,13 +16,13 @@ const db = require('../config/database');
 /**
  * GET /api/reports/daily
  * Lấy thống kê doanh thu theo ngày/khoảng thời gian
- * 
+ *
  * Query params:
  * - from: Ngày bắt đầu (YYYY-MM-DD), mặc định: hôm nay
  * - to: Ngày kết thúc (YYYY-MM-DD), mặc định: hôm nay
  * - staff_id: Lọc theo nhân viên (optional)
  * - store_id: Lọc theo cửa hàng (optional)
- * 
+ *
  * Response:
  * - summary: Tổng quan doanh thu
  * - by_date: Chi tiết theo ngày
@@ -34,12 +34,12 @@ const getDailyReport = async (req, res) => {
     const { from, to, staff_id, store_id } = req.query;
 
     // Default to today
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const fromDate = from || today;
     const toDate = to || today;
 
     // Build filters
-    const filters = ['o.date_key BETWEEN $1 AND $2'];
+    const filters = ["o.date_key BETWEEN $1 AND $2"];
     const params = [fromDate, toDate];
     let paramIndex = 2;
 
@@ -59,10 +59,11 @@ const getDailyReport = async (req, res) => {
       params.push(parseInt(store_id));
     }
 
-    const whereClause = filters.join(' AND ');
+    const whereClause = filters.join(" AND ");
 
     // 1. Summary totals
-    const summaryResult = await db.query(`
+    const summaryResult = await db.query(
+      `
       SELECT 
         COUNT(*) as total_orders,
         COALESCE(SUM(o.subtotal), 0) as gross_revenue,
@@ -74,7 +75,9 @@ const getDailyReport = async (req, res) => {
         COUNT(DISTINCT o.customer_id) as unique_customers
       FROM fact_orders o
       WHERE ${whereClause}
-    `, params);
+    `,
+      params,
+    );
 
     const summary = {
       total_orders: parseInt(summaryResult.rows[0]?.total_orders || 0),
@@ -88,7 +91,8 @@ const getDailyReport = async (req, res) => {
     };
 
     // 2. Group by date
-    const byDateResult = await db.query(`
+    const byDateResult = await db.query(
+      `
       SELECT 
         o.date_key as date,
         COUNT(*) as order_count,
@@ -99,10 +103,13 @@ const getDailyReport = async (req, res) => {
       WHERE ${whereClause}
       GROUP BY o.date_key
       ORDER BY o.date_key ASC
-    `, params);
+    `,
+      params,
+    );
 
     // 3. Group by payment method
-    const byPaymentResult = await db.query(`
+    const byPaymentResult = await db.query(
+      `
       SELECT 
         o.payment_method,
         COUNT(*) as order_count,
@@ -111,10 +118,13 @@ const getDailyReport = async (req, res) => {
       WHERE ${whereClause}
       GROUP BY o.payment_method
       ORDER BY total_amount DESC
-    `, params);
+    `,
+      params,
+    );
 
     // 4. Group by staff
-    const byStaffResult = await db.query(`
+    const byStaffResult = await db.query(
+      `
       SELECT 
         COALESCE(s.full_name, 'Không xác định') as staff_name,
         o.created_by as staff_id,
@@ -125,60 +135,64 @@ const getDailyReport = async (req, res) => {
       WHERE ${whereClause}
       GROUP BY o.created_by, s.full_name
       ORDER BY total_amount DESC
-    `, params);
+    `,
+      params,
+    );
 
     // 5. Returns/Refunds in period
-    const returnsResult = await db.query(`
+    const returnsResult = await db.query(
+      `
       SELECT 
         COUNT(*) as return_count,
-        COALESCE(SUM(o.refund_amount), 0) as refund_total
+        COALESCE(SUM(o.final_amount), 0) as refund_total
       FROM fact_orders o
       WHERE o.date_key BETWEEN $1 AND $2
         AND o.status = 'returned'
-      ${staff_id ? `AND o.created_by = ${parseInt(staff_id)}` : ''}
-      ${store_id ? `AND o.store_id = ${parseInt(store_id)}` : ''}
-    `, [fromDate, toDate]);
+      ${staff_id ? `AND o.created_by = ${parseInt(staff_id)}` : ""}
+      ${store_id ? `AND o.store_id = ${parseInt(store_id)}` : ""}
+    `,
+      [fromDate, toDate],
+    );
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy báo cáo doanh thu thành công',
+      message: "Lấy báo cáo doanh thu thành công",
       data: {
         period: {
           from: fromDate,
-          to: toDate
+          to: toDate,
         },
         summary,
-        by_date: byDateResult.rows.map(row => ({
+        by_date: byDateResult.rows.map((row) => ({
           date: row.date,
           order_count: parseInt(row.order_count),
           gross_revenue: parseFloat(row.gross),
           discount: parseFloat(row.discount),
-          net_revenue: parseFloat(row.net)
+          net_revenue: parseFloat(row.net),
         })),
-        by_payment_method: byPaymentResult.rows.map(row => ({
+        by_payment_method: byPaymentResult.rows.map((row) => ({
           method: row.payment_method,
           order_count: parseInt(row.order_count),
-          total_amount: parseFloat(row.total_amount)
+          total_amount: parseFloat(row.total_amount),
         })),
-        by_staff: byStaffResult.rows.map(row => ({
+        by_staff: byStaffResult.rows.map((row) => ({
           staff_id: row.staff_id,
           staff_name: row.staff_name,
           order_count: parseInt(row.order_count),
-          total_amount: parseFloat(row.total_amount)
+          total_amount: parseFloat(row.total_amount),
         })),
         returns: {
           return_count: parseInt(returnsResult.rows[0]?.return_count || 0),
-          refund_total: parseFloat(returnsResult.rows[0]?.refund_total || 0)
-        }
-      }
+          refund_total: parseFloat(returnsResult.rows[0]?.refund_total || 0),
+        },
+      },
     });
-
   } catch (error) {
-    console.error('Get daily report error:', error);
+    console.error("Get daily report error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy báo cáo doanh thu',
-      error: error.message
+      message: "Lỗi khi lấy báo cáo doanh thu",
+      error: error.message,
     });
   }
 };
@@ -186,13 +200,13 @@ const getDailyReport = async (req, res) => {
 /**
  * GET /api/reports/actual-revenue
  * Lấy thống kê thực thu theo phương thức thanh toán
- * 
+ *
  * Query params:
  * - from: Ngày bắt đầu (YYYY-MM-DD), mặc định: hôm nay
  * - to: Ngày kết thúc (YYYY-MM-DD), mặc định: hôm nay
  * - staff_id: Lọc theo nhân viên (optional)
  * - store_id: Lọc theo cửa hàng (optional)
- * 
+ *
  * Response:
  * - summary: Tổng thực thu
  * - by_method: Chi tiết theo phương thức
@@ -202,13 +216,13 @@ const getActualRevenue = async (req, res) => {
   try {
     const { from, to, staff_id, store_id } = req.query;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const fromDate = from || today;
     const toDate = to || today;
 
     // Build base filters
-    let staffFilter = '';
-    let storeFilter = '';
+    let staffFilter = "";
+    let storeFilter = "";
     if (staff_id) {
       staffFilter = `AND o.created_by = ${parseInt(staff_id)}`;
     }
@@ -217,7 +231,8 @@ const getActualRevenue = async (req, res) => {
     }
 
     // 1. Paid orders by payment method
-    const paidResult = await db.query(`
+    const paidResult = await db.query(
+      `
       SELECT 
         o.payment_method,
         COUNT(*) as order_count,
@@ -230,60 +245,74 @@ const getActualRevenue = async (req, res) => {
         ${storeFilter}
       GROUP BY o.payment_method
       ORDER BY paid_amount DESC
-    `, [fromDate, toDate]);
+    `,
+      [fromDate, toDate],
+    );
 
     // 2. Pending payments
-    const pendingResult = await db.query(`
+    const pendingResult = await db.query(
+      `
       SELECT 
         COUNT(*) as order_count,
-        COALESCE(SUM(o.final_amount - COALESCE(o.paid_amount, 0)), 0) as pending_amount
+        COALESCE(SUM(o.final_amount), 0) as pending_amount
       FROM fact_orders o
       WHERE o.date_key BETWEEN $1 AND $2
         AND o.status NOT IN ('cancelled', 'returned')
         AND o.payment_status IN ('pending', 'partial')
         ${staffFilter}
         ${storeFilter}
-    `, [fromDate, toDate]);
+    `,
+      [fromDate, toDate],
+    );
 
-    // 3. Refunds in period
-    const refundResult = await db.query(`
+    // 3. Refunds in period (returned orders)
+    const refundResult = await db.query(
+      `
       SELECT 
         COUNT(*) as refund_count,
-        COALESCE(SUM(o.refund_amount), 0) as refund_amount
+        COALESCE(SUM(o.final_amount), 0) as refund_amount
       FROM fact_orders o
       WHERE o.date_key BETWEEN $1 AND $2
-        AND o.refund_amount > 0
+        AND o.status = 'returned'
         ${staffFilter}
         ${storeFilter}
-    `, [fromDate, toDate]);
+    `,
+      [fromDate, toDate],
+    );
 
     // Calculate totals
-    const totalPaid = paidResult.rows.reduce((sum, row) => sum + parseFloat(row.paid_amount), 0);
+    const totalPaid = paidResult.rows.reduce(
+      (sum, row) => sum + parseFloat(row.paid_amount),
+      0,
+    );
     const totalPending = parseFloat(pendingResult.rows[0]?.pending_amount || 0);
     const totalRefund = parseFloat(refundResult.rows[0]?.refund_amount || 0);
 
     // 4. Cashbook income (additional income)
-    const cashbookResult = await db.query(`
+    const cashbookResult = await db.query(
+      `
       SELECT 
-        COALESCE(SUM(CASE WHEN ct.type = 'income' THEN t.amount ELSE 0 END), 0) as income,
-        COALESCE(SUM(CASE WHEN ct.type = 'expense' THEN t.amount ELSE 0 END), 0) as expense
+        COALESCE(SUM(CASE WHEN ct.transaction_direction = 1 THEN t.amount ELSE 0 END), 0) as income,
+        COALESCE(SUM(CASE WHEN ct.transaction_direction = -1 THEN t.amount ELSE 0 END), 0) as expense
       FROM fact_cashbook_transactions t
       JOIN subdim_cashbook_types ct ON t.cashbook_type_id = ct.id
       WHERE t.date_key BETWEEN $1 AND $2
         AND t.status = 'approved'
-        ${store_id ? `AND t.store_id = ${parseInt(store_id)}` : ''}
-    `, [fromDate, toDate]);
+        ${store_id ? `AND t.store_id = ${parseInt(store_id)}` : ""}
+    `,
+      [fromDate, toDate],
+    );
 
     const cashbookIncome = parseFloat(cashbookResult.rows[0]?.income || 0);
     const cashbookExpense = parseFloat(cashbookResult.rows[0]?.expense || 0);
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy báo cáo thực thu thành công',
+      message: "Lấy báo cáo thực thu thành công",
       data: {
         period: {
           from: fromDate,
-          to: toDate
+          to: toDate,
         },
         summary: {
           total_paid: totalPaid,
@@ -293,30 +322,30 @@ const getActualRevenue = async (req, res) => {
           cashbook_income: cashbookIncome,
           cashbook_expense: cashbookExpense,
           cashbook_net: cashbookIncome - cashbookExpense,
-          grand_total: totalPaid - totalRefund + cashbookIncome - cashbookExpense
+          grand_total:
+            totalPaid - totalRefund + cashbookIncome - cashbookExpense,
         },
-        by_method: paidResult.rows.map(row => ({
+        by_method: paidResult.rows.map((row) => ({
           method: row.payment_method,
           order_count: parseInt(row.order_count),
-          amount: parseFloat(row.paid_amount)
+          amount: parseFloat(row.paid_amount),
         })),
         pending: {
           order_count: parseInt(pendingResult.rows[0]?.order_count || 0),
-          amount: totalPending
+          amount: totalPending,
         },
         refunds: {
           count: parseInt(refundResult.rows[0]?.refund_count || 0),
-          amount: totalRefund
-        }
-      }
+          amount: totalRefund,
+        },
+      },
     });
-
   } catch (error) {
-    console.error('Get actual revenue error:', error);
+    console.error("Get actual revenue error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy báo cáo thực thu',
-      error: error.message
+      message: "Lỗi khi lấy báo cáo thực thu",
+      error: error.message,
     });
   }
 };
@@ -324,7 +353,7 @@ const getActualRevenue = async (req, res) => {
 /**
  * GET /api/reports/sold-products
  * Lấy danh sách sản phẩm đã bán trong khoảng thời gian
- * 
+ *
  * Query params:
  * - from: Ngày bắt đầu (YYYY-MM-DD), mặc định: hôm nay
  * - to: Ngày kết thúc (YYYY-MM-DD), mặc định: hôm nay
@@ -332,46 +361,46 @@ const getActualRevenue = async (req, res) => {
  * - store_id: Lọc theo cửa hàng (optional)
  * - page: Trang (default: 1)
  * - limit: Số lượng (default: 50)
- * - sort_by: Cột sắp xếp (quantity, revenue, profit) 
+ * - sort_by: Cột sắp xếp (quantity, revenue, profit)
  * - sort_order: ASC/DESC
- * 
+ *
  * Response:
  * - products: Danh sách sản phẩm đã bán
  * - summary: Tổng hợp
  */
 const getSoldProducts = async (req, res) => {
   try {
-    const { 
-      from, 
-      to, 
-      staff_id, 
+    const {
+      from,
+      to,
+      staff_id,
       store_id,
-      page = 1, 
+      page = 1,
       limit = 50,
-      sort_by = 'quantity',
-      sort_order = 'DESC'
+      sort_by = "quantity",
+      sort_order = "DESC",
     } = req.query;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const fromDate = from || today;
     const toDate = to || today;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     // Validate sort
-    const validSorts = ['quantity', 'revenue', 'orders', 'profit'];
-    const sortColumn = validSorts.includes(sort_by) ? sort_by : 'quantity';
-    const sortDir = sort_order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const validSorts = ["quantity", "revenue", "orders", "profit"];
+    const sortColumn = validSorts.includes(sort_by) ? sort_by : "quantity";
+    const sortDir = sort_order.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     const sortMap = {
-      quantity: 'total_quantity',
-      revenue: 'total_revenue',
-      orders: 'order_count',
-      profit: 'total_profit'
+      quantity: "total_quantity",
+      revenue: "total_revenue",
+      orders: "order_count",
+      profit: "total_profit",
     };
 
     // Build filters
-    let staffFilter = '';
-    let storeFilter = '';
+    let staffFilter = "";
+    let storeFilter = "";
     if (staff_id) {
       staffFilter = `AND o.created_by = ${parseInt(staff_id)}`;
     }
@@ -380,7 +409,8 @@ const getSoldProducts = async (req, res) => {
     }
 
     // Get sold products with aggregations
-    const productsResult = await db.query(`
+    const productsResult = await db.query(
+      `
       SELECT 
         p.id as product_id,
         p.name as product_name,
@@ -389,10 +419,10 @@ const getSoldProducts = async (req, res) => {
         v.variant_name,
         COUNT(DISTINCT o.id) as order_count,
         SUM(oi.quantity) as total_quantity,
-        SUM(oi.subtotal) as gross_revenue,
-        SUM(oi.discount_amount) as total_discount,
-        SUM(oi.subtotal - oi.discount_amount) as total_revenue,
-        SUM(oi.tax_amount) as total_tax,
+        SUM(oi.line_subtotal) as gross_revenue,
+        SUM(oi.discount_per_item) as total_discount,
+        SUM(oi.line_total) as total_revenue,
+        0 as total_tax,
         AVG(oi.unit_price) as avg_price,
         SUM((oi.unit_price - COALESCE(v.cost_price, 0)) * oi.quantity) as total_profit
       FROM fact_order_items oi
@@ -407,10 +437,13 @@ const getSoldProducts = async (req, res) => {
       GROUP BY p.id, p.name, v.sku, v.id, v.variant_name
       ORDER BY ${sortMap[sortColumn]} ${sortDir}
       LIMIT $3 OFFSET $4
-    `, [fromDate, toDate, parseInt(limit), offset]);
+    `,
+      [fromDate, toDate, parseInt(limit), offset],
+    );
 
     // Get total count
-    const countResult = await db.query(`
+    const countResult = await db.query(
+      `
       SELECT COUNT(DISTINCT (p.id, v.id)) as total
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
@@ -421,18 +454,21 @@ const getSoldProducts = async (req, res) => {
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-    `, [fromDate, toDate]);
+    `,
+      [fromDate, toDate],
+    );
 
     const total = parseInt(countResult.rows[0]?.total || 0);
 
     // Summary totals
-    const summaryResult = await db.query(`
+    const summaryResult = await db.query(
+      `
       SELECT 
         SUM(oi.quantity) as total_quantity,
-        SUM(oi.subtotal) as gross_revenue,
-        SUM(oi.discount_amount) as total_discount,
-        SUM(oi.subtotal - oi.discount_amount) as net_revenue,
-        SUM(oi.tax_amount) as total_tax,
+        SUM(oi.line_subtotal) as gross_revenue,
+        SUM(oi.discount_per_item) as total_discount,
+        SUM(oi.line_total) as net_revenue,
+        0 as total_tax,
         SUM((oi.unit_price - COALESCE(v.cost_price, 0)) * oi.quantity) as total_profit
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
@@ -443,15 +479,17 @@ const getSoldProducts = async (req, res) => {
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-    `, [fromDate, toDate]);
+    `,
+      [fromDate, toDate],
+    );
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy danh sách sản phẩm đã bán thành công',
+      message: "Lấy danh sách sản phẩm đã bán thành công",
       data: {
         period: {
           from: fromDate,
-          to: toDate
+          to: toDate,
         },
         products: productsResult.rows.map((row, index) => ({
           stt: offset + index + 1,
@@ -467,32 +505,33 @@ const getSoldProducts = async (req, res) => {
           net_revenue: parseFloat(row.total_revenue || 0),
           tax: parseFloat(row.total_tax || 0),
           avg_price: parseFloat(row.avg_price || 0),
-          profit: parseFloat(row.total_profit || 0)
+          profit: parseFloat(row.total_profit || 0),
         })),
         summary: {
           total_quantity: parseInt(summaryResult.rows[0]?.total_quantity || 0),
           gross_revenue: parseFloat(summaryResult.rows[0]?.gross_revenue || 0),
-          total_discount: parseFloat(summaryResult.rows[0]?.total_discount || 0),
+          total_discount: parseFloat(
+            summaryResult.rows[0]?.total_discount || 0,
+          ),
           net_revenue: parseFloat(summaryResult.rows[0]?.net_revenue || 0),
           total_tax: parseFloat(summaryResult.rows[0]?.total_tax || 0),
-          total_profit: parseFloat(summaryResult.rows[0]?.total_profit || 0)
-        }
+          total_profit: parseFloat(summaryResult.rows[0]?.total_profit || 0),
+        },
       },
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
         totalPages: Math.ceil(total / parseInt(limit)),
-        hasMore: offset + productsResult.rows.length < total
-      }
+        hasMore: offset + productsResult.rows.length < total,
+      },
     });
-
   } catch (error) {
-    console.error('Get sold products error:', error);
+    console.error("Get sold products error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách sản phẩm đã bán',
-      error: error.message
+      message: "Lỗi khi lấy danh sách sản phẩm đã bán",
+      error: error.message,
     });
   }
 };
@@ -500,12 +539,12 @@ const getSoldProducts = async (req, res) => {
 /**
  * GET /api/reports/daily/print
  * Lấy dữ liệu đầy đủ để in báo cáo cuối ngày
- * 
+ *
  * Query params:
  * - date: Ngày báo cáo (YYYY-MM-DD), mặc định: hôm nay
  * - staff_id: Lọc theo nhân viên (optional)
  * - store_id: Lọc theo cửa hàng (optional)
- * 
+ *
  * Response:
  * - report_info: Thông tin báo cáo
  * - revenue_summary: Tổng hợp doanh thu
@@ -517,11 +556,11 @@ const getDailyPrintReport = async (req, res) => {
   try {
     const { date, staff_id, store_id } = req.query;
 
-    const reportDate = date || new Date().toISOString().split('T')[0];
+    const reportDate = date || new Date().toISOString().split("T")[0];
 
     // Build filters
-    let staffFilter = '';
-    let storeFilter = '';
+    let staffFilter = "";
+    let storeFilter = "";
     if (staff_id) {
       staffFilter = `AND o.created_by = ${parseInt(staff_id)}`;
     }
@@ -530,7 +569,8 @@ const getDailyPrintReport = async (req, res) => {
     }
 
     // 1. Revenue summary
-    const revenueResult = await db.query(`
+    const revenueResult = await db.query(
+      `
       SELECT 
         COUNT(*) as total_orders,
         COALESCE(SUM(o.subtotal), 0) as gross_revenue,
@@ -546,10 +586,13 @@ const getDailyPrintReport = async (req, res) => {
         AND o.payment_status = 'paid'
         ${staffFilter}
         ${storeFilter}
-    `, [reportDate]);
+    `,
+      [reportDate],
+    );
 
     // 2. Actual revenue by payment method
-    const paymentResult = await db.query(`
+    const paymentResult = await db.query(
+      `
       SELECT 
         o.payment_method,
         COUNT(*) as order_count,
@@ -562,27 +605,33 @@ const getDailyPrintReport = async (req, res) => {
         ${storeFilter}
       GROUP BY o.payment_method
       ORDER BY amount DESC
-    `, [reportDate]);
+    `,
+      [reportDate],
+    );
 
     // 3. Returns
-    const returnsResult = await db.query(`
+    const returnsResult = await db.query(
+      `
       SELECT 
         COUNT(*) as count,
-        COALESCE(SUM(o.refund_amount), 0) as amount
+        COALESCE(SUM(o.final_amount), 0) as amount
       FROM fact_orders o
       WHERE o.date_key = $1
         AND o.status = 'returned'
         ${staffFilter}
         ${storeFilter}
-    `, [reportDate]);
+    `,
+      [reportDate],
+    );
 
     // 4. Top 10 products
-    const topProductsResult = await db.query(`
+    const topProductsResult = await db.query(
+      `
       SELECT 
         p.name as product_name,
         v.sku,
         SUM(oi.quantity) as quantity,
-        SUM(oi.subtotal - oi.discount_amount) as revenue
+        SUM(oi.line_total) as revenue
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
       JOIN dim_product_variants v ON oi.variant_id = v.id
@@ -595,10 +644,13 @@ const getDailyPrintReport = async (req, res) => {
       GROUP BY p.id, p.name, v.sku
       ORDER BY quantity DESC
       LIMIT 10
-    `, [reportDate]);
+    `,
+      [reportDate],
+    );
 
     // 5. Orders list
-    const ordersResult = await db.query(`
+    const ordersResult = await db.query(
+      `
       SELECT 
         o.id,
         o.order_code as code,
@@ -613,88 +665,101 @@ const getDailyPrintReport = async (req, res) => {
         ${staffFilter}
         ${storeFilter}
       ORDER BY o.created_at ASC
-    `, [reportDate]);
+    `,
+      [reportDate],
+    );
 
     // Get staff name if filtered
-    let staffName = 'Tất cả nhân viên';
+    let staffName = "Tất cả nhân viên";
     if (staff_id) {
       const staffResult = await db.query(
-        'SELECT full_name FROM dim_users WHERE id = $1',
-        [parseInt(staff_id)]
+        "SELECT full_name FROM dim_users WHERE id = $1",
+        [parseInt(staff_id)],
       );
-      staffName = staffResult.rows[0]?.full_name || 'Không xác định';
+      staffName = staffResult.rows[0]?.full_name || "Không xác định";
     }
 
     // Get store name if filtered
-    let storeName = 'Tất cả cửa hàng';
+    let storeName = "Tất cả cửa hàng";
     if (store_id) {
       const storeResult = await db.query(
-        'SELECT name FROM dim_stores WHERE id = $1',
-        [parseInt(store_id)]
+        "SELECT name FROM dim_stores WHERE id = $1",
+        [parseInt(store_id)],
       );
-      storeName = storeResult.rows[0]?.name || 'Không xác định';
+      storeName = storeResult.rows[0]?.name || "Không xác định";
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy báo cáo in thành công',
+      message: "Lấy báo cáo in thành công",
       data: {
         report_info: {
           date: reportDate,
           generated_at: new Date().toISOString(),
           staff_filter: staffName,
           store_filter: storeName,
-          generated_by: req.user?.full_name || 'System'
+          generated_by: req.user?.full_name || "System",
         },
         revenue_summary: {
           total_orders: parseInt(revenueResult.rows[0]?.total_orders || 0),
           gross_revenue: parseFloat(revenueResult.rows[0]?.gross_revenue || 0),
-          total_discount: parseFloat(revenueResult.rows[0]?.total_discount || 0),
+          total_discount: parseFloat(
+            revenueResult.rows[0]?.total_discount || 0,
+          ),
           shipping_fee: parseFloat(revenueResult.rows[0]?.shipping_fee || 0),
           tax_amount: parseFloat(revenueResult.rows[0]?.tax_amount || 0),
           net_revenue: parseFloat(revenueResult.rows[0]?.net_revenue || 0),
-          avg_order_value: parseFloat(revenueResult.rows[0]?.avg_order_value || 0),
-          unique_customers: parseInt(revenueResult.rows[0]?.unique_customers || 0)
+          avg_order_value: parseFloat(
+            revenueResult.rows[0]?.avg_order_value || 0,
+          ),
+          unique_customers: parseInt(
+            revenueResult.rows[0]?.unique_customers || 0,
+          ),
         },
         actual_revenue: {
-          by_payment: paymentResult.rows.map(row => ({
+          by_payment: paymentResult.rows.map((row) => ({
             method: row.payment_method,
             order_count: parseInt(row.order_count),
-            amount: parseFloat(row.amount)
+            amount: parseFloat(row.amount),
           })),
-          total: paymentResult.rows.reduce((sum, row) => sum + parseFloat(row.amount), 0),
+          total: paymentResult.rows.reduce(
+            (sum, row) => sum + parseFloat(row.amount),
+            0,
+          ),
           returns: {
             count: parseInt(returnsResult.rows[0]?.count || 0),
-            amount: parseFloat(returnsResult.rows[0]?.amount || 0)
+            amount: parseFloat(returnsResult.rows[0]?.amount || 0),
           },
-          net_actual: paymentResult.rows.reduce((sum, row) => sum + parseFloat(row.amount), 0) 
-            - parseFloat(returnsResult.rows[0]?.amount || 0)
+          net_actual:
+            paymentResult.rows.reduce(
+              (sum, row) => sum + parseFloat(row.amount),
+              0,
+            ) - parseFloat(returnsResult.rows[0]?.amount || 0),
         },
         top_products: topProductsResult.rows.map((row, index) => ({
           rank: index + 1,
           product_name: row.product_name,
           sku: row.sku,
           quantity: parseInt(row.quantity),
-          revenue: parseFloat(row.revenue)
+          revenue: parseFloat(row.revenue),
         })),
-        orders_list: ordersResult.rows.map(row => ({
+        orders_list: ordersResult.rows.map((row) => ({
           id: row.id,
           code: row.code,
           time: row.created_at,
           customer: row.customer_name,
           payment_method: row.payment_method,
           status: row.status,
-          amount: parseFloat(row.amount)
-        }))
-      }
+          amount: parseFloat(row.amount),
+        })),
+      },
     });
-
   } catch (error) {
-    console.error('Get daily print report error:', error);
+    console.error("Get daily print report error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy báo cáo in',
-      error: error.message
+      message: "Lỗi khi lấy báo cáo in",
+      error: error.message,
     });
   }
 };
@@ -714,16 +779,15 @@ const getStaffList = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy danh sách nhân viên thành công',
-      data: result.rows
+      message: "Lấy danh sách nhân viên thành công",
+      data: result.rows,
     });
-
   } catch (error) {
-    console.error('Get staff list error:', error);
+    console.error("Get staff list error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách nhân viên',
-      error: error.message
+      message: "Lỗi khi lấy danh sách nhân viên",
+      error: error.message,
     });
   }
 };
@@ -733,5 +797,5 @@ module.exports = {
   getActualRevenue,
   getSoldProducts,
   getDailyPrintReport,
-  getStaffList
+  getStaffList,
 };

@@ -17,7 +17,7 @@ import apiClient from "./apiClient";
  */
 export const searchProducts = async (params = {}) => {
   try {
-    const response = await apiClient.get("/inventory/lookup/search", {
+    const response = await apiClient.get("/api/inventory/lookup/search", {
       params,
     });
     return response.data;
@@ -34,7 +34,7 @@ export const searchProducts = async (params = {}) => {
  */
 export const getProductInventoryDetail = async (productId) => {
   try {
-    const response = await apiClient.get(`/inventory/lookup/${productId}`);
+    const response = await apiClient.get(`/api/inventory/lookup/${productId}`);
     return response.data;
   } catch (error) {
     console.error("Error fetching product inventory detail:", error);

@@ -240,6 +240,7 @@ const getOrderDetail = async (req, res) => {
         foi.discount_per_item,
         foi.line_subtotal,
         foi.line_total,
+        foi.custom_product_name,
         dp.name as product_name,
         dp.code as product_code,
         dpv.sku,
@@ -255,7 +256,8 @@ const getOrderDetail = async (req, res) => {
 
     const formattedItems = itemsResult.rows.map((item) => ({
       id: item.id,
-      product: item.product_name || "Unknown Product",
+      product:
+        item.product_name || item.custom_product_name || "Unknown Product",
       quantity: parseFloat(item.quantity),
       unit_price: parseFloat(item.unit_price),
       discount_per_item: parseFloat(item.discount_per_item) || 0,

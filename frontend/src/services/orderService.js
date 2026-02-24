@@ -85,6 +85,12 @@ const orderService = {
     );
     return response.data;
   },
+
+  // Lấy thông tin hóa đơn để in
+  async getOrderInvoice(id) {
+    const response = await apiClient.get(`/api/orders/${id}/invoice`);
+    return response.data;
+  },
 };
 
 export default orderService;
