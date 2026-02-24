@@ -6,6 +6,7 @@
       :activeId="activeTabId"
       :searchResults="productSearchResults"
       :isSearching="isSearchingProducts"
+      :storeName="currentStoreName"
       @add="addNewOrder"
       @select="selectOrder"
       @close="closeOrder"
@@ -174,41 +175,38 @@
           <div class="footer-right">
             <!-- Draft Orders -->
             <button
-              class="footer-btn"
+              class="footer-icon-btn"
               @click="showDraftListModal = true"
               :disabled="isLoadingDrafts"
+              title="Đơn nháp"
             >
-              <div class="footer-btn-icon">
-                <i
-                  class="fa-regular fa-file"
-                  :class="{ 'fa-spin': isLoadingDrafts }"
-                ></i>
-              </div>
-              <div class="footer-btn-text">
-                <div class="footer-btn-title">
-                  Đơn nháp ({{ draftOrders.length }})
-                </div>
-                <div class="footer-btn-subtitle">Xem danh sách</div>
-              </div>
+              <i
+                class="fa-regular fa-file"
+                :class="{ 'fa-spin': isLoadingDrafts }"
+              ></i>
+              <span class="footer-icon-label">Đơn nháp</span>
+              <span v-if="draftOrders.length" class="footer-badge">{{
+                draftOrders.length
+              }}</span>
             </button>
 
             <!-- Save Draft Button -->
             <button
-              class="footer-btn"
+              class="footer-icon-btn"
               @click="saveDraft"
               :disabled="currentOrder.items.length === 0"
+              title="Lưu nháp (F7)"
             >
-              <div class="footer-btn-icon">
-                <i class="fa-regular fa-save"></i>
-              </div>
-              <div class="footer-btn-text">
-                <div class="footer-btn-title">Lưu nháp</div>
-                <div class="footer-btn-subtitle">F7</div>
-              </div>
+              <i class="fa-regular fa-floppy-disk"></i>
+              <span class="footer-icon-label">Lưu nháp</span>
             </button>
 
+            <!-- Divider -->
+            <div class="footer-divider"></div>
+
+            <!-- Staff -->
             <div class="footer-staff">
-              <label class="footer-label">Nhân viên:</label>
+              <i class="fa-regular fa-user footer-staff-icon"></i>
               <select class="footer-select" v-model="selectedStaff">
                 <option value="admin">Admin dohuyy</option>
                 <option value="staff1">Nhân viên 1</option>
@@ -216,10 +214,14 @@
               </select>
             </div>
 
-            <button class="footer-custom-btn">
-              <span class="mr-2">➕</span>
-              Sản phẩm tuỳ chỉnh
-              <kbd class="kbd ml-2">F2</kbd>
+            <!-- Divider -->
+            <div class="footer-divider"></div>
+
+            <!-- Custom Product -->
+            <button class="footer-accent-btn" title="Sản phẩm tuỳ chỉnh (F2)">
+              <i class="fa-solid fa-plus"></i>
+              <span>Sản phẩm tuỳ chỉnh</span>
+              <kbd class="footer-kbd">F2</kbd>
             </button>
           </div>
         </div>
@@ -441,7 +443,11 @@ import posService, {
 const orderTabs = ref([{ id: 1, name: "Đơn 1" }]);
 const activeTabId = ref(1);
 const orderCounter = ref(1);
-const currentStoreId = ref(1); // TODO: Get from user context
+
+// Get store_id from logged-in user
+const user = JSON.parse(localStorage.getItem("user") || "{}");
+const currentStoreId = ref(user.store_id || 1);
+const currentStoreName = ref(user.store_name || "");
 
 // Product search state
 const productSearchResults = ref([]);
@@ -1640,57 +1646,152 @@ const handleKeyPress = async (e) => {
 .footer-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
+/* Footer Icon Buttons */
+.footer-icon-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #475569;
+  font-size: 1.15rem;
+  min-width: 64px;
+}
+
+.footer-icon-btn:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #1e40af;
+}
+
+.footer-icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.footer-icon-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.footer-icon-btn:hover .footer-icon-label {
+  color: #1e40af;
+}
+
+.footer-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* Footer Divider */
+.footer-divider {
+  width: 1px;
+  height: 32px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+/* Footer Staff */
 .footer-staff {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.footer-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
+.footer-staff-icon {
+  color: #94a3b8;
+  font-size: 0.9rem;
 }
 
 .footer-select {
   padding: 8px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: #1e293b;
   outline: none;
   cursor: pointer;
   transition: all 0.2s;
-  background: white;
+  background: #f8fafc;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+.footer-select:hover {
+  border-color: #cbd5e1;
+  background-color: #f1f5f9;
 }
 
 .footer-select:focus {
   border-color: #1e40af;
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.1);
 }
 
-.footer-custom-btn {
+/* Footer Accent Button */
+.footer-accent-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 16px;
   background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
-  align-items: center;
   box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
+  white-space: nowrap;
 }
 
-.footer-custom-btn:hover {
+.footer-accent-btn:hover {
   background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
   box-shadow: 0 4px 12px rgba(30, 64, 175, 0.35);
   transform: translateY(-1px);
+}
+
+.footer-accent-btn i {
+  font-size: 0.8rem;
+}
+
+.footer-kbd {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .kbd {

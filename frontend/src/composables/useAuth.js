@@ -30,6 +30,8 @@ export function useAuth() {
         role_id: payload.role_id,
         role_name: payload.role_name,
         role,
+        store_id: payload.store_id,
+        store_name: payload.store_name,
       };
 
       localStorage.setItem("token", token);
@@ -62,6 +64,8 @@ export function useAuth() {
         role_id: payload.role_id,
         role_name: payload.role_name,
         role,
+        store_id: payload.store_id,
+        store_name: payload.store_name,
       };
 
       localStorage.setItem("token", token);

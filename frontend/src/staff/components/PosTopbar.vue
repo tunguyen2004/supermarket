@@ -139,7 +139,7 @@
         class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 transition cursor-pointer"
       >
         <span class="text-xl"><i class="fa-solid fa-location-dot"></i></span>
-        <span class="text-xs font-medium">Cửa hàng chính</span>
+        <span class="text-xs font-medium">{{ props.storeName }}</span>
       </div>
 
       <!-- Status Icons -->
@@ -198,11 +198,12 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/useAuth";
 
-defineProps({
+const props = defineProps({
   tabs: { type: Array, required: true },
   activeId: { type: [String, Number], required: true },
   searchResults: { type: Array, default: () => [] },
   isSearching: { type: Boolean, default: false },
+  storeName: { type: String, default: "Cửa hàng chính" },
 });
 
 const emit = defineEmits([
