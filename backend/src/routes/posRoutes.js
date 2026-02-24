@@ -384,4 +384,115 @@ router.post(
  */
 router.get("/payment-methods", verifyToken, posService.getPaymentMethods);
 
+/**
+ * @swagger
+ * /api/pos/qr/generate:
+ *   post:
+ *     summary: Tạo mã QR thanh toán chuyển khoản (VietQR)
+ *     tags: [POS]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Số tiền thanh toán
+ *               order_info:
+ *                 type: string
+ *                 description: Mã đơn hàng
+ *     responses:
+ *       200:
+ *         description: Tạo QR thành công
+ */
+router.post("/qr/generate", verifyToken, posService.generateQRCode);
+
+/**
+ * @swagger
+ * /api/pos/webhook/sepay:
+ *   post:
+ *     summary: Webhook nhận thông báo giao dịch từ Sepay.vn
+ *     tags: [POS]
+ *     description: |
+ *       Endpoint nhận webhook từ Sepay.vn khi có giao dịch ngân hàng.
+ *       Sepay gửi POST request mỗi khi phát hiện giao dịch mới.
+ *       Xác thực bằng API Key trong header Authorization.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id: { type: integer }
+ *               gateway: { type: string }
+ *               transferType: { type: string, enum: [in, out] }
+ *               transferAmount: { type: number }
+ *               content: { type: string }
+ *               accountNumber: { type: string }
+ *               referenceCode: { type: string }
+ *               transactionDate: { type: string }
+ *     responses:
+ *       200:
+ *         description: Webhook nhận thành công
+ */
+router.post(
+  "/webhook/sepay",
+  (req, res, next) => {
+    // Log webhook request cho debug
+    const authHeader = req.headers.authorization || "";
+    console.log(
+      `[Sepay Webhook] Received webhook, auth: ${authHeader ? authHeader.substring(0, 30) + "..." : "NONE"}`,
+    );
+
+    // Xác thực Sepay webhook key (nếu có cấu hình SEPAY_WEBHOOK_KEY)
+    // Nếu không có SEPAY_WEBHOOK_KEY, chấp nhận mọi request (dùng với ngrok)
+    const webhookKey = process.env.SEPAY_WEBHOOK_KEY;
+    if (webhookKey) {
+      const providedKey = authHeader.replace(/^(Apikey|Bearer)\s+/i, "").trim();
+      if (providedKey !== webhookKey) {
+        console.warn("[Sepay Webhook] Invalid webhook key, rejecting");
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+    }
+    next();
+  },
+  posService.handleSepayWebhook,
+);
+
+/**
+ * @swagger
+ * /api/pos/qr/check-payment:
+ *   get:
+ *     summary: Kiểm tra trạng thái thanh toán QR
+ *     tags: [POS]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: amount
+ *         required: true
+ *         schema: { type: number }
+ *       - in: query
+ *         name: account_number
+ *         required: true
+ *         schema: { type: string }
+ *       - in: query
+ *         name: transfer_content
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Trạng thái thanh toán
+ */
+router.get("/qr/check-payment", verifyToken, posService.checkQRPayment);
+
 module.exports = router;

@@ -135,6 +135,101 @@
               </div>
             </div>
 
+            <!-- QR Code Payment Section -->
+            <div v-if="activeMethod === 'bank_qr'" class="qr-section">
+              <div v-if="isLoadingQR" class="qr-loading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>Đang tạo mã QR...</span>
+              </div>
+
+              <div v-else-if="qrData" class="qr-content">
+                <!-- QR Image -->
+                <div class="qr-image-wrapper">
+                  <img
+                    :src="qrData.qr_url"
+                    alt="QR Code thanh toán"
+                    class="qr-image"
+                  />
+                </div>
+
+                <!-- Bank Info -->
+                <div class="qr-bank-info">
+                  <div class="qr-info-row">
+                    <span class="qr-info-label">Ngân hàng</span>
+                    <span class="qr-info-value">{{ qrData.bank_name }}</span>
+                  </div>
+                  <div class="qr-info-row">
+                    <span class="qr-info-label">Số tài khoản</span>
+                    <span class="qr-info-value account-number">{{
+                      qrData.account_number
+                    }}</span>
+                  </div>
+                  <div class="qr-info-row">
+                    <span class="qr-info-label">Chủ tài khoản</span>
+                    <span class="qr-info-value">{{ qrData.account_name }}</span>
+                  </div>
+                  <div class="qr-info-row">
+                    <span class="qr-info-label">Số tiền</span>
+                    <span class="qr-info-value amount">{{
+                      formatPrice(qrData.amount)
+                    }}</span>
+                  </div>
+                  <div class="qr-info-row">
+                    <span class="qr-info-label">Nội dung CK</span>
+                    <span class="qr-info-value transfer-content">{{
+                      qrData.transfer_content
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- Confirm Payment -->
+                <div v-if="!qrPaymentConfirmed" class="qr-status">
+                  <div class="qr-status-icon">
+                    <i class="fa-solid fa-clock"></i>
+                  </div>
+                  <span>Đang chờ khách hàng quét mã...</span>
+                  <div class="qr-polling-dot"></div>
+                </div>
+                <div v-else class="qr-status qr-status-success">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span v-if="qrTransactionInfo">
+                    Đã nhận {{ formatPrice(qrTransactionInfo.amount) }} từ
+                    {{ qrTransactionInfo.gateway }}
+                  </span>
+                  <span v-else>Đã xác nhận nhận tiền thành công</span>
+                </div>
+
+                <div class="qr-actions">
+                  <button
+                    v-if="!qrPaymentConfirmed"
+                    class="qr-confirm-btn"
+                    @click="confirmQRPayment"
+                  >
+                    <i class="fa-solid fa-check-circle"></i>
+                    Xác nhận thủ công
+                  </button>
+
+                  <!-- Refresh button -->
+                  <button
+                    class="qr-refresh-btn"
+                    @click="loadQRCode"
+                    :disabled="isLoadingQR"
+                  >
+                    <i class="fa-solid fa-rotate"></i>
+                    Tạo lại mã QR
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="qr-error">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>{{ qrErrorMessage || "Không thể tạo mã QR" }}</span>
+                <button class="qr-retry-btn" @click="loadQRCode">
+                  Thử lại
+                </button>
+              </div>
+            </div>
+
             <!-- Hint Bar -->
             <div class="hint-bar">
               <div class="hint-item">
@@ -184,6 +279,7 @@ import {
   nextTick,
 } from "vue";
 import { ElMessage } from "element-plus";
+import posService from "@/services/posService";
 
 const props = defineProps({
   modelValue: {
@@ -217,12 +313,18 @@ const isProcessing = ref(false);
 const amountInputRef = ref(null);
 const showBeneficiaryModal = ref(false);
 const selectedBeneficiary = ref(null);
+const isLoadingQR = ref(false);
+const qrData = ref(null);
+const qrPaymentConfirmed = ref(false);
+const qrErrorMessage = ref("");
+const qrPollingTimer = ref(null);
+const qrTransactionInfo = ref(null);
 
 const paymentMethods = [
   { id: "cash", label: "Tiền mặt", icon: "fa-solid fa-money-bill-wave" },
+  { id: "bank_qr", label: "QR Code", icon: "fa-solid fa-qrcode" },
   { id: "bank", label: "Chuyển khoản", icon: "fa-solid fa-building-columns" },
   { id: "card", label: "Thanh toán thẻ", icon: "fa-solid fa-credit-card" },
-  { id: "settings", label: "Thiết lập thanh toán", icon: "fa-solid fa-gear" },
 ];
 
 // Computed
@@ -233,6 +335,9 @@ const remaining = computed(() => {
 });
 
 const canComplete = computed(() => {
+  if (activeMethod.value === "bank_qr") {
+    return qrPaymentConfirmed.value && !isProcessing.value;
+  }
   return amountReceived.value >= totalPayable.value && !isProcessing.value;
 });
 
@@ -260,8 +365,15 @@ const selectMethod = (methodId) => {
   activeMethod.value = methodId;
   selectedChip.value = null;
 
-  if (methodId === "settings") {
-    ElMessage.info("Tính năng đang phát triển");
+  // Auto-fill exact amount for non-cash methods
+  if (methodId !== "cash") {
+    amountReceived.value = totalPayable.value;
+    amountReceivedDisplay.value = formatPrice(totalPayable.value);
+  }
+
+  // Auto-generate QR code when selecting QR method
+  if (methodId === "bank_qr") {
+    loadQRCode();
     return;
   }
 
@@ -269,6 +381,79 @@ const selectMethod = (methodId) => {
   nextTick(() => {
     amountInputRef.value?.focus();
   });
+};
+
+const loadQRCode = async () => {
+  isLoadingQR.value = true;
+  qrData.value = null;
+  qrPaymentConfirmed.value = false;
+  qrErrorMessage.value = "";
+  qrTransactionInfo.value = null;
+  stopQRPolling();
+
+  try {
+    const response = await posService.generateQRCode({
+      amount: totalPayable.value,
+      order_info: props.orderData?.order_code || `POS-${Date.now()}`,
+    });
+    qrData.value = response.data;
+    // Bắt đầu polling kiểm tra thanh toán từ Sepay
+    startQRPolling();
+  } catch (error) {
+    console.error("QR generation failed:", error);
+    qrErrorMessage.value =
+      error.message || "Không thể tạo mã QR. Vui lòng thử lại.";
+    ElMessage.error(qrErrorMessage.value);
+  } finally {
+    isLoadingQR.value = false;
+  }
+};
+
+// Sepay auto-polling: kiểm tra mỗi 3 giây
+const startQRPolling = () => {
+  stopQRPolling();
+  qrPollingTimer.value = setInterval(async () => {
+    if (!qrData.value || qrPaymentConfirmed.value) {
+      stopQRPolling();
+      return;
+    }
+    try {
+      const result = await posService.checkQRPayment({
+        amount: qrData.value.amount,
+        account_number: qrData.value.account_number,
+        transfer_content: qrData.value.transfer_content,
+      });
+      if (result.data?.paid) {
+        // Tự động xác nhận thanh toán!
+        qrPaymentConfirmed.value = true;
+        qrTransactionInfo.value = result.data.transaction;
+        amountReceived.value = totalPayable.value;
+        amountReceivedDisplay.value = formatPrice(totalPayable.value);
+        stopQRPolling();
+        ElMessage.success({
+          message: "Đã nhận được chuyển khoản thành công!",
+          duration: 5000,
+        });
+      }
+    } catch (err) {
+      // Im lặng, tiếp tục polling
+    }
+  }, 3000);
+};
+
+const stopQRPolling = () => {
+  if (qrPollingTimer.value) {
+    clearInterval(qrPollingTimer.value);
+    qrPollingTimer.value = null;
+  }
+};
+
+const confirmQRPayment = () => {
+  qrPaymentConfirmed.value = true;
+  amountReceived.value = totalPayable.value;
+  amountReceivedDisplay.value = formatPrice(totalPayable.value);
+  stopQRPolling();
+  ElMessage.success("Xác nhận thanh toán QR thành công!");
 };
 
 const selectQuickAmount = (amount) => {
@@ -327,12 +512,13 @@ const handleComplete = async () => {
 
 const handleClose = () => {
   if (isProcessing.value) return;
+  stopQRPolling();
   emit("cancel");
   isOpen.value = false;
 };
 
 const cyclePaymentMethod = () => {
-  const methods = ["cash", "bank", "card"];
+  const methods = ["cash", "bank_qr", "bank", "card"];
   const currentIndex = methods.indexOf(activeMethod.value);
   const nextIndex = (currentIndex + 1) % methods.length;
   selectMethod(methods[nextIndex]);
@@ -388,6 +574,12 @@ watch(
       amountReceivedDisplay.value = formatPrice(totalPayable.value);
       selectedChip.value = totalPayable.value;
       activeMethod.value = "cash";
+      qrData.value = null;
+      isLoadingQR.value = false;
+      qrPaymentConfirmed.value = false;
+      qrErrorMessage.value = "";
+      qrTransactionInfo.value = null;
+      stopQRPolling();
 
       // Focus input after opening
       nextTick(() => {
@@ -404,6 +596,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleKeyPress);
+  stopQRPolling();
 });
 </script>
 
@@ -877,5 +1070,235 @@ onBeforeUnmount(() => {
   .payment-methods {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ===== QR Code Section ===== */
+.qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.qr-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+.qr-loading i {
+  font-size: 28px;
+  color: #3b82f6;
+}
+
+.qr-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.qr-image-wrapper {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.qr-image {
+  width: 220px;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.qr-bank-info {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.qr-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.qr-info-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.qr-info-value {
+  color: #1e293b;
+  font-weight: 600;
+  text-align: right;
+}
+
+.qr-info-value.account-number {
+  font-family: "Courier New", monospace;
+  letter-spacing: 0.5px;
+  color: #3b82f6;
+}
+
+.qr-info-value.amount {
+  color: #059669;
+  font-size: 15px;
+}
+
+.qr-info-value.transfer-content {
+  color: #7c3aed;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+}
+
+.qr-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+}
+.qr-status-success {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+.qr-status-success i {
+  color: #059669;
+  font-size: 18px;
+}
+.qr-status-icon {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.qr-polling-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  margin-left: auto;
+  animation: pollingBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes pollingBlink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.qr-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.qr-confirm-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #059669, #10b981);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+}
+.qr-confirm-btn:hover {
+  background: linear-gradient(135deg, #047857, #059669);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+  transform: translateY(-1px);
+}
+.qr-confirm-btn:active {
+  transform: translateY(0);
+}
+
+.qr-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.qr-refresh-btn:hover {
+  background: #dbeafe;
+}
+.qr-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qr-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px 0;
+  color: #ef4444;
+  font-size: 14px;
+}
+.qr-error i {
+  font-size: 28px;
+}
+
+.qr-retry-btn {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  background: #ef4444;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.qr-retry-btn:hover {
+  background: #dc2626;
 }
 </style>

@@ -15,7 +15,30 @@ const db = require("../config/database");
  * - DELETE /api/pos/orders/draft/:id - Xóa đơn tạm
  * - GET /api/pos/orders/:id/receipt - In hóa đơn POS
  * - POST /api/pos/discounts/validate - Kiểm tra mã giảm giá
+ * - POST /api/pos/qr/generate - Tạo mã QR thanh toán (VietQR)
+ * - POST /api/pos/webhook/sepay - Nhận webhook từ Sepay.vn
+ * - GET /api/pos/qr/check-payment - Kiểm tra trạng thái thanh toán QR
  */
+
+// ============================================================================
+//   SEPAY INTEGRATION - Lưu trụ giao dịch đã xác nhận từ webhook
+// ============================================================================
+// In-memory store cho các giao dịch đã nhận được (TTL 30 phút)
+const confirmedPayments = new Map();
+const PAYMENT_TTL = 30 * 60 * 1000; // 30 phút
+
+// Dọn dẹp giao dịch cũ mỗi 5 phút
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, payment] of confirmedPayments) {
+      if (now - payment.timestamp > PAYMENT_TTL) {
+        confirmedPayments.delete(key);
+      }
+    }
+  },
+  5 * 60 * 1000,
+);
 
 /**
  * POST /api/pos/checkout
@@ -92,6 +115,33 @@ const checkout = async (req, res) => {
     const orderItems = [];
 
     for (const item of items) {
+      // Handle custom products (no variant_id)
+      if (item.is_custom || !item.variant_id) {
+        const unitPrice = item.unit_price || 0;
+        const itemSubtotal = unitPrice * item.quantity;
+        const itemDiscount = item.discount_amount || 0;
+        const itemTotal = itemSubtotal - itemDiscount;
+
+        calculatedSubtotal += itemSubtotal;
+
+        orderItems.push({
+          variant_id: null,
+          product_id: null,
+          product_name: item.name || "Sản phẩm tuỳ chỉnh",
+          variant_name: null,
+          quantity: item.quantity,
+          unit_price: unitPrice,
+          cost_price: 0,
+          subtotal: itemSubtotal,
+          discount_amount: itemDiscount,
+          tax_amount: 0,
+          total: itemTotal,
+          is_custom: true,
+          custom_product_name: item.name || "Sản phẩm tuỳ chỉnh",
+        });
+        continue;
+      }
+
       // Get product/variant info
       const variantResult = await client.query(
         `
@@ -196,17 +246,23 @@ const checkout = async (req, res) => {
       await client.query(
         `
         INSERT INTO fact_order_items (
-          order_id, variant_id, quantity, unit_price, discount_per_item
-        ) VALUES ($1, $2, $3, $4, $5)
+          order_id, variant_id, quantity, unit_price, discount_per_item, custom_product_name
+        ) VALUES ($1, $2, $3, $4, $5, $6)
       `,
         [
           orderId,
-          item.variant_id,
+          item.variant_id || null,
           item.quantity,
           item.unit_price,
           item.discount_amount || 0,
+          item.custom_product_name || null,
         ],
       );
+
+      // Skip inventory updates for custom products
+      if (item.is_custom || !item.variant_id) {
+        continue;
+      }
 
       // Update inventory
       await client.query(
@@ -1344,6 +1400,393 @@ const createEmptyDraft = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/pos/qr/generate
+ * Tạo mã QR thanh toán chuyển khoản ngân hàng (VietQR)
+ *
+ * Body:
+ * - amount: Số tiền cần thanh toán
+ * - order_info: Mã đơn hàng hoặc thông tin thanh toán
+ *
+ * Response: { qr_url, bank_name, account_number, account_name, amount, transfer_content }
+ */
+const generateQRCode = async (req, res) => {
+  try {
+    const { amount, order_info } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Số tiền thanh toán không hợp lệ",
+      });
+    }
+
+    // BIN mapping cho VietQR (nguồn: https://api.vietqr.io/v2/banks)
+    const bankBins = {
+      VCB: "970436",
+      TCB: "970407",
+      ACB: "970416",
+      VTB: "970415",
+      BID: "970418",
+      MBB: "970422",
+      VPB: "970432",
+      TPB: "970423",
+      STB: "970403",
+      SCB: "970429",
+      SHB: "970443",
+      MSB: "970426",
+      HDB: "970437",
+      OCB: "970448",
+      LPB: "970449",
+      SEA: "970440",
+      NAB: "970428",
+      EIB: "970431",
+      VIB: "970441",
+      ABB: "970425",
+      AGRI: "970405",
+      BAB: "970409",
+      CAKE: "546034",
+      CBB: "970444",
+      CIMB: "422589",
+      COOPBANK: "970446",
+      DOB: "970406",
+      GPB: "970408",
+      NCB: "970419",
+      PGB: "970430",
+      PVCB: "970412",
+      SGICB: "970400",
+      SHBVN: "970424",
+      TIMO: "963388",
+      VAB: "970427",
+      VBB: "970433",
+      MB: "970422",
+      BIDV: "970418",
+      CTG: "970415",
+    };
+
+    // Lấy thông tin tài khoản ngân hàng từ DB
+    let bankConfig;
+    try {
+      // Ưu tiên lấy tài khoản mặc định, active, theo store_id của user
+      const storeId = req.user?.store_id || null;
+      const bankResult = await db.query(
+        `SELECT account_name, account_number, bank_name, bank_code, branch
+         FROM dim_bank_accounts
+         WHERE is_active = true
+         ${storeId ? "AND (store_id = $1 OR store_id IS NULL)" : ""}
+         ORDER BY ${storeId ? "CASE WHEN store_id = $1 THEN 0 ELSE 1 END," : ""} is_default DESC, id ASC
+         LIMIT 1`,
+        storeId ? [storeId] : [],
+      );
+
+      if (bankResult.rows.length > 0) {
+        const bank = bankResult.rows[0];
+        const bankBin =
+          bankBins[bank.bank_code.toUpperCase()] || bank.bank_code;
+        bankConfig = {
+          bankId: bankBin,
+          bankCode: bank.bank_code,
+          bankName: bank.bank_name,
+          accountNumber: bank.account_number,
+          accountName: bank.account_name,
+        };
+      }
+    } catch (dbError) {
+      console.warn(
+        "Could not fetch bank config from DB, using defaults:",
+        dbError.message,
+      );
+    }
+
+    // Fallback nếu không có bank trong DB
+    if (!bankConfig) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Chưa cấu hình tài khoản ngân hàng. Vui lòng thêm tài khoản trong phần Quản lý tài khoản ngân hàng.",
+      });
+    }
+
+    // Tạo nội dung chuyển khoản
+    const transferContent = order_info
+      ? `TT ${order_info}`
+      : `TT DH ${Date.now()}`;
+
+    // Tạo URL VietQR (chuẩn Napas - miễn phí, không cần API key)
+    const encodedAccountName = encodeURIComponent(bankConfig.accountName);
+    const encodedContent = encodeURIComponent(transferContent);
+
+    // Template: compact2 (có logo bank, gọn), compact (gọn không logo), qr_only (chỉ QR)
+    const qrUrl = `https://img.vietqr.io/image/${bankConfig.bankId}-${bankConfig.accountNumber}-compact2.png?amount=${amount}&addInfo=${encodedContent}&accountName=${encodedAccountName}`;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        qr_url: qrUrl,
+        bank_name: bankConfig.bankName,
+        bank_code: bankConfig.bankCode,
+        account_number: bankConfig.accountNumber,
+        account_name: bankConfig.accountName,
+        amount: amount,
+        transfer_content: transferContent,
+      },
+    });
+  } catch (error) {
+    console.error("Generate QR code error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi tạo mã QR thanh toán",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/pos/webhook/sepay
+ * Nhận webhook từ Sepay.vn khi có giao dịch ngân hàng
+ */
+const handleSepayWebhook = async (req, res) => {
+  try {
+    const {
+      id,
+      gateway,
+      transferType,
+      transferAmount,
+      content,
+      accountNumber,
+      referenceCode,
+      transactionDate,
+    } = req.body;
+
+    console.log("[Sepay Webhook] Received:", {
+      id,
+      gateway,
+      transferType,
+      transferAmount,
+      content,
+      accountNumber,
+    });
+
+    // Chỉ xử lý giao dịch tiền VÀO
+    if (transferType !== "in") {
+      return res.status(200).json({ success: true });
+    }
+
+    // Chống trùng lặp bằng Sepay transaction ID
+    const dedupeKey = `sepay_${id}`;
+    if (confirmedPayments.has(dedupeKey)) {
+      return res.status(200).json({ success: true });
+    }
+
+    const normalizedContent = (content || "")
+      .toUpperCase()
+      .replace(/\s+/g, " ")
+      .trim();
+    const amount = parseInt(transferAmount) || 0;
+
+    const paymentInfo = {
+      sepay_id: id,
+      gateway,
+      amount,
+      content: normalizedContent,
+      account_number: accountNumber,
+      reference_code: referenceCode,
+      transaction_date: transactionDate,
+      timestamp: Date.now(),
+    };
+
+    // Lưu vào confirmed payments với nhiều key để dễ lookup
+    confirmedPayments.set(dedupeKey, paymentInfo);
+
+    // Key theo amount + account (cho polling check)
+    const amountKey = `${accountNumber}_${amount}`;
+    if (!confirmedPayments.has(amountKey)) {
+      confirmedPayments.set(amountKey, []);
+    }
+    const arr = confirmedPayments.get(amountKey);
+    if (Array.isArray(arr)) {
+      arr.push(paymentInfo);
+    } else {
+      confirmedPayments.set(amountKey, [paymentInfo]);
+    }
+
+    console.log(
+      `[Sepay Webhook] Payment confirmed: ${amount} VND -> ${accountNumber}, content: ${normalizedContent}`,
+    );
+
+    // Phản hồi Sepay (bắt buộc 200 + {success: true})
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("[Sepay Webhook] Error:", error);
+    return res.status(200).json({ success: true });
+  }
+};
+
+/**
+ * GET /api/pos/qr/check-payment
+ * Kiểm tra xem giao dịch đã được xác nhận qua Sepay chưa
+ * Ưu tiên: 1. Check webhook cache → 2. Gọi Sepay API trực tiếp
+ * Query: amount, account_number, transfer_content
+ */
+const checkQRPayment = async (req, res) => {
+  try {
+    const { amount, account_number, transfer_content } = req.query;
+    console.log(
+      `[QR Check] Params: amount=${amount}, account=${account_number}, content=${transfer_content}`,
+    );
+
+    if (!amount || !account_number) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin kiểm tra",
+      });
+    }
+
+    const parsedAmount = parseInt(amount);
+
+    // ===== BƯỚC 1: Check webhook cache (nhanh) =====
+    const amountKey = `${account_number}_${parsedAmount}`;
+    const payments = confirmedPayments.get(amountKey);
+
+    if (payments && Array.isArray(payments) && payments.length > 0) {
+      const normalizedExpected = (transfer_content || "")
+        .toUpperCase()
+        .replace(/\s+/g, " ")
+        .trim();
+
+      let matchedPayment = null;
+      if (normalizedExpected) {
+        matchedPayment = payments.find((p) =>
+          p.content.includes(normalizedExpected),
+        );
+      }
+      if (!matchedPayment) {
+        const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+        matchedPayment = payments.find((p) => p.timestamp >= fiveMinAgo);
+      }
+
+      if (matchedPayment) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            paid: true,
+            source: "webhook",
+            transaction: {
+              sepay_id: matchedPayment.sepay_id,
+              amount: matchedPayment.amount,
+              content: matchedPayment.content,
+              reference_code: matchedPayment.reference_code,
+              transaction_date: matchedPayment.transaction_date,
+              gateway: matchedPayment.gateway,
+            },
+          },
+        });
+      }
+    }
+
+    // ===== BƯỚC 2: Gọi Sepay API trực tiếp (backup) =====
+    console.log(`[QR Check] Cache miss, calling Sepay API...`);
+    const sepayToken = process.env.SEPAY_API_KEY;
+    if (sepayToken) {
+      try {
+        const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+        const sepayUrl = `https://my.sepay.vn/userapi/transactions/list?account_number=${account_number}&amount_in=${parsedAmount}&transaction_date_min=${today}&limit=10`;
+
+        console.log(`[QR Check] Sepay API URL: ${sepayUrl}`);
+        const sepayRes = await fetch(sepayUrl, {
+          headers: {
+            Authorization: `Bearer ${sepayToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        console.log(`[QR Check] Sepay API response: ${sepayRes.status}`);
+        if (sepayRes.ok) {
+          const sepayData = await sepayRes.json();
+          const transactions = sepayData.transactions || [];
+          console.log(`[QR Check] Transactions found: ${transactions.length}`);
+
+          if (transactions.length > 0) {
+            // Tìm giao dịch match nội dung
+            const normalizedExpected = (transfer_content || "")
+              .toUpperCase()
+              .replace(/\s+/g, " ")
+              .trim();
+
+            let matched = transactions[0]; // Mặc định lấy giao dịch mới nhất
+            if (normalizedExpected) {
+              const contentMatch = transactions.find((t) =>
+                (t.transaction_content || "")
+                  .toUpperCase()
+                  .includes(normalizedExpected),
+              );
+              if (contentMatch) matched = contentMatch;
+            }
+
+            // Cache lại để lần sau không cần gọi API
+            const paymentInfo = {
+              sepay_id: matched.id,
+              gateway: matched.bank_brand_name,
+              amount: parseInt(matched.amount_in) || parsedAmount,
+              content: (matched.transaction_content || "").toUpperCase(),
+              account_number: matched.account_number,
+              reference_code: matched.reference_number,
+              transaction_date: matched.transaction_date,
+              timestamp: Date.now(),
+            };
+
+            const dedupeKey = `sepay_${matched.id}`;
+            confirmedPayments.set(dedupeKey, paymentInfo);
+            if (!confirmedPayments.has(amountKey)) {
+              confirmedPayments.set(amountKey, []);
+            }
+            const arr = confirmedPayments.get(amountKey);
+            if (Array.isArray(arr)) arr.push(paymentInfo);
+
+            console.log(
+              `[Sepay API] Payment found: ${parsedAmount} VND, ref: ${matched.reference_number}`,
+            );
+
+            return res.status(200).json({
+              success: true,
+              data: {
+                paid: true,
+                source: "api",
+                transaction: {
+                  sepay_id: matched.id,
+                  amount: parseInt(matched.amount_in) || parsedAmount,
+                  content: matched.transaction_content,
+                  reference_code: matched.reference_number,
+                  transaction_date: matched.transaction_date,
+                  gateway: matched.bank_brand_name,
+                },
+              },
+            });
+          }
+        } else {
+          console.warn(
+            `[Sepay API] HTTP ${sepayRes.status}:`,
+            await sepayRes.text(),
+          );
+        }
+      } catch (apiErr) {
+        console.warn("[Sepay API] Error:", apiErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { paid: false },
+    });
+  } catch (error) {
+    console.error("Check QR payment error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi kiểm tra thanh toán",
+    });
+  }
+};
+
 module.exports = {
   checkout,
   searchProducts,
@@ -1357,4 +1800,7 @@ module.exports = {
   validateDiscountCode,
   getPaymentMethods,
   createEmptyDraft,
+  generateQRCode,
+  handleSepayWebhook,
+  checkQRPayment,
 };

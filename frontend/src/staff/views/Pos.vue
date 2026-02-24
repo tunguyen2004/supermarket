@@ -218,7 +218,11 @@
             <div class="footer-divider"></div>
 
             <!-- Custom Product -->
-            <button class="footer-accent-btn" title="Sản phẩm tuỳ chỉnh (F2)">
+            <button
+              class="footer-accent-btn"
+              title="Sản phẩm tuỳ chỉnh (F2)"
+              @click="showCustomProductModal = true"
+            >
               <i class="fa-solid fa-plus"></i>
               <span>Sản phẩm tuỳ chỉnh</span>
               <kbd class="footer-kbd">F2</kbd>
@@ -359,6 +363,71 @@
       @cancel="showPaymentDrawer = false"
     />
 
+    <!-- Custom Product Modal -->
+    <el-dialog
+      v-model="showCustomProductModal"
+      title="Thêm sản phẩm tuỳ chỉnh"
+      width="480px"
+      @opened="focusCustomProductName"
+    >
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2"
+            >Tên sản phẩm <span class="text-red-500">*</span></label
+          >
+          <el-input
+            ref="customProductNameRef"
+            v-model="customProduct.name"
+            placeholder="Nhập tên sản phẩm"
+            clearable
+          />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2"
+              >Đơn giá (VNĐ) <span class="text-red-500">*</span></label
+            >
+            <el-input-number
+              v-model="customProduct.price"
+              :min="0"
+              :step="1000"
+              :controls="true"
+              style="width: 100%"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Số lượng</label>
+            <el-input-number
+              v-model="customProduct.quantity"
+              :min="1"
+              :max="9999"
+              style="width: 100%"
+            />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Ghi chú</label>
+          <el-input
+            v-model="customProduct.note"
+            placeholder="Ghi chú sản phẩm (tuỳ chọn)"
+            type="textarea"
+            :rows="2"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showCustomProductModal = false">Hủy</el-button>
+        <el-button
+          type="primary"
+          @click="addCustomProduct"
+          :disabled="!customProduct.name || customProduct.price <= 0"
+        >
+          <i class="fa-solid fa-plus mr-1"></i> Thêm vào đơn hàng
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- Draft Orders List Modal -->
     <el-dialog
       v-model="showDraftListModal"
@@ -427,7 +496,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from "vue";
+import {
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  watch,
+} from "vue";
 import PosTopbar from "@/staff/components/PosTopbar.vue";
 import CustomerPicker from "@/staff/components/CustomerPicker.vue";
 import CustomerCreateModal from "@/staff/components/CustomerCreateModal.vue";
@@ -439,10 +515,25 @@ import posService, {
   calculateOrderTotals,
 } from "@/services/posService";
 
+// ===== SESSION STORAGE PERSISTENCE =====
+const POS_STORAGE_KEY = "pos_cart_state";
+
+const loadSavedState = () => {
+  try {
+    const saved = sessionStorage.getItem(POS_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.warn("[POS] Failed to load saved state:", e);
+  }
+  return null;
+};
+
+const savedState = loadSavedState();
+
 // ===== STATE =====
-const orderTabs = ref([{ id: 1, name: "Đơn 1" }]);
-const activeTabId = ref(1);
-const orderCounter = ref(1);
+const orderTabs = ref(savedState?.orderTabs || [{ id: 1, name: "Đơn 1" }]);
+const activeTabId = ref(savedState?.activeTabId || 1);
+const orderCounter = ref(savedState?.orderCounter || 1);
 
 // Get store_id from logged-in user
 const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -454,32 +545,89 @@ const productSearchResults = ref([]);
 const isSearchingProducts = ref(false);
 const searchTimeout = ref(null);
 
-const orders = ref({
-  1: {
-    items: [],
-    notes: "",
-    paymentMethod: "cash",
-    discount: 0,
-    discountCode: "",
-    discountId: null,
-    discountType: "fixed",
-    draftId: null, // For saved drafts
+const orders = ref(
+  savedState?.orders || {
+    1: {
+      items: [],
+      notes: "",
+      paymentMethod: "cash",
+      discount: 0,
+      discountCode: "",
+      discountId: null,
+      discountType: "fixed",
+      draftId: null,
+    },
   },
-});
+);
 
 // Draft orders state
 const draftOrders = ref([]);
 const isLoadingDrafts = ref(false);
 const showDraftListModal = ref(false);
 
-const selectedCustomer = ref(null);
+const selectedCustomer = ref(savedState?.selectedCustomer || null);
 const showCustomerModal = ref(false);
 const showPaymentDrawer = ref(false);
 const showDiscountModal = ref(false);
-const discountType = ref("fixed");
-const discountValue = ref(0);
+const discountType = ref(savedState?.discountType || "fixed");
+const discountValue = ref(savedState?.discountValue || 0);
 const autoPrint = ref(false);
 const selectedStaff = ref("admin");
+
+// Custom product state
+const showCustomProductModal = ref(false);
+const customProductNameRef = ref(null);
+let customProductIdCounter = -1; // Negative IDs to distinguish from real products
+const customProduct = ref({
+  name: "",
+  price: 0,
+  quantity: 1,
+  note: "",
+});
+
+// ===== PERSIST CART TO SESSION STORAGE =====
+const saveStateToSession = () => {
+  try {
+    const state = {
+      orderTabs: orderTabs.value,
+      activeTabId: activeTabId.value,
+      orderCounter: orderCounter.value,
+      orders: orders.value,
+      selectedCustomer: selectedCustomer.value,
+      discountType: discountType.value,
+      discountValue: discountValue.value,
+    };
+    sessionStorage.setItem(POS_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn("[POS] Failed to save state:", e);
+  }
+};
+
+// Debounce save to avoid excessive writes
+let saveTimer = null;
+const debouncedSave = () => {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveStateToSession, 300);
+};
+
+// Watch all cart-related state for changes
+watch(
+  [
+    orders,
+    orderTabs,
+    activeTabId,
+    orderCounter,
+    selectedCustomer,
+    discountType,
+    discountValue,
+  ],
+  debouncedSave,
+  { deep: true },
+);
+
+const clearPosSession = () => {
+  sessionStorage.removeItem(POS_STORAGE_KEY);
+};
 
 // ===== COMPUTED =====
 const currentOrder = computed(() => orders.value[activeTabId.value]);
@@ -573,6 +721,45 @@ const handleTopbarSearch = async (searchQuery) => {
 // Clear search results
 const clearSearchResults = () => {
   productSearchResults.value = [];
+};
+
+// ===== CUSTOM PRODUCT =====
+const focusCustomProductName = () => {
+  nextTick(() => {
+    customProductNameRef.value?.focus();
+  });
+};
+
+const addCustomProduct = () => {
+  if (!customProduct.value.name || !customProduct.value.name.trim()) {
+    ElMessage.warning("Vui lòng nhập tên sản phẩm");
+    return;
+  }
+  if (!customProduct.value.price || customProduct.value.price <= 0) {
+    ElMessage.warning("Vui lòng nhập đơn giá hợp lệ");
+    return;
+  }
+
+  const item = {
+    id: customProductIdCounter--,
+    variant_id: null,
+    name: customProduct.value.name.trim(),
+    sku: "CUSTOM",
+    unit_price: customProduct.value.price,
+    price: customProduct.value.price,
+    quantity: customProduct.value.quantity || 1,
+    discount_amount: 0,
+    image: null,
+    is_custom: true,
+    note: customProduct.value.note || "",
+  };
+
+  currentOrder.value.items.push(item);
+  ElMessage.success(`Đã thêm "${item.name}" vào đơn hàng`);
+
+  // Reset form
+  customProduct.value = { name: "", price: 0, quantity: 1, note: "" };
+  showCustomProductModal.value = false;
 };
 
 // ===== METHODS =====
@@ -868,11 +1055,20 @@ const checkout = () => {
 
 const handlePaymentComplete = async (paymentData) => {
   try {
-    // Prepare checkout data
+    // Prepare checkout data - format items for backend
+    const formattedItems = currentOrder.value.items.map((item) => ({
+      variant_id: item.is_custom ? null : item.variant_id,
+      quantity: item.quantity,
+      unit_price: item.unit_price || item.price,
+      discount_amount: item.discount_amount || 0,
+      name: item.is_custom ? item.name : undefined,
+      is_custom: item.is_custom || false,
+    }));
+
     const checkoutData = {
       store_id: currentStoreId.value,
       customer_id: selectedCustomer.value?.id || null,
-      items: currentOrder.value.items,
+      items: formattedItems,
       subtotal: subtotal.value,
       discount_amount: currentOrder.value.discount || 0,
       discount_code: currentOrder.value.discountCode || null,
@@ -971,7 +1167,18 @@ onMounted(async () => {
   }
 });
 
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleKeyPress);
+  if (saveTimer) clearTimeout(saveTimer);
+  saveStateToSession(); // Save one last time
+});
+
 const handleKeyPress = async (e) => {
+  // F2 - Custom product
+  if (e.key === "F2") {
+    e.preventDefault();
+    showCustomProductModal.value = true;
+  }
   // F3 - Focus search input in topbar
   if (e.key === "F3") {
     e.preventDefault();

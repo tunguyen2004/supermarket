@@ -240,6 +240,42 @@ class PosService {
   }
 
   /**
+   * Tạo mã QR thanh toán chuyển khoản (VietQR)
+   * @param {Object} data - Dữ liệu tạo QR
+   * @param {number} data.amount - Số tiền cần thanh toán
+   * @param {string} data.order_info - Mã đơn hàng hoặc thông tin
+   * @returns {Promise<Object>} Thông tin QR code
+   */
+  async generateQRCode(data) {
+    try {
+      const response = await apiClient.post("/api/pos/qr/generate", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      throw new Error(
+        error.response?.data?.message || "Lỗi khi tạo mã QR thanh toán",
+      );
+    }
+  }
+
+  /**
+   * Check QR payment status (polling from Sepay webhook data)
+   * @param {Object} params - { amount, account_number, transfer_content }
+   * @returns {Object} { paid: boolean, transaction?: Object }
+   */
+  async checkQRPayment(params) {
+    try {
+      const response = await apiClient.get("/api/pos/qr/check-payment", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error checking QR payment:", error);
+      return { success: true, data: { paid: false } };
+    }
+  }
+
+  /**
    * Print receipt (open in new window or download)
    * @param {number} orderId - ID đơn hàng
    */

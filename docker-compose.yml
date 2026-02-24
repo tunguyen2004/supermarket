@@ -41,6 +41,7 @@ services:
       JWT_SECRET: your_jwt_secret_key_change_in_production
       JWT_EXPIRE: 7d
       GEMINI_API_KEY: AIzaSyB_pT_WxXhlXxVRbbUPQgyLpOCR0YRtTHc
+      SEPAY_API_KEY: "FQB5ZE3QZ5ATW1BCSFHFZL6VW0GAX7CNTDPSDXNS8P6VICUBA4UMT9MNMKTOOWY2"  # Điền API Key từ Sepay.vn (Cấu hình Công ty → API Access)
     ports:
       - "5000:5000"
     volumes:
