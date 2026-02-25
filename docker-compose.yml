@@ -14,6 +14,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
       - ./database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
+      - ./database/incremental_data_generator.sql:/docker-entrypoint-initdb.d/3_incremental.sql
+      - ./database/catchup_runner.sql:/docker-entrypoint-initdb.d/4_catchup.sql
     networks:
       - minimart_network
     healthcheck:

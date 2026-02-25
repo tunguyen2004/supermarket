@@ -1,7 +1,8 @@
 -- =====================================================
 -- SUPERMARKET MANAGEMENT SYSTEM - SEED DATA
--- Version: 3.1 | Date: 01/02/2026
+-- Version: 4.0 | Date: 25/02/2026
 -- Có thể chạy lại nhiều lần (idempotent)
+-- Orders được sinh bằng incremental_data_generator.sql
 -- =====================================================
 
 -- =========================
@@ -187,8 +188,7 @@ INSERT INTO subdim_transaction_types (code, name, affects_stock) VALUES
 -- =========================
 INSERT INTO subdim_roles (code, name, description) VALUES
     ('ADMIN', 'Administrator', 'Quản trị viên hệ thống - Full quyền'),
-    ('STAFF', 'Sales Staff', 'Nhân viên bán hàng - Bán hàng, thu ngân, xem kho'),
-    ('MANAGER', 'Manager', 'Quản lý cửa hàng');
+    ('STAFF', 'Sales Staff', 'Nhân viên bán hàng - Bán hàng, thu ngân, xem kho');
 
 -- =========================
 -- PERMISSIONS
@@ -224,11 +224,6 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT 2, id FROM subdim_permissions 
 WHERE code IN ('PRODUCT_VIEW', 'ORDER_VIEW', 'ORDER_CREATE', 
                'CUSTOMER_VIEW', 'CUSTOMER_CREATE', 'INVENTORY_VIEW');
-
--- Manager (role_id=3) permissions
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 3, id FROM subdim_permissions 
-WHERE code NOT IN ('SYSTEM_CONFIG', 'USER_MANAGE');
 
 -- =========================
 -- DISCOUNT TYPES
@@ -305,7 +300,7 @@ INSERT INTO dim_suppliers (code, name, city_id, address, phone, email, tax_code,
     ('SUP008', 'Công ty TNHH Nestlé Việt Nam', 1, 'Tòa nhà Peakview, Hà Nội', '0243678901', 'info@vn.nestle.com', '0123456796', 'Thanh toán trong 30 ngày');
 
 -- =========================
--- CUSTOMERS (25 khách hàng)
+-- CUSTOMERS (100 khách hàng)
 -- =========================
 INSERT INTO dim_customers (code, full_name, phone, email, customer_group_id, city_id, address, date_of_birth, gender) VALUES
     ('KH001', 'Nguyễn Văn An', '0901234567', 'nva@email.com', 3, 1, '12 Láng Hạ, Ba Đình, HN', '1985-03-15', 'Nam'),
@@ -332,7 +327,85 @@ INSERT INTO dim_customers (code, full_name, phone, email, customer_group_id, cit
     ('KH022', 'Chu Thị Yến', '0901234588', 'cty@email.com', 5, 1, '34 Tôn Đức Thắng, Đống Đa, HN', '1994-04-11', 'Nữ'),
     ('KH023', 'Huỳnh Văn Zung', '0901234589', 'hvz@email.com', 1, 7, '56 Nguyễn Thị Minh Khai, Quận 3, HCM', '1992-08-19', 'Nam'),
     ('KH024', 'Trịnh Thị Anh', '0901234590', 'tta@email.com', 3, 1, '78 Thái Hà, Đống Đa, HN', '1987-01-26', 'Nữ'),
-    ('KH025', 'Tô Văn Bảo', '0901234591', 'tvb@email.com', 2, 7, '90 Trường Chinh, Quận Tân Bình, HCM', '1991-05-04', 'Nam');
+    ('KH025', 'Tô Văn Bảo', '0901234591', 'tvb@email.com', 2, 7, '90 Trường Chinh, Quận Tân Bình, HCM', '1991-05-04', 'Nam'),
+    -- Khách hàng 26-50
+    ('KH026', 'Nguyễn Thị Cẩm', '0901234592', 'ntc26@email.com', 3, 1, '15 Đội Cấn, Ba Đình, HN', '1993-08-12', 'Nữ'),
+    ('KH027', 'Lê Hoàng Dũng', '0901234593', 'lhd27@email.com', 4, 7, '22 Phan Xích Long, Phú Nhuận, HCM', '1986-11-28', 'Nam'),
+    ('KH028', 'Phạm Minh Đức', '0901234594', 'pmd28@email.com', 2, 8, '8 Lê Hồng Phong, Thủ Dầu Một, BD', '1990-02-19', 'Nam'),
+    ('KH029', 'Trần Thanh Hằng', '0901234595', 'tth29@email.com', 1, 7, '45 Lý Thái Tổ, Quận 10, HCM', '1988-06-07', 'Nữ'),
+    ('KH030', 'Vũ Đình Khoa', '0901234596', 'vdk30@email.com', 5, 1, '67 Hoàng Hoa Thám, Ba Đình, HN', '1995-01-30', 'Nam'),
+    ('KH031', 'Đỗ Thị Lan', '0901234597', 'dtl31@email.com', 3, 4, '33 Nguyễn Văn Linh, Hải Châu, DN', '1991-09-14', 'Nữ'),
+    ('KH032', 'Bùi Quốc Minh', '0901234598', 'bqm32@email.com', 2, 7, '18 Trần Hưng Đạo, Quận 5, HCM', '1987-12-25', 'Nam'),
+    ('KH033', 'Hoàng Thị Ngọc', '0901234599', 'htn33@email.com', 4, 1, '55 Cầu Giấy, Cầu Giấy, HN', '1994-03-08', 'Nữ'),
+    ('KH034', 'Đinh Công Phát', '0901234600', 'dcp34@email.com', 5, 9, '11 Trần Phú, Ninh Kiều, CT', '1989-07-20', 'Nam'),
+    ('KH035', 'Ngô Thanh Quý', '0901234601', 'ntq35@email.com', 1, 7, '99 Nguyễn Đình Chiểu, Quận 3, HCM', '1992-10-03', 'Nữ'),
+    ('KH036', 'Cao Hữu Sang', '0901234602', 'chs36@email.com', 3, 2, '27 Lạch Tray, Ngô Quyền, HP', '1986-04-17', 'Nam'),
+    ('KH037', 'Lý Thị Tâm', '0901234603', 'ltt37@email.com', 2, 7, '41 Võ Thị Sáu, Quận 3, HCM', '1990-08-29', 'Nữ'),
+    ('KH038', 'Phan Đức Uy', '0901234604', 'pdu38@email.com', 4, 1, '63 Nguyễn Trãi, Thanh Xuân, HN', '1988-01-11', 'Nam'),
+    ('KH039', 'Tạ Ngọc Vân', '0901234605', 'tnv39@email.com', 5, 5, '7 Lê Lợi, TP Huế', '1993-05-24', 'Nữ'),
+    ('KH040', 'Mai Xuân Phong', '0901234606', 'mxp40@email.com', 3, 7, '85 Bùi Viện, Quận 1, HCM', '1987-09-06', 'Nam'),
+    ('KH041', 'Hồ Thị Ánh', '0901234607', 'hta41@email.com', 2, 10, '19 Lê Hồng Phong, TP Vũng Tàu', '1991-12-18', 'Nữ'),
+    ('KH042', 'Trương Minh Bảo', '0901234608', 'tmb42@email.com', 4, 1, '73 Định Công, Hoàng Mai, HN', '1989-03-02', 'Nam'),
+    ('KH043', 'Dương Thị Châu', '0901234609', 'dtc43@email.com', 1, 7, '29 Nguyễn Công Trứ, Quận 1, HCM', '1994-06-15', 'Nữ'),
+    ('KH044', 'Lương Hải Đăng', '0901234610', 'lhd44@email.com', 5, 4, '51 Hoàng Diệu, Hải Châu, DN', '1986-10-28', 'Nam'),
+    ('KH045', 'Võ Thị Gấm', '0901234611', 'vtg45@email.com', 3, 7, '37 Lê Văn Sỹ, Quận 3, HCM', '1990-01-10', 'Nữ'),
+    ('KH046', 'Đặng Quốc Huy', '0901234612', 'dqh46@email.com', 2, 1, '95 Giải Phóng, Hoàng Mai, HN', '1988-04-22', 'Nam'),
+    ('KH047', 'Chu Thị Hồng Nhung', '0901234613', 'cthn47@email.com', 4, 6, '13 Trần Phú, Tam Kỳ, QN', '1993-07-04', 'Nữ'),
+    ('KH048', 'Huỳnh Tấn Lộc', '0901234614', 'htl48@email.com', 5, 7, '61 Cộng Hòa, Tân Bình, HCM', '1987-11-17', 'Nam'),
+    ('KH049', 'Trịnh Thị Mỹ Linh', '0901234615', 'ttml49@email.com', 1, 1, '47 Trúc Bạch, Ba Đình, HN', '1992-02-28', 'Nữ'),
+    ('KH050', 'Tô Đình Nam', '0901234616', 'tdn50@email.com', 3, 7, '83 Hoàng Sa, Quận 1, HCM', '1989-06-10', 'Nam'),
+    -- Khách hàng 51-75
+    ('KH051', 'Nguyễn Minh Quân', '0901234617', 'nmq51@email.com', 2, 1, '21 Thanh Nhàn, Hai Bà Trưng, HN', '1991-09-23', 'Nam'),
+    ('KH052', 'Trần Thị Huyền Trang', '0901234618', 'ttht52@email.com', 4, 7, '39 Đinh Tiên Hoàng, Bình Thạnh, HCM', '1987-12-05', 'Nữ'),
+    ('KH053', 'Lê Anh Tuấn', '0901234619', 'lat53@email.com', 5, 3, '15 Lý Thái Tổ, TP Bắc Ninh', '1994-03-18', 'Nam'),
+    ('KH054', 'Phạm Thị Uyên', '0901234620', 'ptu54@email.com', 3, 7, '57 Nguyễn Thượng Hiền, Quận 3, HCM', '1990-06-30', 'Nữ'),
+    ('KH055', 'Hoàng Đức Vinh', '0901234621', 'hdv55@email.com', 1, 1, '79 Liễu Giai, Ba Đình, HN', '1986-10-12', 'Nam'),
+    ('KH056', 'Vũ Thị Thanh Xuân', '0901234622', 'vttx56@email.com', 2, 4, '23 Phan Đăng Lưu, Hải Châu, DN', '1992-01-25', 'Nữ'),
+    ('KH057', 'Đỗ Minh Hoàng', '0901234623', 'dmh57@email.com', 4, 7, '65 Trường Sa, Quận 3, HCM', '1988-04-07', 'Nam'),
+    ('KH058', 'Bùi Thị Kim Oanh', '0901234624', 'btko58@email.com', 5, 1, '31 Thái Thịnh, Đống Đa, HN', '1993-07-20', 'Nữ'),
+    ('KH059', 'Đinh Hữu Phước', '0901234625', 'dhp59@email.com', 3, 8, '9 Đại Lộ Bình Dương, Thủ Dầu Một, BD', '1987-11-02', 'Nam'),
+    ('KH060', 'Ngô Thị Tuyết Mai', '0901234626', 'nttm60@email.com', 2, 7, '43 Lê Thị Riêng, Quận 1, HCM', '1991-02-14', 'Nữ'),
+    ('KH061', 'Cao Xuân Trường', '0901234627', 'cxt61@email.com', 4, 1, '87 Chùa Bộc, Đống Đa, HN', '1989-05-27', 'Nam'),
+    ('KH062', 'Lý Thị Diễm Phúc', '0901234628', 'ltdp62@email.com', 1, 7, '25 Trần Quang Khải, Quận 1, HCM', '1994-08-09', 'Nữ'),
+    ('KH063', 'Phan Thành Đạt', '0901234629', 'ptd63@email.com', 5, 9, '51 Mậu Thân, Ninh Kiều, CT', '1986-12-22', 'Nam'),
+    ('KH064', 'Tạ Thị Phương Thảo', '0901234630', 'ttpt64@email.com', 3, 1, '69 Khâm Thiên, Đống Đa, HN', '1990-03-06', 'Nữ'),
+    ('KH065', 'Mai Hồng Quang', '0901234631', 'mhq65@email.com', 2, 7, '17 Hồ Tùng Mậu, Quận 1, HCM', '1988-06-19', 'Nam'),
+    ('KH066', 'Hồ Ngọc Bích', '0901234632', 'hnb66@email.com', 4, 4, '35 Ông Ích Khiêm, Hải Châu, DN', '1993-09-01', 'Nữ'),
+    ('KH067', 'Trương Quang Vinh', '0901234633', 'tqv67@email.com', 5, 1, '53 Tôn Thất Tùng, Đống Đa, HN', '1987-01-14', 'Nam'),
+    ('KH068', 'Dương Thị Bích Ngọc', '0901234634', 'dtbn68@email.com', 3, 7, '71 Hai Bà Trưng, Quận 1, HCM', '1991-04-26', 'Nữ'),
+    ('KH069', 'Lương Đình Trọng', '0901234635', 'ldt69@email.com', 1, 2, '19 Tô Hiệu, Lê Chân, HP', '1989-08-08', 'Nam'),
+    ('KH070', 'Võ Thị Thanh Hà', '0901234636', 'vtth70@email.com', 2, 7, '89 Bến Vân Đồn, Quận 4, HCM', '1994-11-21', 'Nữ'),
+    ('KH071', 'Đặng Trung Kiên', '0901234637', 'dtk71@email.com', 4, 1, '33 Lạc Long Quân, Tây Hồ, HN', '1986-03-05', 'Nam'),
+    ('KH072', 'Chu Thị Minh Nguyệt', '0901234638', 'ctmn72@email.com', 5, 7, '47 Nguyễn Văn Cừ, Quận 5, HCM', '1990-06-17', 'Nữ'),
+    ('KH073', 'Huỳnh Bá Phúc', '0901234639', 'hbp73@email.com', 3, 10, '5 Trương Công Định, TP Vũng Tàu', '1988-09-30', 'Nam'),
+    ('KH074', 'Trịnh Ngọc Hân', '0901234640', 'tnh74@email.com', 2, 1, '61 Văn Cao, Ba Đình, HN', '1993-01-12', 'Nữ'),
+    ('KH075', 'Tô Văn Thịnh', '0901234641', 'tvt75@email.com', 4, 7, '77 Lê Quang Định, Bình Thạnh, HCM', '1987-04-25', 'Nam'),
+    -- Khách hàng 76-100
+    ('KH076', 'Nguyễn Thị Hạnh Dung', '0901234642', 'nthd76@email.com', 1, 7, '3 Nguyễn Cư Trinh, Quận 1, HCM', '1991-07-07', 'Nữ'),
+    ('KH077', 'Trần Bảo Khánh', '0901234643', 'tbk77@email.com', 5, 1, '41 Nguyễn Khuyến, Đống Đa, HN', '1989-10-20', 'Nam'),
+    ('KH078', 'Lê Thị Ngọc Ánh', '0901234644', 'ltna78@email.com', 3, 4, '29 Hàm Nghi, Hải Châu, DN', '1994-02-02', 'Nữ'),
+    ('KH079', 'Phạm Quốc Đại', '0901234645', 'pqd79@email.com', 2, 7, '67 Nguyễn Kiệm, Phú Nhuận, HCM', '1986-05-15', 'Nam'),
+    ('KH080', 'Hoàng Thị Tuyết Nhung', '0901234646', 'httn80@email.com', 4, 1, '85 Kim Ngưu, Hai Bà Trưng, HN', '1990-08-28', 'Nữ'),
+    ('KH081', 'Vũ Đức Thắng', '0901234647', 'vdt81@email.com', 5, 8, '13 Phú Lợi, Thủ Dầu Một, BD', '1988-12-10', 'Nam'),
+    ('KH082', 'Đỗ Thị Mai Hương', '0901234648', 'dtmh82@email.com', 3, 7, '51 Ký Con, Quận 1, HCM', '1993-03-24', 'Nữ'),
+    ('KH083', 'Bùi Hoàng Nam', '0901234649', 'bhn83@email.com', 1, 1, '39 Phạm Ngọc Thạch, Đống Đa, HN', '1987-06-06', 'Nam'),
+    ('KH084', 'Đinh Thị Thanh Tâm', '0901234650', 'dttt84@email.com', 2, 7, '73 Phạm Viết Chánh, Bình Thạnh, HCM', '1991-09-19', 'Nữ'),
+    ('KH085', 'Ngô Hữu Tài', '0901234651', 'nht85@email.com', 4, 5, '7 Bà Triệu, TP Huế', '1989-01-01', 'Nam'),
+    ('KH086', 'Cao Thị Phương Linh', '0901234652', 'ctpl86@email.com', 5, 7, '91 Nguyễn Thái Bình, Quận 1, HCM', '1994-04-14', 'Nữ'),
+    ('KH087', 'Lý Quang Hào', '0901234653', 'lqh87@email.com', 3, 1, '59 Nguyễn Lương Bằng, Đống Đa, HN', '1986-07-27', 'Nam'),
+    ('KH088', 'Phan Thị Diệu Linh', '0901234654', 'ptdl88@email.com', 2, 4, '15 Nguyễn Chí Thanh, Hải Châu, DN', '1990-11-09', 'Nữ'),
+    ('KH089', 'Tạ Minh Trí', '0901234655', 'tmt89@email.com', 4, 7, '33 Hoàng Văn Thụ, Tân Bình, HCM', '1988-02-22', 'Nam'),
+    ('KH090', 'Mai Thị Hồng Nhung', '0901234656', 'mthn90@email.com', 1, 1, '77 Trần Khát Chân, Hai Bà Trưng, HN', '1993-06-04', 'Nữ'),
+    ('KH091', 'Hồ Thanh Phong', '0901234657', 'htp91@email.com', 5, 7, '5 Pasteur, Quận 3, HCM', '1987-09-17', 'Nam'),
+    ('KH092', 'Trương Thị Kim Chi', '0901234658', 'ttkc92@email.com', 3, 9, '23 Nguyễn Trãi, Ninh Kiều, CT', '1991-12-30', 'Nữ'),
+    ('KH093', 'Dương Hoàng Sơn', '0901234659', 'dhs93@email.com', 2, 1, '67 Vĩnh Hồ, Đống Đa, HN', '1989-04-12', 'Nam'),
+    ('KH094', 'Lương Thị Bích Thủy', '0901234660', 'ltbt94@email.com', 4, 7, '81 Đề Thám, Quận 1, HCM', '1994-07-25', 'Nữ'),
+    ('KH095', 'Võ Anh Khôi', '0901234661', 'vak95@email.com', 5, 1, '49 Hào Nam, Đống Đa, HN', '1986-11-07', 'Nam'),
+    ('KH096', 'Đặng Thị Quỳnh Như', '0901234662', 'dtqn96@email.com', 1, 7, '15 Tôn Thất Đạm, Quận 1, HCM', '1990-02-19', 'Nữ'),
+    ('KH097', 'Chu Văn Hiếu', '0901234663', 'cvh97@email.com', 3, 4, '43 Phan Chu Trinh, Hải Châu, DN', '1988-05-03', 'Nam'),
+    ('KH098', 'Huỳnh Thị Yến Nhi', '0901234664', 'htyn98@email.com', 2, 7, '27 Lê Thánh Tôn, Quận 1, HCM', '1993-08-16', 'Nữ'),
+    ('KH099', 'Trịnh Đức Long', '0901234665', 'tdl99@email.com', 4, 1, '71 Láng Hạ, Đống Đa, HN', '1987-12-28', 'Nam'),
+    ('KH100', 'Tô Thị Phương Mai', '0901234666', 'ttpm100@email.com', 5, 7, '53 Nguyễn Trãi, Quận 5, HCM', '1991-03-13', 'Nữ');
 
 -- =========================
 -- PRODUCTS (49 sản phẩm)
@@ -547,122 +620,6 @@ INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, min_s
 SELECT 5, id, FLOOR(RANDOM() * 1000 + 500)::int, 100, 2000 FROM dim_product_variants WHERE id <= 49;
 
 -- =========================
--- ORDERS (150 đơn hàng trong tháng 1/2026)
--- =========================
-DO $$
-DECLARE
-    i INT;
-    order_date DATE;
-    customer INT;
-    store INT;
-    staff INT;
-    order_status VARCHAR(30);
-    payment_status VARCHAR(30);
-    order_id INT;
-    num_items INT;
-    j INT;
-    variant INT;
-    qty DECIMAL;
-    price DECIMAL;
-    order_subtotal DECIMAL;
-    order_discount DECIMAL;
-BEGIN
-    FOR i IN 1..150 LOOP
-        -- Random date in January 2026
-        order_date := '2026-01-01'::date + (FLOOR(RANDOM() * 27))::int;
-        
-        -- 70% có customer, 30% không (khách lẻ)
-        IF RANDOM() > 0.3 THEN
-            customer := FLOOR(RANDOM() * 25 + 1)::int;
-        ELSE
-            customer := NULL;
-        END IF;
-        
-        -- Random store (1-4, không bao gồm kho)
-        store := FLOOR(RANDOM() * 4 + 1)::int;
-        
-        -- Assign staff based on store
-        CASE store
-            WHEN 1 THEN staff := 2;
-            WHEN 2 THEN staff := 3;
-            WHEN 3 THEN staff := 4;
-            WHEN 4 THEN staff := 5;
-        END CASE;
-        
-        -- Order status
-        IF RANDOM() > 0.1 THEN
-            order_status := 'completed';
-            payment_status := 'paid';
-        ELSIF RANDOM() > 0.5 THEN
-            order_status := 'pending';
-            payment_status := 'unpaid';
-        ELSE
-            order_status := 'cancelled';
-            payment_status := 'unpaid';
-        END IF;
-        
-        -- Create order
-        INSERT INTO fact_orders (order_code, date_key, customer_id, store_id, status, payment_status, 
-                                 subtotal, discount_amount, final_amount, payment_method, created_by)
-        VALUES (
-            'DH' || LPAD(i::text, 6, '0'),
-            order_date,
-            customer,
-            store,
-            order_status,
-            payment_status,
-            0, 0, 0,
-            CASE WHEN RANDOM() > 0.4 THEN 'cash' ELSE 'card' END,
-            staff
-        )
-        RETURNING id INTO order_id;
-        
-        -- Add order items (1-5 items per order)
-        num_items := FLOOR(RANDOM() * 5 + 1)::int;
-        order_subtotal := 0;
-        
-        FOR j IN 1..num_items LOOP
-            variant := FLOOR(RANDOM() * 49 + 1)::int;
-            qty := FLOOR(RANDOM() * 5 + 1);
-            
-            SELECT selling_price INTO price 
-            FROM dim_product_variants 
-            WHERE id = variant;
-            
-            INSERT INTO fact_order_items (order_id, variant_id, quantity, unit_price, discount_per_item)
-            VALUES (order_id, variant, qty, price, 0);
-            
-            order_subtotal := order_subtotal + (qty * price);
-        END LOOP;
-        
-        -- Apply discount
-        IF customer IS NOT NULL AND RANDOM() > 0.7 THEN
-            order_discount := FLOOR(order_subtotal * 0.05);
-        ELSE
-            order_discount := 0;
-        END IF;
-        
-        -- Update order totals
-        UPDATE fact_orders 
-        SET subtotal = order_subtotal,
-            discount_amount = order_discount,
-            final_amount = order_subtotal - order_discount
-        WHERE id = order_id;
-    END LOOP;
-END $$;
-
--- =========================
--- UPDATE CUSTOMER LIFETIME VALUE
--- =========================
-UPDATE dim_customers c 
-SET total_lifetime_value = COALESCE(
-    (SELECT SUM(final_amount) 
-     FROM fact_orders 
-     WHERE customer_id = c.id AND status = 'completed'), 
-    0
-);
-
--- =========================
 -- SAMPLE CASHBOOK TRANSACTION
 -- =========================
 INSERT INTO fact_cashbook_transactions (
@@ -697,7 +654,7 @@ BEGIN
     RAISE NOTICE '   🏷️  Brands: 24';
     RAISE NOTICE '   🏪 Stores: 5 (4 retail + 1 warehouse)';
     RAISE NOTICE '   🏭 Suppliers: 8';
-    RAISE NOTICE '   👥 Customers: 25';
+    RAISE NOTICE '   👥 Customers: 100';
     RAISE NOTICE '   📦 Products: 49';
     RAISE NOTICE '   🔖 Product Variants: 49';
     RAISE NOTICE '   👤 Users: 6 (Password: "1")';
@@ -705,8 +662,11 @@ BEGIN
     RAISE NOTICE '   🏦 Bank Accounts: 3';
     RAISE NOTICE '   🎁 Discounts: 3';
     RAISE NOTICE '   📊 Inventory Stocks: 245 (5 stores x 49 variants)';
-    RAISE NOTICE '   🛒 Orders: 150 (Jan 2026)';
     RAISE NOTICE '   📅 Time dimension: 2025-2027 (1096 days)';
+    RAISE NOTICE '';
+    RAISE NOTICE '⚠️  Orders NOT seeded — use incremental_data_generator.sql:';
+    RAISE NOTICE '   SELECT generate_daily_data(''2026-01-15'');';
+    RAISE NOTICE '   SELECT backfill_daily_data(''2026-01-01'', ''2026-01-31'');';
     RAISE NOTICE '';
     RAISE NOTICE '🔐 Login credentials:';
     RAISE NOTICE '   Username: admin | Password: 1';

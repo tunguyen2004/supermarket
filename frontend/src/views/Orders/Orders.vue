@@ -241,7 +241,7 @@ const fetchOrders = async () => {
       orderCode: order.order_code,
       customerName: order.customer?.name || "Khách lẻ",
       customerPhone: order.customer?.phone || "",
-      orderDate: new Date(order.date || order.created_at).toLocaleString(
+      orderDate: new Date(order.created_at || order.date).toLocaleString(
         "vi-VN",
       ),
       createdBy:
@@ -328,7 +328,7 @@ const viewOrder = async (order) => {
       customerPhone: result.data.customer?.phone || "",
       customerEmail: result.data.customer?.email || "",
       orderDate: new Date(
-        result.data.date || result.data.created_at,
+        result.data.created_at || result.data.date,
       ).toLocaleString("vi-VN"),
       totalAmount: result.data.amount?.total || result.data.amount?.final || 0,
       subtotal: result.data.amount?.subtotal || 0,

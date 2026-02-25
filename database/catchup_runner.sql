@@ -26,7 +26,7 @@ BEGIN
     
     IF v_last_date IS NULL THEN
         -- Không có data, bắt đầu từ 1 tuần trước
-        v_start_date := v_today - INTERVAL '7 days';
+        v_start_date := v_today - INTERVAL '30 days';
         RAISE NOTICE '📅 No existing data. Starting from: %', v_start_date;
     ELSIF v_last_date >= v_today THEN
         RAISE NOTICE '✅ Data is up to date! Last date: %', v_last_date;

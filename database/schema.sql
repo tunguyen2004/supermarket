@@ -440,10 +440,11 @@ CREATE TABLE fact_orders (
 CREATE TABLE fact_order_items (
     id BIGSERIAL PRIMARY KEY,
     order_id INT NOT NULL,
-    variant_id INT NOT NULL,
+    variant_id INT,
     quantity DECIMAL(15, 3) NOT NULL,
     unit_price DECIMAL(15, 2) NOT NULL,
     discount_per_item DECIMAL(15, 2) DEFAULT 0,
+    custom_product_name VARCHAR(300),
     line_subtotal DECIMAL(15, 2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
     line_total DECIMAL(15, 2) GENERATED ALWAYS AS ((quantity * unit_price) - discount_per_item) STORED,
     CONSTRAINT fk_orderitem_order FOREIGN KEY (order_id) REFERENCES fact_orders(id) ON DELETE CASCADE,
@@ -668,16 +669,12 @@ CREATE INDEX idx_chat_history_intent ON fact_chat_history(intent);
 -- =========================
 -- COMPLETION MESSAGE
 -- =========================
-DO $ $ BEGIN RAISE NOTICE '✅ Schema created successfully!';
-
-RAISE NOTICE '   📊 Sub-dimensions: 11 tables (regions, cities, categories, brands, units, etc.)';
-
-RAISE NOTICE '   📦 Dimensions: 10 tables (stores, suppliers, customers, products, users, etc.)';
-
-RAISE NOTICE '   📈 Fact tables: 9 tables (orders, inventory, cashbook, shipments, chat_history, etc.)';
-
-RAISE NOTICE '   👁️  Views: 1 (vw_daily_cashbook_summary)';
-
-RAISE NOTICE '   🔗 Total: 31 tables + indexes';
-
-END $ $;
+DO $$
+BEGIN
+    RAISE NOTICE 'Schema created successfully!';
+    RAISE NOTICE '   Sub-dimensions: 11 tables (regions, cities, categories, brands, units, etc.)';
+    RAISE NOTICE '   Dimensions: 10 tables (stores, suppliers, customers, products, users, etc.)';
+    RAISE NOTICE '   Fact tables: 9 tables (orders, inventory, cashbook, shipments, chat_history, etc.)';
+    RAISE NOTICE '   Views: 1 (vw_daily_cashbook_summary)';
+    RAISE NOTICE '   Total: 36 tables + indexes';
+END $$;

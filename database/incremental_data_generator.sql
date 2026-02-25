@@ -1,9 +1,14 @@
 -- =====================================================
 -- SUPERMARKET MANAGEMENT SYSTEM - INCREMENTAL DATA GENERATOR
--- Version: 1.0 | Date: 28/01/2026
+-- Version: 2.0 | Date: 25/02/2026
 -- Author: Data Engineering Team
 -- =====================================================
--- 
+
+
+-- docker cp D:\supermarket\database\incremental_data_generator.sql minimart_postgres:/tmp/incremental_data_generator.sql;
+-- docker exec -i minimart_postgres psql -U admin -d minimart_db -f /tmp/incremental_data_generator.sql
+
+
 -- TỔNG QUAN KIẾN TRÚC DATA ENGINEERING
 -- =====================================
 -- File này mô phỏng quy trình INCREMENTAL LOAD trong production:
@@ -313,7 +318,7 @@ BEGIN
             v_order_code, p_date, v_customer_id, v_store_id,
             v_order_status, v_payment_status, 0, 0, 0,
             v_payment_method, v_staff_id,
-            p_date + (INTERVAL '1 hour' * FLOOR(RANDOM() * 14 + 7)) -- 7h-21h
+            p_date + (INTERVAL '1 second' * FLOOR(RANDOM() * 50400 + 25200)) -- 7:00:00-21:00:00 (giây ngẫu nhiên)
         ) RETURNING id INTO v_order_id;
         
         v_order_count := v_order_count + 1;
@@ -673,6 +678,274 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =========================
+-- SHIPMENT GENERATION
+-- =========================
+
+-- Function: Sinh shipments cho 1 ngày
+-- Bao gồm: tạo shipments mới cho completed orders + cập nhật trạng thái shipments đang vận chuyển
+-- ~30% completed orders có customer sẽ được giao hàng (còn lại mua tại cửa hàng)
+CREATE OR REPLACE FUNCTION generate_daily_shipments(
+    p_date DATE
+) RETURNS TABLE (
+    new_shipments INT,
+    updated_shipments INT,
+    delivered_shipments INT
+) AS $$
+DECLARE
+    v_new INT := 0;
+    v_updated INT := 0;
+    v_delivered INT := 0;
+    
+    -- Shipment variables
+    v_shipment_id BIGINT;
+    v_shipment_code VARCHAR(100);
+    v_tracking_code VARCHAR(100);
+    v_carrier_id INT;
+    v_new_status_id INT;
+    v_shipping_fee DECIMAL;
+    v_cod_amount DECIMAL;
+    v_insurance_fee DECIMAL;
+    v_weight DECIMAL;
+    v_estimated_days INT;
+    v_seq INT := 0;
+    
+    -- Store info
+    v_store_name VARCHAR(200);
+    v_store_phone VARCHAR(20);
+    v_store_address TEXT;
+    
+    -- Cursors
+    r_order RECORD;
+    r_shipment RECORD;
+    
+    -- Random data arrays
+    v_districts TEXT[] := ARRAY[
+        'Quận 1', 'Quận 3', 'Quận 7', 'Quận 10', 'Bình Thạnh',
+        'Gò Vấp', 'Thủ Đức', 'Hoàng Mai', 'Cầu Giấy', 'Thanh Xuân',
+        'Hai Bà Trưng', 'Long Biên', 'Tân Bình', 'Phú Nhuận', 'Bình Tân'
+    ];
+    v_wards TEXT[] := ARRAY[
+        'Phường 1', 'Phường 3', 'Phường 5', 'Phường 7', 'Phường 10',
+        'Phường 12', 'Phường An Phú', 'Phường Tân Định', 'Phường Bến Nghé',
+        'Phường Đa Kao'
+    ];
+    v_streets TEXT[] := ARRAY[
+        'Nguyễn Huệ', 'Lê Lợi', 'Trần Hưng Đạo', 'Hai Bà Trưng', 'Pasteur',
+        'Nguyễn Thị Minh Khai', 'Điện Biên Phủ', 'Cách Mạng Tháng 8',
+        'Phạm Ngọc Thạch', 'Lý Tự Trọng', 'Trần Phú', 'Nguyễn Trãi'
+    ];
+BEGIN
+    -- =========================
+    -- 1. TẠO SHIPMENTS MỚI cho completed orders
+    -- =========================
+    FOR r_order IN
+        SELECT o.id, o.order_code, o.store_id, o.customer_id, o.final_amount,
+               o.created_by, o.created_at,
+               c.full_name AS cust_name, c.phone AS cust_phone,
+               c.address AS cust_address, c.city_id AS cust_city_id
+        FROM fact_orders o
+        JOIN dim_customers c ON c.id = o.customer_id
+        WHERE o.date_key = p_date
+        AND o.status = 'completed'
+        AND o.customer_id IS NOT NULL
+        AND NOT EXISTS (
+            SELECT 1 FROM fact_shipments s WHERE s.order_id = o.id
+        )
+        ORDER BY RANDOM()
+    LOOP
+        -- ~30% completed orders có customer tạo shipment (còn lại mua tại quầy)
+        IF RANDOM() > 0.30 THEN
+            CONTINUE;
+        END IF;
+        
+        v_seq := v_seq + 1;
+        v_shipment_code := 'SH' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_seq::TEXT, 4, '0');
+        
+        -- Kiểm tra duplicate (idempotent)
+        IF EXISTS (SELECT 1 FROM fact_shipments WHERE shipment_code = v_shipment_code) THEN
+            CONTINUE;
+        END IF;
+        
+        -- Chọn carrier (2-6, không dùng INTERNAL cho delivery)
+        v_carrier_id := FLOOR(RANDOM() * 5 + 2)::INT;
+        
+        -- Tạo tracking code: carrier prefix + date + random
+        v_tracking_code := (
+            SELECT code FROM dim_carriers WHERE id = v_carrier_id
+        ) || TO_CHAR(p_date, 'YYMMDD') || LPAD(FLOOR(RANDOM() * 999999 + 1)::TEXT, 6, '0');
+        
+        -- Package weight: 0.5-15kg (Pareto distribution - nhiều gói nhỏ)
+        v_weight := GREATEST(0.5, LEAST(15, random_pareto(0.5, 2.0)));
+        
+        -- Shipping fee: dựa trên weight + distance factor
+        v_shipping_fee := FLOOR(15000 + v_weight * 3000 + RANDOM() * 20000);
+        
+        -- COD: 60% đơn thu hộ, 40% đã thanh toán
+        IF RANDOM() < 0.60 THEN
+            v_cod_amount := r_order.final_amount;
+        ELSE
+            v_cod_amount := 0;
+        END IF;
+        
+        -- Insurance: đơn > 2 triệu tính phí bảo hiểm 0.5%
+        IF r_order.final_amount > 2000000 THEN
+            v_insurance_fee := FLOOR(r_order.final_amount * 0.005);
+        ELSE
+            v_insurance_fee := 0;
+        END IF;
+        
+        -- Estimated delivery: 1-5 ngày (nội thành nhanh hơn)
+        v_estimated_days := FLOOR(RANDOM() * 4 + 1)::INT +
+            CASE WHEN r_order.cust_city_id IN (1, 2) THEN 0 ELSE 1 END;
+        
+        -- Lấy thông tin store gửi hàng
+        SELECT name, phone, address INTO v_store_name, v_store_phone, v_store_address
+        FROM dim_stores WHERE id = r_order.store_id;
+        
+        -- Insert shipment (status = 1 pending)
+        INSERT INTO fact_shipments (
+            shipment_code, order_id, carrier_id, tracking_code, status_id,
+            sender_store_id, sender_name, sender_phone, sender_address,
+            recipient_name, recipient_phone, recipient_address,
+            recipient_city_id, recipient_district, recipient_ward,
+            package_weight,
+            shipping_fee, cod_amount, insurance_fee, total_fee,
+            estimated_delivery_date,
+            created_by, created_at
+        ) VALUES (
+            v_shipment_code, r_order.id, v_carrier_id, v_tracking_code,
+            1, -- pending
+            r_order.store_id, v_store_name, v_store_phone, v_store_address,
+            r_order.cust_name,
+            r_order.cust_phone,
+            COALESCE(
+                r_order.cust_address,
+                'Số ' || FLOOR(RANDOM() * 200 + 1)::TEXT || ' ' ||
+                v_streets[FLOOR(RANDOM() * 12 + 1)::INT] || ', ' ||
+                v_districts[FLOOR(RANDOM() * 15 + 1)::INT]
+            ),
+            r_order.cust_city_id,
+            v_districts[FLOOR(RANDOM() * 15 + 1)::INT],
+            v_wards[FLOOR(RANDOM() * 10 + 1)::INT],
+            ROUND(v_weight::NUMERIC, 2),
+            v_shipping_fee, v_cod_amount, v_insurance_fee,
+            v_shipping_fee + v_insurance_fee,
+            p_date + v_estimated_days,
+            r_order.created_by,
+            r_order.created_at + INTERVAL '30 minutes'
+        ) RETURNING id INTO v_shipment_id;
+        
+        -- Tạo tracking history - trạng thái đầu tiên
+        INSERT INTO fact_shipment_tracking (
+            shipment_id, status_id, location, description, tracked_at, created_by
+        ) VALUES (
+            v_shipment_id, 1,
+            v_store_name,
+            'Đơn hàng mới tạo, chờ xử lý',
+            r_order.created_at + INTERVAL '30 minutes',
+            r_order.created_by
+        );
+        
+        v_new := v_new + 1;
+    END LOOP;
+    
+    -- =========================
+    -- 2. CẬP NHẬT TRẠNG THÁI shipments đang xử lý
+    -- =========================
+    -- Mỗi ngày, shipments chưa hoàn thành tiến 1-2 trạng thái
+    FOR r_shipment IN
+        SELECT s.id, s.status_id, s.carrier_id, s.sender_store_id,
+               s.recipient_city_id, s.recipient_district,
+               s.recipient_name, s.estimated_delivery_date
+        FROM fact_shipments s
+        WHERE s.status_id < 7  -- Chưa delivered
+        AND s.status_id NOT IN (8, 9, 10) -- Không phải failed/returned/cancelled
+        AND s.created_at::date < p_date   -- Không update shipment vừa tạo hôm nay
+    LOOP
+        -- Tiến 1-2 bước, max đến 7 (delivered)
+        v_new_status_id := LEAST(7, r_shipment.status_id + FLOOR(RANDOM() * 2 + 1)::INT);
+        
+        -- 3% chance giao thất bại khi đang giao (status >= 5)
+        IF r_shipment.status_id >= 5 AND RANDOM() < 0.03 THEN
+            v_new_status_id := 8; -- failed
+        END IF;
+        
+        -- 2% chance bị hủy khi chưa lấy hàng (status <= 3)
+        IF r_shipment.status_id <= 3 AND RANDOM() < 0.02 THEN
+            v_new_status_id := 10; -- cancelled
+        END IF;
+        
+        -- Update shipment status + timestamps
+        UPDATE fact_shipments
+        SET status_id = v_new_status_id,
+            picked_at = CASE
+                WHEN v_new_status_id >= 4 AND picked_at IS NULL
+                THEN p_date + INTERVAL '9 hours'
+                ELSE picked_at
+            END,
+            delivered_at = CASE
+                WHEN v_new_status_id = 7
+                THEN p_date + INTERVAL '14 hours' + (RANDOM() * INTERVAL '4 hours')
+                ELSE delivered_at
+            END,
+            actual_delivery_date = CASE
+                WHEN v_new_status_id = 7 THEN p_date
+                ELSE actual_delivery_date
+            END,
+            updated_at = p_date + INTERVAL '12 hours'
+        WHERE id = r_shipment.id;
+        
+        -- Tạo tracking history cho trạng thái mới
+        INSERT INTO fact_shipment_tracking (
+            shipment_id, status_id, location, description, tracked_at, created_by
+        ) VALUES (
+            r_shipment.id,
+            v_new_status_id,
+            CASE v_new_status_id
+                WHEN 2 THEN (SELECT name FROM dim_stores WHERE id = r_shipment.sender_store_id)
+                WHEN 3 THEN 'Kho phân loại'
+                WHEN 4 THEN 'Kho phân loại'
+                WHEN 5 THEN 'Trung tâm trung chuyển'
+                WHEN 6 THEN COALESCE(
+                    (SELECT name FROM subdim_cities WHERE id = r_shipment.recipient_city_id),
+                    'Bưu cục đích'
+                )
+                WHEN 7 THEN COALESCE(r_shipment.recipient_district, 'Địa chỉ giao')
+                WHEN 8 THEN COALESCE(r_shipment.recipient_district, 'Địa chỉ giao')
+                WHEN 10 THEN (SELECT name FROM dim_stores WHERE id = r_shipment.sender_store_id)
+                ELSE 'Đang xử lý'
+            END,
+            CASE v_new_status_id
+                WHEN 2 THEN 'Đã xác nhận đơn, chuẩn bị hàng'
+                WHEN 3 THEN 'Shipper đang đến lấy hàng'
+                WHEN 4 THEN 'Đã lấy hàng, đưa vào kho phân loại'
+                WHEN 5 THEN 'Đang vận chuyển đến bưu cục đích'
+                WHEN 6 THEN 'Đang giao hàng cho ' || r_shipment.recipient_name
+                WHEN 7 THEN 'Giao hàng thành công'
+                WHEN 8 THEN 'Giao hàng thất bại - không liên lạc được khách'
+                WHEN 10 THEN 'Đơn hàng đã bị hủy'
+                ELSE 'Cập nhật trạng thái'
+            END,
+            p_date + INTERVAL '8 hours' + (RANDOM() * INTERVAL '10 hours'),
+            NULL
+        );
+        
+        v_updated := v_updated + 1;
+        IF v_new_status_id = 7 THEN
+            v_delivered := v_delivered + 1;
+        END IF;
+    END LOOP;
+    
+    IF v_new > 0 OR v_updated > 0 THEN
+        RAISE NOTICE '🚚 Shipments: % new | % updated | % delivered',
+            v_new, v_updated, v_delivered;
+    END IF;
+    
+    RETURN QUERY SELECT v_new, v_updated, v_delivered;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =========================
 -- DIMENSION UPDATES (SCD Type 1)
 -- =========================
 
@@ -816,13 +1089,16 @@ BEGIN
     -- 2. Sinh Inventory Transactions
     SELECT * INTO v_inv_result FROM generate_daily_inventory_transactions(p_date);
     
-    -- 3. Update Customer Tiers (chỉ cuối tuần)
+    -- 3. Sinh Shipments (tạo mới + cập nhật trạng thái)
+    PERFORM generate_daily_shipments(p_date);
+    
+    -- 4. Update Customer Tiers (chỉ cuối tuần)
     IF EXTRACT(DOW FROM p_date) = 0 THEN
         SELECT upgraded, downgraded INTO v_dim_upgraded, v_dim_downgraded 
         FROM update_customer_tiers(p_date);
     END IF;
     
-    -- 4. Price Changes (ngày 1 hoặc 15)
+    -- 5. Price Changes (ngày 1 hoặc 15)
     v_price_changes := apply_price_changes(p_date);
     
     RAISE NOTICE '==============================================';
@@ -1096,8 +1372,11 @@ SELECT * FROM generate_daily_data('2026-02-01');
 -- 2. Sinh data cho 1 ngày với số lượng orders cố định:
 SELECT * FROM generate_daily_orders('2026-02-01', 100);
 
--- 3. Backfill 1 tháng data:
+-- 3. Backfill 1 tháng data (orders + inventory + shipments):
 SELECT * FROM backfill_daily_data('2026-02-01', '2026-02-28');
+
+-- 3b. Chỉ sinh shipments cho 1 ngày:
+SELECT * FROM generate_daily_shipments('2026-02-01');
 
 -- 4. Mô phỏng Flash Sale (Black Friday):
 SELECT * FROM generate_flash_sale_day('2026-11-27', 5.0);
@@ -1128,6 +1407,7 @@ BEGIN
     RAISE NOTICE '  - generate_daily_data(date, expected_orders)';
     RAISE NOTICE '  - generate_daily_orders(date, expected_orders)';
     RAISE NOTICE '  - generate_daily_inventory_transactions(date)';
+    RAISE NOTICE '  - generate_daily_shipments(date)';
     RAISE NOTICE '  - backfill_daily_data(start_date, end_date)';
     RAISE NOTICE '  - generate_flash_sale_day(date, multiplier)';
     RAISE NOTICE '  - generate_incident_day(date, missing_rate)';
