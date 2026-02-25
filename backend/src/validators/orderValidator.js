@@ -94,6 +94,9 @@ const orderListQuerySchema = Joi.object({
     "created_at",
   ),
   order: Joi.string().valid("ASC", "DESC", "asc", "desc"),
+  from: Joi.date().iso().allow(""),
+  to: Joi.date().iso().allow(""),
+  customer_type: Joi.string().valid("walk_in").allow(""),
 });
 
 module.exports = {

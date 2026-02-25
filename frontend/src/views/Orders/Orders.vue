@@ -10,9 +10,9 @@
     <el-tabs v-model="activeTab" class="order-tabs">
       <el-tab-pane label="Tất cả" name="all"></el-tab-pane>
       <el-tab-pane label="Chờ xử lý" name="pending"></el-tab-pane>
-      <!--<el-tab-pane label="Đang giao" name="shipping"></el-tab-pane>-->
       <el-tab-pane label="Hoàn thành" name="completed"></el-tab-pane>
       <el-tab-pane label="Đã hủy" name="cancelled"></el-tab-pane>
+      <el-tab-pane label="Khách lẻ" name="walk_in"></el-tab-pane>
     </el-tabs>
 
     <div class="table-container">
@@ -211,12 +211,24 @@ const fetchOrders = async () => {
       cancelled: "cancelled",
     };
 
+    // Build date range params
+    let fromDate, toDate;
+    if (dateRange.value && dateRange.value.length === 2) {
+      fromDate = new Date(dateRange.value[0]).toISOString().split("T")[0];
+      toDate = new Date(dateRange.value[1]).toISOString().split("T")[0];
+    }
+
     const params = {
       limit: pageSize,
       offset: (currentPage.value - 1) * pageSize,
       search: search.value || undefined,
       status:
-        activeTab.value !== "all" ? statusMap[activeTab.value] : undefined,
+        activeTab.value !== "all" && activeTab.value !== "walk_in"
+          ? statusMap[activeTab.value]
+          : undefined,
+      customer_type: activeTab.value === "walk_in" ? "walk_in" : undefined,
+      from: fromDate || undefined,
+      to: toDate || undefined,
       sort: "created_at",
       order: "DESC",
     };
@@ -288,7 +300,7 @@ const filteredOrders = computed(() => orders.value);
 const pagedOrders = computed(() => orders.value);
 
 // Watch filters and refetch from server
-watch([activeTab, search], () => {
+watch([activeTab, search, dateRange], () => {
   currentPage.value = 1;
   fetchOrders();
 });

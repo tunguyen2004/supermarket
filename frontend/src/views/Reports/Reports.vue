@@ -324,7 +324,17 @@ async function fetchStats(params) {
     const p = params || getDateParams();
     const res = await apiClient.get("/api/dashboard/stats", { params: p });
     if (res.data?.success) {
-      stats.value = res.data.data;
+      const d = res.data.data;
+      stats.value = {
+        totalRevenue: d.revenue?.current ?? 0,
+        revenueChange: d.revenue?.change ?? 0,
+        totalOrders: d.orders?.current ?? 0,
+        ordersChange: d.orders?.change ?? 0,
+        avgOrderValue: d.avgOrderValue?.current ?? 0,
+        avgOrderChange: d.avgOrderValue?.change ?? 0,
+        newCustomers: d.newCustomers?.current ?? 0,
+        customersChange: d.newCustomers?.change ?? 0,
+      };
     }
   } catch (err) {
     console.error("Stats error:", err);
@@ -352,7 +362,10 @@ async function fetchTopProducts(params) {
       params: { ...p, limit: 5 },
     });
     if (res.data?.success) {
-      topProductsData.value = res.data.data;
+      topProductsData.value = (res.data.data || []).map((item) => ({
+        ...item,
+        quantity: item.totalSold ?? item.quantity ?? 0,
+      }));
     }
   } catch (err) {
     console.error("Top products error:", err);
@@ -393,7 +406,10 @@ async function fetchLowStock() {
       params: { threshold: 20, limit: 10 },
     });
     if (res.data?.success) {
-      lowStockProducts.value = res.data.data;
+      lowStockProducts.value = (res.data.data || []).map((item) => ({
+        ...item,
+        stock: item.currentStock ?? item.stock ?? 0,
+      }));
     }
   } catch (err) {
     console.error("Low stock error:", err);

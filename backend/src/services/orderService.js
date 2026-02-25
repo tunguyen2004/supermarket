@@ -25,6 +25,9 @@ const getOrderList = async (req, res) => {
       search,
       sort = "created_at",
       order = "DESC",
+      from,
+      to,
+      customer_type,
     } = req.query;
 
     // Đảm bảo limit và offset là số
@@ -67,6 +70,22 @@ const getOrderList = async (req, res) => {
       );
       queryParams.push(`%${search}%`);
       paramIndex++;
+    }
+
+    if (from) {
+      whereConditions.push(`fo.date_key >= $${paramIndex}`);
+      queryParams.push(from);
+      paramIndex++;
+    }
+
+    if (to) {
+      whereConditions.push(`fo.date_key <= $${paramIndex}`);
+      queryParams.push(to);
+      paramIndex++;
+    }
+
+    if (customer_type === "walk_in") {
+      whereConditions.push(`fo.customer_id IS NULL`);
     }
 
     const whereClause =
