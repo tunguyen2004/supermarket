@@ -123,7 +123,7 @@
     </div>
 
     <!-- ====== QUICK CATEGORIES BAR (sau khi đã chat) ====== -->
-    <div v-if="messages.length > 0" class="categories-bar">
+    <div v-if="messages.length > 0" class="categories-bar" ref="categoriesBar" @wheel.prevent="onBarWheel($event, 'categoriesBar')">
       <button
         v-for="(cat, i) in categories"
         :key="i"
@@ -136,7 +136,7 @@
     </div>
 
     <!-- Expanded questions for selected bar category -->
-    <div v-if="messages.length > 0 && expandedBarCategory" class="bar-questions">
+    <div v-if="messages.length > 0 && expandedBarCategory" class="bar-questions" ref="barQuestions" @wheel.prevent="onBarWheel($event, 'barQuestions')">
       <button
         v-for="(q, qi) in barCategoryQuestions"
         :key="qi"
@@ -186,6 +186,8 @@ const unreadCount = ref(0)
 const selectedCategory = ref(null)
 const expandedBarCategory = ref(null)
 const sessionId = ref('chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6))
+const categoriesBar = ref(null)
+const barQuestions = ref(null)
 
 // ============ DATA QUERY CATEGORIES (câu hỏi truy vấn dữ liệu — gửi qua /message) ============
 const DATA_CATEGORIES = [
@@ -462,6 +464,13 @@ async function clearHistory() {
   selectedCategory.value = null
   expandedBarCategory.value = null
   sessionId.value = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+}
+
+// ============ WHEEL → HORIZONTAL SCROLL ============
+function onBarWheel(event, refName) {
+  const el = refName === 'categoriesBar' ? categoriesBar.value : barQuestions.value
+  if (!el) return
+  el.scrollLeft += event.deltaY
 }
 
 // ============ HELPERS ============
