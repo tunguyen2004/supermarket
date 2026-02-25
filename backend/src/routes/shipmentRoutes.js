@@ -6,12 +6,12 @@
  * ============================================================================
  */
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const shipmentService = require('../services/shipmentService');
-const { authenticate, authorize } = require('../middleware');
-const validate = require('../middleware/validate');
-const { shipmentValidator } = require('../validators');
+const shipmentService = require("../services/shipmentService");
+const { authenticate, authorize } = require("../middleware");
+const validate = require("../middleware/validate");
+const { shipmentValidator } = require("../validators");
 
 /**
  * @swagger
@@ -71,7 +71,7 @@ const { shipmentValidator } = require('../validators');
  *       200:
  *         description: Danh sách vận đơn
  */
-router.get('/', authenticate, shipmentService.getShipments);
+router.get("/", authenticate, shipmentService.getShipments);
 
 /**
  * @swagger
@@ -85,7 +85,7 @@ router.get('/', authenticate, shipmentService.getShipments);
  *       200:
  *         description: Danh sách trạng thái
  */
-router.get('/statuses', authenticate, shipmentService.getShipmentStatuses);
+router.get("/statuses", authenticate, shipmentService.getShipmentStatuses);
 
 /**
  * @swagger
@@ -99,7 +99,35 @@ router.get('/statuses', authenticate, shipmentService.getShipmentStatuses);
  *       200:
  *         description: Danh sách đơn vị vận chuyển
  */
-router.get('/carriers', authenticate, shipmentService.getCarriers);
+router.get("/carriers", authenticate, shipmentService.getCarriers);
+
+/**
+ * @swagger
+ * /api/shipments/reports/dashboard:
+ *   get:
+ *     summary: Báo cáo tổng quan vận chuyển
+ *     tags: [Shipments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: to
+ *         schema: { type: string, format: date }
+ *       - in: query
+ *         name: store_id
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Dữ liệu báo cáo vận chuyển
+ */
+router.get(
+  "/reports/dashboard",
+  authenticate,
+  shipmentService.getShipmentReportDashboard,
+);
 
 /**
  * @swagger
@@ -121,7 +149,7 @@ router.get('/carriers', authenticate, shipmentService.getCarriers);
  *       404:
  *         description: Không tìm thấy vận đơn
  */
-router.get('/:id', authenticate, shipmentService.getShipmentById);
+router.get("/:id", authenticate, shipmentService.getShipmentById);
 
 /**
  * @swagger
@@ -183,10 +211,11 @@ router.get('/:id', authenticate, shipmentService.getShipmentById);
  *       400:
  *         description: Dữ liệu không hợp lệ
  */
-router.post('/', 
-  authenticate, 
+router.post(
+  "/",
+  authenticate,
   validate(shipmentValidator.createShipment),
-  shipmentService.createShipment
+  shipmentService.createShipment,
 );
 
 /**
@@ -234,10 +263,11 @@ router.post('/',
  *       404:
  *         description: Không tìm thấy vận đơn
  */
-router.put('/:id', 
-  authenticate, 
+router.put(
+  "/:id",
+  authenticate,
   validate(shipmentValidator.updateShipment),
-  shipmentService.updateShipment
+  shipmentService.updateShipment,
 );
 
 /**
@@ -260,10 +290,11 @@ router.put('/:id',
  *       404:
  *         description: Không tìm thấy vận đơn
  */
-router.delete('/:id', 
-  authenticate, 
-  authorize(['admin', 'manager']),
-  shipmentService.deleteShipment
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(["admin", "manager"]),
+  shipmentService.deleteShipment,
 );
 
 /**
@@ -306,10 +337,11 @@ router.delete('/:id',
  *       404:
  *         description: Không tìm thấy vận đơn
  */
-router.patch('/:id/status', 
-  authenticate, 
+router.patch(
+  "/:id/status",
+  authenticate,
   validate(shipmentValidator.updateStatus),
-  shipmentService.updateShipmentStatus
+  shipmentService.updateShipmentStatus,
 );
 
 module.exports = router;

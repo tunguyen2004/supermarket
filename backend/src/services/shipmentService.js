@@ -3,9 +3,9 @@
  *                    MODULE 15: SHIPMENT SERVICE (VẬN CHUYỂN)
  * ============================================================================
  * Quản lý vận đơn / giao hàng
- * Sử dụng bảng: fact_shipments, fact_shipment_tracking, dim_carriers, 
+ * Sử dụng bảng: fact_shipments, fact_shipment_tracking, dim_carriers,
  *               subdim_shipment_statuses
- * 
+ *
  * Chức năng:
  * - Danh sách vận đơn
  * - Tạo vận đơn
@@ -16,7 +16,7 @@
  * ============================================================================
  */
 
-const db = require('../config/database');
+const db = require("../config/database");
 
 /**
  * 1. Danh sách vận đơn - GET /api/shipments
@@ -33,8 +33,8 @@ const getShipments = async (req, res) => {
       to,
       page = 1,
       limit = 20,
-      sortBy = 'created_at',
-      order = 'DESC'
+      sortBy = "created_at",
+      order = "DESC",
     } = req.query;
 
     const offset = (page - 1) * limit;
@@ -42,7 +42,7 @@ const getShipments = async (req, res) => {
     let paramIndex = 1;
 
     // Build WHERE clause
-    let whereClause = 'WHERE 1=1';
+    let whereClause = "WHERE 1=1";
 
     if (search) {
       whereClause += ` AND (
@@ -82,14 +82,21 @@ const getShipments = async (req, res) => {
 
     if (to) {
       whereClause += ` AND s.created_at <= $${paramIndex}`;
-      params.push(to + ' 23:59:59');
+      params.push(to + " 23:59:59");
       paramIndex++;
     }
 
     // Validate sortBy
-    const allowedSortFields = ['created_at', 'shipment_code', 'recipient_name', 'total_fee'];
-    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
-    const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const allowedSortFields = [
+      "created_at",
+      "shipment_code",
+      "recipient_name",
+      "total_fee",
+    ];
+    const sortField = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : "created_at";
+    const sortOrder = order.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     // Count total
     const countQuery = `
@@ -146,17 +153,16 @@ const getShipments = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
       },
-      message: 'Lấy danh sách vận đơn thành công'
+      message: "Lấy danh sách vận đơn thành công",
     });
-
   } catch (error) {
-    console.error('Get shipments error:', error);
+    console.error("Get shipments error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách vận đơn',
-      error: error.message
+      message: "Lỗi khi lấy danh sách vận đơn",
+      error: error.message,
     });
   }
 };
@@ -197,7 +203,7 @@ const getShipmentById = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy vận đơn'
+        message: "Không tìm thấy vận đơn",
       });
     }
 
@@ -223,7 +229,10 @@ const getShipmentById = async (req, res) => {
     const shipment = result.rows[0];
     let trackingUrl = null;
     if (shipment.tracking_code && shipment.tracking_url_template) {
-      trackingUrl = shipment.tracking_url_template.replace('{tracking_code}', shipment.tracking_code);
+      trackingUrl = shipment.tracking_url_template.replace(
+        "{tracking_code}",
+        shipment.tracking_code,
+      );
     }
 
     res.json({
@@ -231,17 +240,16 @@ const getShipmentById = async (req, res) => {
       data: {
         ...shipment,
         tracking_url: trackingUrl,
-        tracking_history: trackingResult.rows
+        tracking_history: trackingResult.rows,
       },
-      message: 'Lấy thông tin vận đơn thành công'
+      message: "Lấy thông tin vận đơn thành công",
     });
-
   } catch (error) {
-    console.error('Get shipment by id error:', error);
+    console.error("Get shipment by id error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy thông tin vận đơn',
-      error: error.message
+      message: "Lỗi khi lấy thông tin vận đơn",
+      error: error.message,
     });
   }
 };
@@ -273,48 +281,54 @@ const createShipment = async (req, res) => {
       insurance_fee = 0,
       estimated_delivery_date,
       notes,
-      special_instructions
+      special_instructions,
     } = req.body;
 
     // Validate required fields
-    if (!order_id || !sender_store_id || !recipient_name || !recipient_phone || !recipient_address) {
+    if (
+      !order_id ||
+      !sender_store_id ||
+      !recipient_name ||
+      !recipient_phone ||
+      !recipient_address
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Thiếu thông tin bắt buộc'
+        message: "Thiếu thông tin bắt buộc",
       });
     }
 
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Check order exists
     const orderCheck = await client.query(
-      'SELECT id, order_code FROM fact_orders WHERE id = $1',
-      [order_id]
+      "SELECT id, order_code FROM fact_orders WHERE id = $1",
+      [order_id],
     );
     if (orderCheck.rows.length === 0) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       return res.status(400).json({
         success: false,
-        message: 'Đơn hàng không tồn tại'
+        message: "Đơn hàng không tồn tại",
       });
     }
 
     // Check if shipment already exists for this order
     const existingShipment = await client.query(
-      'SELECT id FROM fact_shipments WHERE order_id = $1',
-      [order_id]
+      "SELECT id FROM fact_shipments WHERE order_id = $1",
+      [order_id],
     );
     if (existingShipment.rows.length > 0) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       return res.status(400).json({
         success: false,
-        message: 'Đơn hàng đã có vận đơn'
+        message: "Đơn hàng đã có vận đơn",
       });
     }
 
     // Get pending status
     const statusResult = await client.query(
-      "SELECT id FROM subdim_shipment_statuses WHERE code = 'pending'"
+      "SELECT id FROM subdim_shipment_statuses WHERE code = 'pending'",
     );
     const statusId = statusResult.rows[0].id;
 
@@ -326,8 +340,8 @@ const createShipment = async (req, res) => {
 
     // Get sender info from store
     const storeResult = await client.query(
-      'SELECT name, phone, address FROM dim_stores WHERE id = $1',
-      [sender_store_id]
+      "SELECT name, phone, address FROM dim_stores WHERE id = $1",
+      [sender_store_id],
     );
     const store = storeResult.rows[0];
 
@@ -347,24 +361,48 @@ const createShipment = async (req, res) => {
     `;
 
     const insertResult = await client.query(insertQuery, [
-      shipmentCode, order_id, carrier_id, tracking_code, statusId,
-      sender_store_id, store.name, store.phone, store.address,
-      recipient_name, recipient_phone, recipient_address, recipient_city_id,
-      recipient_district, recipient_ward,
-      package_weight, package_length, package_width, package_height, items_description,
-      shipping_fee, cod_amount, insurance_fee, totalFee,
-      estimated_delivery_date, notes, special_instructions, req.user.id
+      shipmentCode,
+      order_id,
+      carrier_id,
+      tracking_code,
+      statusId,
+      sender_store_id,
+      store.name,
+      store.phone,
+      store.address,
+      recipient_name,
+      recipient_phone,
+      recipient_address,
+      recipient_city_id,
+      recipient_district,
+      recipient_ward,
+      package_weight,
+      package_length,
+      package_width,
+      package_height,
+      items_description,
+      shipping_fee,
+      cod_amount,
+      insurance_fee,
+      totalFee,
+      estimated_delivery_date,
+      notes,
+      special_instructions,
+      req.user.id,
     ]);
 
     const shipmentId = insertResult.rows[0].id;
 
     // Insert initial tracking record
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO fact_shipment_tracking (shipment_id, status_id, description, created_by)
       VALUES ($1, $2, $3, $4)
-    `, [shipmentId, statusId, 'Vận đơn được tạo', req.user.id]);
+    `,
+      [shipmentId, statusId, "Vận đơn được tạo", req.user.id],
+    );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     // Get created shipment
     const resultQuery = `
@@ -387,16 +425,15 @@ const createShipment = async (req, res) => {
     res.status(201).json({
       success: true,
       data: result.rows[0],
-      message: 'Tạo vận đơn thành công'
+      message: "Tạo vận đơn thành công",
     });
-
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Create shipment error:', error);
+    await client.query("ROLLBACK");
+    console.error("Create shipment error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi tạo vận đơn',
-      error: error.message
+      message: "Lỗi khi tạo vận đơn",
+      error: error.message,
     });
   } finally {
     client.release();
@@ -428,7 +465,7 @@ const updateShipment = async (req, res) => {
       insurance_fee,
       estimated_delivery_date,
       notes,
-      special_instructions
+      special_instructions,
     } = req.body;
 
     // Check shipment exists
@@ -437,22 +474,23 @@ const updateShipment = async (req, res) => {
        FROM fact_shipments s 
        JOIN subdim_shipment_statuses ss ON s.status_id = ss.id
        WHERE s.id = $1`,
-      [id]
+      [id],
     );
 
     if (existingResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy vận đơn'
+        message: "Không tìm thấy vận đơn",
       });
     }
 
     // Can only edit pending/confirmed shipments
-    const editableStatuses = ['pending', 'confirmed'];
+    const editableStatuses = ["pending", "confirmed"];
     if (!editableStatuses.includes(existingResult.rows[0].status_code)) {
       return res.status(400).json({
         success: false,
-        message: 'Chỉ có thể sửa vận đơn ở trạng thái chờ xử lý hoặc đã xác nhận'
+        message:
+          "Chỉ có thể sửa vận đơn ở trạng thái chờ xử lý hoặc đã xác nhận",
       });
     }
 
@@ -462,10 +500,25 @@ const updateShipment = async (req, res) => {
     let paramIndex = 1;
 
     const fieldMappings = {
-      carrier_id, tracking_code, recipient_name, recipient_phone, recipient_address,
-      recipient_city_id, recipient_district, recipient_ward,
-      package_weight, package_length, package_width, package_height, items_description,
-      shipping_fee, cod_amount, insurance_fee, estimated_delivery_date, notes, special_instructions
+      carrier_id,
+      tracking_code,
+      recipient_name,
+      recipient_phone,
+      recipient_address,
+      recipient_city_id,
+      recipient_district,
+      recipient_ward,
+      package_weight,
+      package_length,
+      package_width,
+      package_height,
+      items_description,
+      shipping_fee,
+      cod_amount,
+      insurance_fee,
+      estimated_delivery_date,
+      notes,
+      special_instructions,
     };
 
     for (const [key, value] of Object.entries(fieldMappings)) {
@@ -478,29 +531,35 @@ const updateShipment = async (req, res) => {
     // Recalculate total fee if needed
     if (shipping_fee !== undefined || insurance_fee !== undefined) {
       const currentShipment = await db.query(
-        'SELECT shipping_fee, insurance_fee FROM fact_shipments WHERE id = $1',
-        [id]
+        "SELECT shipping_fee, insurance_fee FROM fact_shipments WHERE id = $1",
+        [id],
       );
-      const newShippingFee = shipping_fee !== undefined ? shipping_fee : currentShipment.rows[0].shipping_fee;
-      const newInsuranceFee = insurance_fee !== undefined ? insurance_fee : currentShipment.rows[0].insurance_fee;
-      
+      const newShippingFee =
+        shipping_fee !== undefined
+          ? shipping_fee
+          : currentShipment.rows[0].shipping_fee;
+      const newInsuranceFee =
+        insurance_fee !== undefined
+          ? insurance_fee
+          : currentShipment.rows[0].insurance_fee;
+
       updateFields.push(`total_fee = $${paramIndex++}`);
       params.push(parseFloat(newShippingFee) + parseFloat(newInsuranceFee));
     }
 
-    updateFields.push('updated_at = NOW()');
+    updateFields.push("updated_at = NOW()");
 
     if (updateFields.length === 1) {
       return res.status(400).json({
         success: false,
-        message: 'Không có thông tin cập nhật'
+        message: "Không có thông tin cập nhật",
       });
     }
 
     params.push(id);
     await db.query(
-      `UPDATE fact_shipments SET ${updateFields.join(', ')} WHERE id = $${paramIndex}`,
-      params
+      `UPDATE fact_shipments SET ${updateFields.join(", ")} WHERE id = $${paramIndex}`,
+      params,
     );
 
     // Get updated shipment
@@ -522,15 +581,14 @@ const updateShipment = async (req, res) => {
     res.json({
       success: true,
       data: result.rows[0],
-      message: 'Cập nhật vận đơn thành công'
+      message: "Cập nhật vận đơn thành công",
     });
-
   } catch (error) {
-    console.error('Update shipment error:', error);
+    console.error("Update shipment error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi cập nhật vận đơn',
-      error: error.message
+      message: "Lỗi khi cập nhật vận đơn",
+      error: error.message,
     });
   }
 };
@@ -548,53 +606,55 @@ const deleteShipment = async (req, res) => {
        FROM fact_shipments s 
        JOIN subdim_shipment_statuses ss ON s.status_id = ss.id
        WHERE s.id = $1`,
-      [id]
+      [id],
     );
 
     if (existingResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy vận đơn'
+        message: "Không tìm thấy vận đơn",
       });
     }
 
     const shipment = existingResult.rows[0];
 
     // Can only delete pending shipments, others are cancelled
-    if (shipment.status_code !== 'pending') {
+    if (shipment.status_code !== "pending") {
       // Update to cancelled
       const cancelledStatus = await db.query(
-        "SELECT id FROM subdim_shipment_statuses WHERE code = 'cancelled'"
+        "SELECT id FROM subdim_shipment_statuses WHERE code = 'cancelled'",
       );
-      
+
       await db.query(
-        'UPDATE fact_shipments SET status_id = $1, updated_at = NOW() WHERE id = $2',
-        [cancelledStatus.rows[0].id, id]
+        "UPDATE fact_shipments SET status_id = $1, updated_at = NOW() WHERE id = $2",
+        [cancelledStatus.rows[0].id, id],
       );
 
       return res.json({
         success: true,
-        message: `Đã hủy vận đơn ${shipment.shipment_code}`
+        message: `Đã hủy vận đơn ${shipment.shipment_code}`,
       });
     }
 
     // Delete tracking history first
-    await db.query('DELETE FROM fact_shipment_tracking WHERE shipment_id = $1', [id]);
-    
+    await db.query(
+      "DELETE FROM fact_shipment_tracking WHERE shipment_id = $1",
+      [id],
+    );
+
     // Delete shipment
-    await db.query('DELETE FROM fact_shipments WHERE id = $1', [id]);
+    await db.query("DELETE FROM fact_shipments WHERE id = $1", [id]);
 
     res.json({
       success: true,
-      message: `Đã xóa vận đơn ${shipment.shipment_code}`
+      message: `Đã xóa vận đơn ${shipment.shipment_code}`,
     });
-
   } catch (error) {
-    console.error('Delete shipment error:', error);
+    console.error("Delete shipment error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi xóa vận đơn',
-      error: error.message
+      message: "Lỗi khi xóa vận đơn",
+      error: error.message,
     });
   }
 };
@@ -611,7 +671,7 @@ const updateShipmentStatus = async (req, res) => {
     if (!status) {
       return res.status(400).json({
         success: false,
-        message: 'Trạng thái là bắt buộc'
+        message: "Trạng thái là bắt buộc",
       });
     }
 
@@ -621,70 +681,79 @@ const updateShipmentStatus = async (req, res) => {
        FROM fact_shipments s 
        JOIN subdim_shipment_statuses ss ON s.status_id = ss.id
        WHERE s.id = $1`,
-      [id]
+      [id],
     );
 
     if (existingResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy vận đơn'
+        message: "Không tìm thấy vận đơn",
       });
     }
 
     // Get new status id
     const statusResult = await client.query(
-      'SELECT id, name FROM subdim_shipment_statuses WHERE code = $1',
-      [status]
+      "SELECT id, name FROM subdim_shipment_statuses WHERE code = $1",
+      [status],
     );
 
     if (statusResult.rows.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Trạng thái không hợp lệ'
+        message: "Trạng thái không hợp lệ",
       });
     }
 
     const newStatusId = statusResult.rows[0].id;
     const statusName = statusResult.rows[0].name;
 
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Update shipment status
-    let updateQuery = 'UPDATE fact_shipments SET status_id = $1, updated_at = NOW()';
+    let updateQuery =
+      "UPDATE fact_shipments SET status_id = $1, updated_at = NOW()";
     let updateParams = [newStatusId];
 
     // Set timestamps based on status
-    if (status === 'picked') {
-      updateQuery += ', picked_at = NOW()';
-    } else if (status === 'delivered') {
-      updateQuery += ', delivered_at = NOW(), actual_delivery_date = NOW()';
+    if (status === "picked") {
+      updateQuery += ", picked_at = NOW()";
+    } else if (status === "delivered") {
+      updateQuery += ", delivered_at = NOW(), actual_delivery_date = NOW()";
     }
 
-    updateQuery += ' WHERE id = $' + (updateParams.length + 1);
+    updateQuery += " WHERE id = $" + (updateParams.length + 1);
     updateParams.push(id);
 
     await client.query(updateQuery, updateParams);
 
     // Add tracking record
-    await client.query(`
+    await client.query(
+      `
       INSERT INTO fact_shipment_tracking (shipment_id, status_id, location, description, created_by)
       VALUES ($1, $2, $3, $4, $5)
-    `, [id, newStatusId, location || null, description || statusName, req.user.id]);
+    `,
+      [
+        id,
+        newStatusId,
+        location || null,
+        description || statusName,
+        req.user.id,
+      ],
+    );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     res.json({
       success: true,
-      message: `Đã cập nhật trạng thái vận đơn thành "${statusName}"`
+      message: `Đã cập nhật trạng thái vận đơn thành "${statusName}"`,
     });
-
   } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Update shipment status error:', error);
+    await client.query("ROLLBACK");
+    console.error("Update shipment status error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi cập nhật trạng thái vận đơn',
-      error: error.message
+      message: "Lỗi khi cập nhật trạng thái vận đơn",
+      error: error.message,
     });
   } finally {
     client.release();
@@ -697,21 +766,20 @@ const updateShipmentStatus = async (req, res) => {
 const getShipmentStatuses = async (req, res) => {
   try {
     const result = await db.query(
-      'SELECT id, code, name, description FROM subdim_shipment_statuses ORDER BY sort_order'
+      "SELECT id, code, name, description FROM subdim_shipment_statuses ORDER BY sort_order",
     );
 
     res.json({
       success: true,
       data: result.rows,
-      message: 'Lấy danh sách trạng thái vận đơn thành công'
+      message: "Lấy danh sách trạng thái vận đơn thành công",
     });
-
   } catch (error) {
-    console.error('Get shipment statuses error:', error);
+    console.error("Get shipment statuses error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách trạng thái',
-      error: error.message
+      message: "Lỗi khi lấy danh sách trạng thái",
+      error: error.message,
     });
   }
 };
@@ -725,21 +793,211 @@ const getCarriers = async (req, res) => {
       `SELECT id, code, name, phone, website, tracking_url_template 
        FROM dim_carriers 
        WHERE is_active = true
-       ORDER BY name`
+       ORDER BY name`,
     );
 
     res.json({
       success: true,
       data: result.rows,
-      message: 'Lấy danh sách đơn vị vận chuyển thành công'
+      message: "Lấy danh sách đơn vị vận chuyển thành công",
     });
-
   } catch (error) {
-    console.error('Get carriers error:', error);
+    console.error("Get carriers error:", error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy danh sách đơn vị vận chuyển',
-      error: error.message
+      message: "Lỗi khi lấy danh sách đơn vị vận chuyển",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * SHIPMENT REPORT DASHBOARD
+ * GET /api/shipments/reports/dashboard
+ * Query: from, to, store_id
+ * Returns: statusCards, avgPickupByStore, avgDeliveryByStore, successRate, weightDistribution
+ */
+const getShipmentReportDashboard = async (req, res) => {
+  try {
+    const { from, to, store_id } = req.query;
+
+    const endDate = to || new Date().toISOString().split("T")[0];
+    const startDate =
+      from ||
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+
+    let storeFilter = "";
+    const params = [startDate, endDate + " 23:59:59"];
+    if (store_id) {
+      params.push(parseInt(store_id));
+      storeFilter = ` AND s.sender_store_id = $${params.length}`;
+    }
+
+    // 1. Status cards – group by status category the frontend needs
+    const statusCardsResult = await db.query(
+      `
+      SELECT
+        CASE
+          WHEN ss.code IN ('pending','confirmed') THEN 'waiting_pickup'
+          WHEN ss.code IN ('picking','picked') THEN 'picked'
+          WHEN ss.code IN ('in_transit','out_for_delivery') THEN 'delivering'
+          WHEN ss.code = 'failed' THEN 'failed_redeliver'
+          WHEN ss.code IN ('returned','cancelled') THEN 'returning'
+          ELSE 'other'
+        END as group_key,
+        COUNT(*) as cnt,
+        COALESCE(SUM(s.cod_amount), 0) as total_cod
+      FROM fact_shipments s
+      JOIN subdim_shipment_statuses ss ON s.status_id = ss.id
+      WHERE s.created_at BETWEEN $1 AND $2 ${storeFilter}
+      GROUP BY group_key
+    `,
+      params,
+    );
+
+    const groupMap = {};
+    statusCardsResult.rows.forEach((r) => {
+      groupMap[r.group_key] = {
+        count: parseInt(r.cnt),
+        cod: parseFloat(r.total_cod),
+      };
+    });
+
+    const statusCards = [
+      {
+        label: "Chờ lấy hàng",
+        value: groupMap.waiting_pickup?.count || 0,
+        cod: groupMap.waiting_pickup?.cod || 0,
+      },
+      {
+        label: "Đã lấy hàng",
+        value: groupMap.picked?.count || 0,
+        cod: groupMap.picked?.cod || 0,
+      },
+      {
+        label: "Đang giao hàng",
+        value: groupMap.delivering?.count || 0,
+        cod: groupMap.delivering?.cod || 0,
+      },
+      {
+        label: "Chờ giao lại",
+        value: groupMap.failed_redeliver?.count || 0,
+        cod: groupMap.failed_redeliver?.cod || 0,
+      },
+      {
+        label: "Đang hoàn hàng",
+        value: groupMap.returning?.count || 0,
+        cod: groupMap.returning?.cod || 0,
+      },
+    ];
+
+    // 2. Avg pickup time by store (minutes from created_at to picked_at)
+    const pickupResult = await db.query(
+      `
+      SELECT
+        st.name as store_name,
+        ROUND(AVG(EXTRACT(EPOCH FROM (s.picked_at - s.created_at)) / 60)) as avg_minutes
+      FROM fact_shipments s
+      JOIN dim_stores st ON s.sender_store_id = st.id
+      WHERE s.picked_at IS NOT NULL
+        AND s.created_at BETWEEN $1 AND $2 ${storeFilter}
+      GROUP BY st.id, st.name
+      ORDER BY st.name
+    `,
+      params,
+    );
+
+    // 3. Avg delivery time by store (minutes from picked_at to delivered_at)
+    const deliveryResult = await db.query(
+      `
+      SELECT
+        st.name as store_name,
+        ROUND(AVG(EXTRACT(EPOCH FROM (s.delivered_at - s.picked_at)) / 60)) as avg_minutes
+      FROM fact_shipments s
+      JOIN dim_stores st ON s.sender_store_id = st.id
+      WHERE s.delivered_at IS NOT NULL
+        AND s.picked_at IS NOT NULL
+        AND s.created_at BETWEEN $1 AND $2 ${storeFilter}
+      GROUP BY st.id, st.name
+      ORDER BY st.name
+    `,
+      params,
+    );
+
+    // 4. Success rate (delivered vs total excluding pending/confirmed)
+    const successResult = await db.query(
+      `
+      SELECT
+        COUNT(*) FILTER (WHERE ss.code = 'delivered') as delivered,
+        COUNT(*) FILTER (WHERE ss.code = 'failed') as failed,
+        COUNT(*) FILTER (WHERE ss.code IN ('returned','cancelled')) as returned_cancelled,
+        COUNT(*) as total
+      FROM fact_shipments s
+      JOIN subdim_shipment_statuses ss ON s.status_id = ss.id
+      WHERE s.created_at BETWEEN $1 AND $2 ${storeFilter}
+    `,
+      params,
+    );
+
+    const sr = successResult.rows[0];
+    const delivered = parseInt(sr.delivered || 0);
+    const failed = parseInt(sr.failed || 0);
+    const returnedCancelled = parseInt(sr.returned_cancelled || 0);
+    const total = parseInt(sr.total || 0);
+    const successRate = {
+      delivered,
+      failed,
+      returnedCancelled,
+      total,
+      rate: total > 0 ? Math.round((delivered / total) * 100) : 0,
+    };
+
+    // 5. Weight distribution
+    const weightResult = await db.query(
+      `
+      SELECT
+        CASE
+          WHEN package_weight <= 5 THEN 'Nhẹ (≤5kg)'
+          WHEN package_weight <= 15 THEN 'Trung bình (5-15kg)'
+          ELSE 'Nặng (>15kg)'
+        END as weight_group,
+        COUNT(*) as cnt
+      FROM fact_shipments s
+      WHERE s.created_at BETWEEN $1 AND $2 ${storeFilter}
+      GROUP BY weight_group
+      ORDER BY weight_group
+    `,
+      params,
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        statusCards,
+        avgPickup: {
+          labels: pickupResult.rows.map((r) => r.store_name),
+          data: pickupResult.rows.map((r) => parseInt(r.avg_minutes || 0)),
+        },
+        avgDelivery: {
+          labels: deliveryResult.rows.map((r) => r.store_name),
+          data: deliveryResult.rows.map((r) => parseInt(r.avg_minutes || 0)),
+        },
+        successRate,
+        weightDistribution: {
+          labels: weightResult.rows.map((r) => r.weight_group),
+          data: weightResult.rows.map((r) => parseInt(r.cnt)),
+        },
+      },
+      message: "Shipment report dashboard retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Shipment report dashboard error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy báo cáo vận chuyển",
+      error: error.message,
     });
   }
 };
@@ -752,5 +1010,6 @@ module.exports = {
   deleteShipment,
   updateShipmentStatus,
   getShipmentStatuses,
-  getCarriers
+  getCarriers,
+  getShipmentReportDashboard,
 };

@@ -202,6 +202,25 @@ class ShipmentService {
       );
     }
   }
+
+  /**
+   * Lấy báo cáo tổng quan vận chuyển
+   * @param {Object} params - { from, to, store_id }
+   * @returns {Promise<Object>} Dữ liệu báo cáo
+   */
+  async getReportDashboard(params = {}) {
+    try {
+      const response = await apiClient.get("/api/shipments/reports/dashboard", {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching shipment report:", error);
+      throw new Error(
+        error.response?.data?.message || "Lỗi khi lấy báo cáo vận chuyển",
+      );
+    }
+  }
 }
 
 // Export instance

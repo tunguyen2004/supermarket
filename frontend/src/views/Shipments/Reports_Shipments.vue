@@ -22,7 +22,7 @@
 
         <el-dropdown trigger="click" @command="handleBranchChange">
           <div class="filter-btn">
-            {{ filters.branch || "Tất cả chi nhánh" }}
+            {{ selectedBranchLabel }}
             <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </div>
           <template #dropdown>
@@ -30,12 +30,13 @@
               <el-dropdown-item :command="null"
                 >Tất cả chi nhánh</el-dropdown-item
               >
-              <el-dropdown-item command="Chi nhánh Quận 1"
-                >Chi nhánh Quận 1</el-dropdown-item
+              <el-dropdown-item
+                v-for="store in stores"
+                :key="store.id"
+                :command="store.id"
               >
-              <el-dropdown-item command="Chi nhánh Quận 3"
-                >Chi nhánh Quận 3</el-dropdown-item
-              >
+                {{ store.name }}
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -47,12 +48,17 @@
       </div>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loading" class="loading-overlay">
+      <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+    </div>
+
     <div class="shipment-status-cards">
       <div class="status-card" v-for="item in statusList" :key="item.label">
         <div class="status-title">{{ item.label }}</div>
         <div class="status-value">{{ item.value }}</div>
         <div class="status-cod">
-          COD: <b>{{ item.cod }}</b>
+          COD: <b>{{ formatCurrency(item.cod) }}</b>
         </div>
       </div>
     </div>
@@ -76,13 +82,22 @@
 
       <div class="report-card">
         <div class="report-title">Tỉ lệ giao hàng thành công</div>
-        <div class="report-content">
+        <div class="report-content success-rate-content">
           <canvas ref="successPieRef" class="big-chart"></canvas>
+          <div class="success-rate-info" v-if="reportData.successRate">
+            <div class="rate-number">{{ reportData.successRate.rate }}%</div>
+            <div class="rate-detail">
+              {{ reportData.successRate.delivered }}/{{
+                reportData.successRate.total
+              }}
+              đơn giao thành công
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="report-card">
-        <div class="report-title">Tỉ trọng vận đơn</div>
+        <div class="report-title">Tỉ trọng vận đơn theo khối lượng</div>
         <div class="report-content">
           <canvas ref="weightPieRef" class="big-chart"></canvas>
         </div>
@@ -92,19 +107,32 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import { Chart, registerables } from "chart.js";
-import { ArrowDown } from "@element-plus/icons-vue"; // Import icon
+import { ArrowDown } from "@element-plus/icons-vue";
+import shipmentService from "@/services/shipmentService";
+import apiClient from "@/config/axios";
+import formatCurrency from "@/utils/formatCurrency";
+
 Chart.register(...registerables);
 
-// --- STATE QUẢN LÝ ---
+// --- STATE ---
 const filters = reactive({
   date: { key: "7d", label: "7 ngày qua" },
-  branch: null,
+  store_id: null,
 });
 
+const loading = ref(false);
 const statusList = ref([]);
-const chartInstances = {}; // Lưu trữ các đối tượng chart
+const stores = ref([]);
+const reportData = ref({});
+const chartInstances = {};
+
+const selectedBranchLabel = computed(() => {
+  if (!filters.store_id) return "Tất cả chi nhánh";
+  const s = stores.value.find((st) => st.id === filters.store_id);
+  return s ? s.name : "Tất cả chi nhánh";
+});
 
 // --- REFS CHO CANVAS ---
 const pickupChartRef = ref(null);
@@ -112,137 +140,194 @@ const deliveryChartRef = ref(null);
 const successPieRef = ref(null);
 const weightPieRef = ref(null);
 
-// --- HÀM GIẢ LẬP LẤY DỮ LIỆU ---
-const fetchDashboardData = async () => {
-  console.log("Đang lấy dữ liệu mới với bộ lọc:", filters);
-  // Giả lập độ trễ mạng
-  await new Promise((resolve) => setTimeout(resolve, 300));
+// --- DATE RANGE HELPER ---
+const getDateRange = () => {
+  const now = new Date();
+  let from;
+  const to = now.toISOString().split("T")[0];
 
-  // Tạo dữ liệu ngẫu nhiên
-  statusList.value = [
-    {
-      label: "Chờ lấy hàng",
-      value: Math.floor(Math.random() * 10),
-      cod: `${(Math.random() * 2000).toFixed(0)}.000đ`,
-    },
-    {
-      label: "Đã lấy hàng",
-      value: Math.floor(Math.random() * 20),
-      cod: `${(Math.random() * 5000).toFixed(0)}.000đ`,
-    },
-    {
-      label: "Đang giao hàng",
-      value: Math.floor(Math.random() * 15),
-      cod: `${(Math.random() * 4000).toFixed(0)}.000đ`,
-    },
-    {
-      label: "Chờ giao lại",
-      value: Math.floor(Math.random() * 5),
-      cod: `${(Math.random() * 1000).toFixed(0)}.000đ`,
-    },
-    {
-      label: "Đang hoàn hàng",
-      value: Math.floor(Math.random() * 3),
-      cod: `${(Math.random() * 500).toFixed(0)}.000đ`,
-    },
-  ];
-
-  const randomBarData1 = [
-    Math.floor(Math.random() * 20 + 30),
-    Math.floor(Math.random() * 20 + 30),
-    Math.floor(Math.random() * 20 + 30),
-  ];
-  const randomBarData2 = [
-    Math.floor(Math.random() * 20 + 50),
-    Math.floor(Math.random() * 20 + 50),
-    Math.floor(Math.random() * 20 + 50),
-  ];
-  const randomPieData1 = Math.floor(Math.random() * 10 + 85);
-  const randomPieData2 = Math.floor(Math.random() * 50 + 50);
-
-  // Cập nhật dữ liệu cho các biểu đồ
-  updateChartData(chartInstances.pickup, randomBarData1);
-  updateChartData(chartInstances.delivery, randomBarData2);
-  updateChartData(chartInstances.success, [
-    randomPieData1,
-    100 - randomPieData1,
-  ]);
-  updateChartData(chartInstances.weight, [
-    randomPieData2,
-    150 - randomPieData2,
-  ]);
+  switch (filters.date.key) {
+    case "30d":
+      from = new Date(now - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      break;
+    case "this_month":
+      from = new Date(now.getFullYear(), now.getMonth(), 1)
+        .toISOString()
+        .split("T")[0];
+      break;
+    default: // 7d
+      from = new Date(now - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+  }
+  return { from, to };
 };
 
-// --- LOGIC BIỂU ĐỒ ---
+// --- FETCH STORES ---
+const fetchStores = async () => {
+  try {
+    const res = await apiClient.get("/api/stores");
+    if (res.data.success) {
+      stores.value = res.data.data.filter((s) => s.is_active);
+    }
+  } catch (err) {
+    console.error("Error loading stores:", err);
+  }
+};
+
+// --- FETCH REPORT DATA ---
+const fetchDashboardData = async () => {
+  loading.value = true;
+  try {
+    const { from, to } = getDateRange();
+    const params = { from, to };
+    if (filters.store_id) params.store_id = filters.store_id;
+
+    const res = await shipmentService.getReportDashboard(params);
+    if (res.success) {
+      const data = res.data;
+      reportData.value = data;
+      statusList.value = data.statusCards || [];
+
+      // Update charts
+      renderBarChart(chartInstances.pickup, data.avgPickup);
+      renderBarChart(chartInstances.delivery, data.avgDelivery);
+
+      if (data.successRate) {
+        updateChartData(chartInstances.success, [
+          data.successRate.delivered,
+          data.successRate.failed + data.successRate.returnedCancelled,
+        ]);
+      }
+      if (data.weightDistribution) {
+        // Rebuild weight chart with dynamic labels
+        if (chartInstances.weight) chartInstances.weight.destroy();
+        chartInstances.weight = createChart(
+          weightPieRef.value,
+          "doughnut",
+          {
+            labels: data.weightDistribution.labels,
+            datasets: [
+              {
+                data: data.weightDistribution.data,
+                backgroundColor: ["#42a5f5", "#ffa726", "#ef5350"],
+              },
+            ],
+          },
+          {
+            plugins: { legend: { display: true, position: "bottom" } },
+            cutout: "70%",
+          },
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error loading shipment report:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// --- CHART HELPERS ---
 const initCharts = () => {
   chartInstances.pickup = createChart(
     pickupChartRef.value,
     "bar",
     {
-      labels: ["CN1", "CN2", "CN3"],
+      labels: [],
       datasets: [
         {
-          label: "Lấy hàng (phút)",
+          label: "Thời gian lấy hàng (phút)",
           data: [],
-          backgroundColor: ["#42a5f5", "#90caf9", "#e3f2fd"],
+          backgroundColor: [
+            "#42a5f5",
+            "#90caf9",
+            "#bbdefb",
+            "#e3f2fd",
+            "#64b5f6",
+          ],
         },
       ],
     },
     {
       plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } },
-    }
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Phút" },
+        },
+      },
+    },
   );
 
   chartInstances.delivery = createChart(
     deliveryChartRef.value,
     "bar",
     {
-      labels: ["CN1", "CN2", "CN3"],
+      labels: [],
       datasets: [
         {
-          label: "Giao hàng (phút)",
+          label: "Thời gian giao hàng (phút)",
           data: [],
-          backgroundColor: ["#66bb6a", "#a5d6a7", "#e8f5e9"],
+          backgroundColor: [
+            "#66bb6a",
+            "#a5d6a7",
+            "#c8e6c9",
+            "#e8f5e9",
+            "#81c784",
+          ],
         },
       ],
     },
     {
       plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } },
-    }
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Phút" },
+        },
+      },
+    },
   );
 
   chartInstances.success = createChart(
     successPieRef.value,
     "doughnut",
     {
-      labels: ["Thành công", "Thất bại"],
+      labels: ["Thành công", "Thất bại/Hoàn"],
       datasets: [{ data: [], backgroundColor: ["#42a5f5", "#e0e0e0"] }],
     },
     {
       plugins: { legend: { display: true, position: "bottom" } },
       cutout: "70%",
-    }
+    },
   );
 
   chartInstances.weight = createChart(
     weightPieRef.value,
     "doughnut",
     {
-      labels: ["Nặng", "Nhẹ"],
-      datasets: [{ data: [], backgroundColor: ["#ffa726", "#ffe0b2"] }],
+      labels: [],
+      datasets: [
+        { data: [], backgroundColor: ["#42a5f5", "#ffa726", "#ef5350"] },
+      ],
     },
     {
       plugins: { legend: { display: true, position: "bottom" } },
       cutout: "70%",
-    }
+    },
   );
 };
 
 const createChart = (canvasRef, type, data, options) => {
   if (!canvasRef) return null;
-  return new Chart(canvasRef, { type, data, options });
+  return new Chart(canvasRef, {
+    type,
+    data,
+    options: { responsive: true, maintainAspectRatio: false, ...options },
+  });
 };
 
 const updateChartData = (chart, newData) => {
@@ -251,7 +336,14 @@ const updateChartData = (chart, newData) => {
   chart.update();
 };
 
-// --- HÀM XỬ LÝ SỰ KIỆN ---
+const renderBarChart = (chart, apiData) => {
+  if (!chart || !apiData) return;
+  chart.data.labels = apiData.labels;
+  chart.data.datasets[0].data = apiData.data;
+  chart.update();
+};
+
+// --- EVENT HANDLERS ---
 const handleDateChange = (command) => {
   const labels = {
     "7d": "7 ngày qua",
@@ -263,22 +355,20 @@ const handleDateChange = (command) => {
 };
 
 const handleBranchChange = (command) => {
-  filters.branch = command;
+  filters.store_id = command;
   fetchDashboardData();
 };
 
-// --- VÒNG ĐỜI COMPONENT ---
-onMounted(() => {
+// --- LIFECYCLE ---
+onMounted(async () => {
+  await fetchStores();
   initCharts();
-  fetchDashboardData();
+  await fetchDashboardData();
 });
 
 onUnmounted(() => {
-  // Hủy các đối tượng chart để tránh rò rỉ bộ nhớ
   Object.values(chartInstances).forEach((chart) => {
-    if (chart) {
-      chart.destroy();
-    }
+    if (chart) chart.destroy();
   });
 });
 </script>
@@ -424,5 +514,31 @@ onUnmounted(() => {
     width: 98%;
     justify-content: center;
   }
+}
+
+.loading-overlay {
+  text-align: center;
+  padding: 24px;
+  color: #6b7280;
+  font-size: 1rem;
+}
+.loading-overlay i {
+  margin-right: 8px;
+}
+.success-rate-content {
+  flex-direction: column;
+  gap: 8px;
+}
+.success-rate-info {
+  text-align: center;
+}
+.rate-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #42a5f5;
+}
+.rate-detail {
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 </style>
