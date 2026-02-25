@@ -3,45 +3,34 @@
     <div class="page-header">
       <h1 class="page-title">Đơn đặt hàng nhập</h1>
       <div class="action-buttons-group">
-        <el-button :icon="Upload" @click="importDialogVisible = true"
-          >Nhập file</el-button
-        >
         <el-button type="primary" :icon="Plus" @click="openCreateDialog"
-          >Tạo đơn đặt hàng</el-button
+          >Tạo đơn nhập hàng</el-button
         >
       </div>
     </div>
-
-    <el-tabs v-model="activeTab" class="order-tabs">
-      <el-tab-pane label="Tất cả" name="all" />
-      <el-tab-pane label="Nháp" name="draft" />
-      <el-tab-pane label="Đã đặt hàng" name="ordered" />
-      <el-tab-pane label="Đã nhập kho" name="received" />
-      <el-tab-pane label="Đã hủy" name="cancelled" />
-    </el-tabs>
 
     <div class="table-container">
       <div class="filters-bar">
         <div class="search-input-wrapper">
           <el-input
             v-model="search"
-            placeholder="Tìm theo mã đơn, nhà cung cấp..."
+            placeholder="Tìm theo mã giao dịch, sản phẩm..."
             clearable
             :prefix-icon="Search"
           />
         </div>
         <div v-if="!isMobile" class="advanced-filters">
           <el-select
-            v-model="supplierFilter"
-            placeholder="Nhà cung cấp"
+            v-model="storeFilter"
+            placeholder="Chi nhánh"
             clearable
             class="adv-select"
           >
             <el-option
-              v-for="s in uniqueSuppliers"
-              :key="s"
-              :label="s"
-              :value="s"
+              v-for="s in stores"
+              :key="s.id"
+              :label="s.name"
+              :value="s.id"
             />
           </el-select>
           <el-date-picker
@@ -59,127 +48,120 @@
       <!-- DESKTOP TABLE -->
       <el-table
         v-if="!isMobile"
-        :data="pagedPOs"
+        :data="transactions"
         v-loading="isLoading"
         style="width: 100%"
       >
-        <el-table-column prop="poCode" label="Mã đơn nhập" width="170" />
-        <el-table-column prop="supplier" label="Nhà cung cấp" min-width="200" />
-        <el-table-column prop="branch" label="Chi nhánh nhận" width="180" />
-        <el-table-column prop="createdDate" label="Ngày tạo" width="150" />
-        <el-table-column label="Tổng tiền" width="150" align="right">
-          <template #default="scope"
-            ><span class="total-amount">{{
-              formatCurrency(scope.row.totalCost)
-            }}</span></template
-          >
-        </el-table-column>
-        <el-table-column label="Trạng thái" width="160" align="center">
-          <template #default="scope"
-            ><el-tag
-              :type="getStatusType(scope.row.status)"
-              effect="light"
-              size="small"
-              >{{ scope.row.status }}</el-tag
-            ></template
-          >
-        </el-table-column>
-        <el-table-column label="Thao tác" width="220" align="center">
+        <el-table-column
+          prop="transaction_code"
+          label="Mã giao dịch"
+          width="190"
+        />
+        <el-table-column label="Sản phẩm" min-width="200">
           <template #default="scope">
-            <div class="action-buttons">
-              <el-button
-                size="small"
-                :icon="View"
-                text
-                bg
-                @click="openDetail(scope.row)"
-                >Xem</el-button
-              >
-              <el-dropdown trigger="click">
-                <el-button size="small" text>Hành động</el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item
-                      @click="markOrdered(scope.row)"
-                      v-if="scope.row.status === 'Nháp'"
-                      >Đánh dấu Đã đặt hàng</el-dropdown-item
-                    >
-                    <el-dropdown-item
-                      @click="markReceived(scope.row)"
-                      v-if="scope.row.status === 'Đã đặt hàng'"
-                      >Đánh dấu Đã nhập kho</el-dropdown-item
-                    >
-                    <el-dropdown-item
-                      divided
-                      @click="cancelPO(scope.row)"
-                      v-if="scope.row.status !== 'Đã hủy'"
-                      >Huỷ đơn</el-dropdown-item
-                    >
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+            <div>
+              <div style="font-weight: 600">{{ scope.row.product_name }}</div>
+              <div style="color: #6b7280; font-size: 0.85em">
+                {{ scope.row.sku }}
+              </div>
             </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="store_name" label="Chi nhánh" width="170" />
+        <el-table-column label="Ngày nhập" width="130">
+          <template #default="scope">{{ scope.row.date_key }}</template>
+        </el-table-column>
+        <el-table-column label="Số lượng" width="110" align="right">
+          <template #default="scope">
+            <span style="font-weight: 600; color: #10b981"
+              >+{{ scope.row.quantity_change }}</span
+            >
+          </template>
+        </el-table-column>
+        <el-table-column label="Đơn giá" width="130" align="right">
+          <template #default="scope">{{
+            formatCurrency(scope.row.unit_cost)
+          }}</template>
+        </el-table-column>
+        <el-table-column label="Thành tiền" width="150" align="right">
+          <template #default="scope">
+            <span class="total-amount">{{
+              formatCurrency(scope.row.total_value)
+            }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="created_by_name"
+          label="Người nhập"
+          width="140"
+        />
+        <el-table-column label="" width="80" align="center">
+          <template #default="scope">
+            <el-button
+              size="small"
+              :icon="View"
+              text
+              bg
+              @click="openDetail(scope.row)"
+              >Xem</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
 
       <!-- MOBILE LIST -->
       <div v-else class="mobile-card-list">
-        <div v-for="item in pagedPOs" :key="item.poCode" class="mobile-card">
+        <div
+          v-for="item in transactions"
+          :key="item.id"
+          class="mobile-card"
+          @click="openDetail(item)"
+        >
           <div class="card-header">
             <div class="card-title-group">
-              <span class="card-title">{{ item.poCode }}</span>
-              <span class="card-subtitle">{{ item.supplier }}</span>
+              <span class="card-title">{{ item.transaction_code }}</span>
+              <span class="card-subtitle">{{ item.product_name }}</span>
             </div>
-            <el-tag
-              :type="getStatusType(item.status)"
-              effect="light"
-              size="small"
-              >{{ item.status }}</el-tag
-            >
+            <el-tag type="success" effect="light" size="small">Đã nhập</el-tag>
           </div>
           <div class="card-body">
             <div class="card-row">
-              <span class="card-label">Chi nhánh</span
-              ><span class="card-value">{{ item.branch }}</span>
+              <span class="card-label">Chi nhánh</span>
+              <span class="card-value">{{ item.store_name }}</span>
             </div>
             <div class="card-row">
-              <span class="card-label">Ngày tạo</span
-              ><span class="card-value">{{ item.createdDate }}</span>
+              <span class="card-label">Ngày nhập</span>
+              <span class="card-value">{{ item.date_key }}</span>
             </div>
             <div class="card-row">
-              <span class="card-label">Tổng tiền</span
-              ><span class="card-value total-amount">{{
-                formatCurrency(item.totalCost)
+              <span class="card-label">Số lượng</span>
+              <span class="card-value" style="color: #10b981; font-weight: 600"
+                >+{{ item.quantity_change }}</span
+              >
+            </div>
+            <div class="card-row">
+              <span class="card-label">Thành tiền</span>
+              <span class="card-value total-amount">{{
+                formatCurrency(item.total_value)
               }}</span>
             </div>
-          </div>
-          <div class="card-footer">
-            <el-button
-              size="small"
-              :icon="View"
-              text
-              bg
-              @click="openDetail(item)"
-              >Xem</el-button
-            >
           </div>
         </div>
       </div>
 
       <el-empty
-        v-if="!isLoading && pagedPOs.length === 0"
-        description="Chưa có đơn đặt hàng nhập nào"
+        v-if="!isLoading && transactions.length === 0"
+        description="Chưa có giao dịch nhập hàng nào"
       />
     </div>
 
     <div class="pagination-container">
       <el-pagination
-        v-if="filteredPOs.length > 0"
+        v-if="totalItems > 0"
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredPOs.length"
+        :total="totalItems"
         :page-size="pageSize"
         v-model:current-page="currentPage"
       />
@@ -188,202 +170,189 @@
     <!-- DETAIL DIALOG -->
     <el-dialog
       v-model="detailVisible"
-      :title="`Chi tiết · ${selectedPO?.poCode || ''}`"
+      :title="`Chi tiết · ${selectedTx?.transaction_code || ''}`"
       width="720"
     >
-      <div v-if="selectedPO" class="detail-grid">
+      <div v-if="selectedTx" class="detail-grid">
         <div class="drow">
-          <span class="dl">Nhà cung cấp</span
-          ><span class="dv">{{ selectedPO.supplier }}</span>
+          <span class="dl">Mã giao dịch</span
+          ><span class="dv">{{ selectedTx.transaction_code }}</span>
+        </div>
+        <div class="drow">
+          <span class="dl">Sản phẩm</span
+          ><span class="dv"
+            >{{ selectedTx.product_name }} ({{ selectedTx.variant_name }})</span
+          >
+        </div>
+        <div class="drow">
+          <span class="dl">SKU</span
+          ><span class="dv">{{ selectedTx.sku }}</span>
         </div>
         <div class="drow">
           <span class="dl">Chi nhánh</span
-          ><span class="dv">{{ selectedPO.branch }}</span>
+          ><span class="dv">{{ selectedTx.store_name }}</span>
         </div>
         <div class="drow">
-          <span class="dl">Ngày tạo</span
-          ><span class="dv">{{ selectedPO.createdDate }}</span>
+          <span class="dl">Ngày nhập</span
+          ><span class="dv">{{ selectedTx.date_key }}</span>
         </div>
         <div class="drow">
-          <span class="dl">Tổng tiền</span
-          ><span class="dv">{{ formatCurrency(selectedPO.totalCost) }}</span>
-        </div>
-        <div class="drow">
-          <span class="dl">Trạng thái</span
-          ><span class="dv"
-            ><el-tag
-              :type="getStatusType(selectedPO.status)"
-              size="small"
-              effect="light"
-              >{{ selectedPO.status }}</el-tag
-            ></span
+          <span class="dl">Số lượng nhập</span
+          ><span class="dv" style="color: #10b981; font-weight: 700"
+            >+{{ selectedTx.quantity_change }}</span
           >
         </div>
-        <div class="divider" />
+        <div class="drow">
+          <span class="dl">Đơn giá</span
+          ><span class="dv">{{ formatCurrency(selectedTx.unit_cost) }}</span>
+        </div>
+        <div class="drow">
+          <span class="dl">Thành tiền</span
+          ><span class="dv">{{ formatCurrency(selectedTx.total_value) }}</span>
+        </div>
+        <div class="drow">
+          <span class="dl">Tồn trước</span
+          ><span class="dv">{{ selectedTx.balance_before }}</span>
+        </div>
+        <div class="drow">
+          <span class="dl">Tồn sau</span
+          ><span class="dv">{{ selectedTx.balance_after }}</span>
+        </div>
+        <div class="drow">
+          <span class="dl">Người nhập</span
+          ><span class="dv">{{ selectedTx.created_by_name }}</span>
+        </div>
         <div class="drow">
           <span class="dl">Ghi chú</span
-          ><span class="dv">{{ selectedPO.note || "—" }}</span>
+          ><span class="dv">{{ selectedTx.notes || "—" }}</span>
         </div>
       </div>
       <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="detailVisible = false">Đóng</el-button>
-          <el-button
-            v-if="selectedPO?.status === 'Nháp'"
-            @click="markOrdered(selectedPO)"
-            >Đánh dấu Đã đặt hàng</el-button
-          >
-          <el-button
-            type="success"
-            v-if="selectedPO?.status === 'Đã đặt hàng'"
-            @click="markReceived(selectedPO)"
-            >Đánh dấu Đã nhập kho</el-button
-          >
-          <el-button
-            type="danger"
-            v-if="selectedPO && selectedPO.status !== 'Đã hủy'"
-            @click="cancelPO(selectedPO)"
-            >Huỷ đơn</el-button
-          >
-        </div>
+        <el-button @click="detailVisible = false">Đóng</el-button>
       </template>
     </el-dialog>
 
     <!-- CREATE DIALOG -->
-    <el-dialog v-model="createVisible" title="Tạo đơn đặt hàng" width="720">
+    <el-dialog
+      v-model="createVisible"
+      title="Tạo đơn nhập hàng"
+      width="800"
+      :close-on-click-modal="false"
+    >
       <el-form
         ref="createFormRef"
         :model="form"
         :rules="rules"
         label-width="140px"
-        class="create-grid"
       >
-        <el-form-item label="Nhà cung cấp" prop="supplier">
-          <el-select v-model="form.supplier" placeholder="Chọn nhà cung cấp">
+        <el-form-item label="Chi nhánh nhận" prop="store_id">
+          <el-select
+            v-model="form.store_id"
+            placeholder="Chọn chi nhánh"
+            style="width: 100%"
+          >
             <el-option
-              v-for="s in allSuppliers"
-              :key="s"
-              :label="s"
-              :value="s"
+              v-for="s in stores"
+              :key="s.id"
+              :label="s.name"
+              :value="s.id"
             />
           </el-select>
-        </el-form-item>
-        <el-form-item label="Chi nhánh nhận" prop="branch">
-          <el-select v-model="form.branch" placeholder="Chọn chi nhánh">
-            <el-option
-              v-for="b in allBranches"
-              :key="b"
-              :label="b"
-              :value="b"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="Ngày tạo" prop="createdDate">
-          <el-date-picker
-            v-model="form.createdDate"
-            type="date"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <el-form-item label="Tổng tiền (đ)" prop="totalCost">
-          <el-input-number
-            v-model="form.totalCost"
-            :min="0"
-            :step="1000"
-            controls-position="right"
-          />
         </el-form-item>
         <el-form-item label="Ghi chú">
           <el-input
-            v-model="form.note"
+            v-model="form.notes"
             type="textarea"
             :rows="2"
-            placeholder="Ghi chú nội bộ"
+            placeholder="Ghi chú (tuỳ chọn)"
           />
         </el-form-item>
       </el-form>
+
+      <div style="margin-top: 16px">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+          "
+        >
+          <span style="font-weight: 600; font-size: 1rem"
+            >Danh sách sản phẩm nhập</span
+          >
+          <el-button :icon="Plus" size="small" @click="addItem"
+            >Thêm dòng</el-button
+          >
+        </div>
+        <el-table :data="form.items" border size="small">
+          <el-table-column label="Variant ID" width="120">
+            <template #default="scope">
+              <el-input-number
+                v-model="scope.row.variant_id"
+                :min="1"
+                size="small"
+                controls-position="right"
+                style="width: 100%"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="Số lượng" width="120">
+            <template #default="scope">
+              <el-input-number
+                v-model="scope.row.quantity"
+                :min="1"
+                size="small"
+                controls-position="right"
+                style="width: 100%"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="Đơn giá nhập" width="150">
+            <template #default="scope">
+              <el-input-number
+                v-model="scope.row.unit_cost"
+                :min="0"
+                :step="1000"
+                size="small"
+                controls-position="right"
+                style="width: 100%"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="Thành tiền" width="140" align="right">
+            <template #default="scope">
+              <span style="font-weight: 600">{{
+                formatCurrency(
+                  (scope.row.quantity || 0) * (scope.row.unit_cost || 0),
+                )
+              }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="" width="60" align="center">
+            <template #default="scope">
+              <el-button
+                :icon="Delete"
+                size="small"
+                text
+                type="danger"
+                @click="removeItem(scope.$index)"
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="total-row">
+          Tổng: <span class="grand-total">{{ formatCurrency(formTotal) }}</span>
+        </div>
+      </div>
       <template #footer>
         <el-button @click="createVisible = false">Huỷ</el-button>
-        <el-button type="primary" :loading="creating" @click="submitCreate"
-          >Tạo</el-button
-        >
-      </template>
-    </el-dialog>
-
-    <!-- IMPORT DIALOG -->
-    <el-dialog
-      v-model="importDialogVisible"
-      title="Nhập file đơn đặt hàng"
-      width="640"
-      align-center
-    >
-      <el-form :model="importForm" label-position="top">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Chi nhánh tạo đơn">
-              <el-select
-                v-model="importForm.branch"
-                placeholder="Chọn chi nhánh"
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="b in allBranches"
-                  :key="b"
-                  :label="b"
-                  :value="b"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Nhà cung cấp (mặc định)">
-              <el-select
-                v-model="importForm.supplier"
-                placeholder="Chọn nhà cung cấp"
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="s in allSuppliers"
-                  :key="s"
-                  :label="s"
-                  :value="s"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <el-upload
-        ref="uploadRef"
-        class="import-uploader"
-        drag
-        action="#"
-        :auto-upload="false"
-        :limit="1"
-        :on-exceed="handleExceed"
-        :on-change="handleFileChange"
-        accept=".csv"
-      >
-        <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-        <div class="el-upload__text">
-          Kéo thả file CSV vào đây hoặc <em>nhấn để chọn file</em>
-        </div>
-        <template #tip>
-          <div class="el-upload__tip">
-            Chỉ chấp nhận file .csv.
-            <el-button type="primary" link @click.stop="downloadTemplate"
-              >Tải file mẫu</el-button
-            >
-          </div>
-        </template>
-      </el-upload>
-      <template #footer>
-        <el-button @click="importDialogVisible = false">Hủy</el-button>
         <el-button
           type="primary"
-          @click="handleImport"
-          :disabled="!selectedFile"
-          >Bắt đầu nhập</el-button
+          :loading="creating"
+          @click="submitCreate"
+          :disabled="form.items.length === 0"
+          >Nhập kho</el-button
         >
       </template>
     </el-dialog>
@@ -399,14 +368,9 @@ import {
   onBeforeUnmount,
   watch,
 } from "vue";
-import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
-import {
-  Search,
-  Plus,
-  View,
-  Upload,
-  UploadFilled,
-} from "@element-plus/icons-vue";
+import { ElMessage, ElNotification } from "element-plus";
+import { Search, Plus, View, Delete } from "@element-plus/icons-vue";
+import inventoryService from "@/services/inventoryService";
 
 // --- Responsive ---
 const isMobile = ref(false);
@@ -416,377 +380,157 @@ const checkScreenSize = () => {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  initData();
+  fetchData();
 });
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);
 });
 
-// --- Base state ---
-const isLoading = ref(true);
+// --- State ---
+const isLoading = ref(false);
 const search = ref("");
 const dateRange = ref("");
-const activeTab = ref("all");
-const supplierFilter = ref("");
+const storeFilter = ref("");
 const currentPage = ref(1);
-const pageSize = 10;
-const purchaseOrders = ref([]);
+const pageSize = 20;
+const totalItems = ref(0);
+const transactions = ref([]);
+const stores = ref([]);
 
-// --- Mock data ---
-const samplePOs = [
-  {
-    poCode: "PO20250808-01",
-    supplier: "Nhà cung cấp A",
-    branch: "Chi nhánh trung tâm",
-    createdDate: "2025-08-08",
-    totalCost: 5500000,
-    status: "Đã nhập kho",
-    note: "",
-  },
-  {
-    poCode: "PO20250807-03",
-    supplier: "Nhà cung cấp B",
-    branch: "Chi nhánh trung tâm",
-    createdDate: "2025-08-07",
-    totalCost: 12000000,
-    status: "Đã đặt hàng",
-    note: "",
-  },
-  {
-    poCode: "PO20250807-02",
-    supplier: "Nhà cung cấp A",
-    branch: "Chi nhánh trung tâm",
-    createdDate: "2025-08-07",
-    totalCost: 3200000,
-    status: "Nháp",
-    note: "",
-  },
-  {
-    poCode: "PO20250806-01",
-    supplier: "Nhà cung cấp B",
-    branch: "Chi nhánh trung tâm",
-    createdDate: "2025-08-06",
-    totalCost: 800000,
-    status: "Đã hủy",
-    note: "Khách đổi lịch",
-  },
-];
-
-function initData() {
-  setTimeout(() => {
-    purchaseOrders.value = samplePOs;
+// --- Fetch data ---
+async function fetchData() {
+  try {
+    isLoading.value = true;
+    const [storesRes, txRes] = await Promise.all([
+      inventoryService.getStores(),
+      inventoryService.getTransactions(buildParams()),
+    ]);
+    stores.value = storesRes.data || [];
+    transactions.value = txRes.data || [];
+    totalItems.value = txRes.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error loading data:", error);
+    ElMessage.error("Không thể tải dữ liệu");
+  } finally {
     isLoading.value = false;
-  }, 500);
+  }
 }
+
+function buildParams() {
+  const params = { type: "IMPORT", page: currentPage.value, limit: pageSize };
+  if (search.value.trim()) params.search = search.value.trim();
+  if (storeFilter.value) params.store_id = storeFilter.value;
+  if (Array.isArray(dateRange.value) && dateRange.value.length === 2) {
+    params.from = dateRange.value[0];
+    params.to = dateRange.value[1];
+  }
+  return params;
+}
+
+async function fetchTransactions() {
+  try {
+    isLoading.value = true;
+    const res = await inventoryService.getTransactions(buildParams());
+    transactions.value = res.data || [];
+    totalItems.value = res.pagination?.total || 0;
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Debounce search
+let searchTimer = null;
+watch(search, () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    fetchTransactions();
+  }, 400);
+});
+watch([storeFilter, dateRange], () => {
+  currentPage.value = 1;
+  fetchTransactions();
+});
+watch(currentPage, () => {
+  fetchTransactions();
+});
 
 // --- Helpers ---
 const formatCurrency = (value) => (value ?? 0).toLocaleString("vi-VN") + "đ";
-const getStatusType = (status) => {
-  if (status === "Đã nhập kho") return "success";
-  if (status === "Đã đặt hàng") return "primary";
-  if (status === "Nháp") return "warning";
-  if (status === "Đã hủy") return "danger";
-  return "info";
-};
-const getStatusFromTab = (tab) =>
-  ({
-    draft: "Nháp",
-    ordered: "Đã đặt hàng",
-    received: "Đã nhập kho",
-    cancelled: "Đã hủy",
-  }[tab]);
-
-const uniqueSuppliers = computed(() =>
-  Array.from(new Set(purchaseOrders.value.map((p) => p.supplier))).sort()
-);
-const allSuppliers = computed(() =>
-  uniqueSuppliers.value.length
-    ? uniqueSuppliers.value
-    : ["Nhà cung cấp A", "Nhà cung cấp B"]
-);
-const allBranches = ["Chi nhánh trung tâm", "Chi nhánh 1", "Chi nhánh 2"];
-
-// --- Filters ---
-const filteredPOs = computed(() => {
-  let arr = purchaseOrders.value;
-  const q = search.value.trim().toLowerCase();
-  if (q)
-    arr = arr.filter(
-      (i) =>
-        i.poCode.toLowerCase().includes(q) ||
-        i.supplier.toLowerCase().includes(q)
-    );
-  if (supplierFilter.value)
-    arr = arr.filter((i) => i.supplier === supplierFilter.value);
-  if (Array.isArray(dateRange.value) && dateRange.value.length === 2) {
-    const [s, e] = dateRange.value;
-    arr = arr.filter((i) => i.createdDate >= s && i.createdDate <= e);
-  }
-  if (activeTab.value !== "all")
-    arr = arr.filter((i) => i.status === getStatusFromTab(activeTab.value));
-  return arr;
-});
-
-const pagedPOs = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredPOs.value.slice(start, start + pageSize);
-});
-watch([search, supplierFilter, activeTab, dateRange], () => {
-  currentPage.value = 1;
-});
 
 // --- Detail dialog ---
 const detailVisible = ref(false);
-const selectedPO = ref(null);
+const selectedTx = ref(null);
 const openDetail = (row) => {
-  selectedPO.value = row;
+  selectedTx.value = row;
   detailVisible.value = true;
-};
-
-// --- Status actions ---
-const markOrdered = async (row) => {
-  await ElMessageBox.confirm(
-    `Đánh dấu đơn ${row.poCode} là "Đã đặt hàng"?`,
-    "Xác nhận",
-    { type: "warning" }
-  ).catch(() => null);
-  row.status = "Đã đặt hàng";
-  ElNotification({
-    title: "Cập nhật trạng thái",
-    message: "Đã đặt hàng",
-    type: "success",
-  });
-};
-const markReceived = async (row) => {
-  await ElMessageBox.confirm(
-    `Đánh dấu đơn ${row.poCode} là "Đã nhập kho"?`,
-    "Xác nhận",
-    { type: "warning" }
-  ).catch(() => null);
-  row.status = "Đã nhập kho";
-  ElNotification({
-    title: "Cập nhật trạng thái",
-    message: "Đã nhập kho",
-    type: "success",
-  });
-};
-const cancelPO = async (row) => {
-  await ElMessageBox.confirm(`Huỷ đơn ${row.poCode}?`, "Xác nhận huỷ", {
-    type: "warning",
-  }).catch(() => null);
-  row.status = "Đã hủy";
-  ElNotification({ title: "Đã huỷ đơn", message: row.poCode, type: "warning" });
 };
 
 // --- Create dialog ---
 const createVisible = ref(false);
 const creating = ref(false);
 const createFormRef = ref();
-const today = () => new Date().toISOString().slice(0, 10);
-const form = reactive({
-  supplier: "",
-  branch: "",
-  createdDate: today(),
-  totalCost: 0,
-  note: "",
-});
-
+const form = reactive({ store_id: "", notes: "", items: [] });
 const rules = {
-  supplier: [
-    { required: true, message: "Chọn nhà cung cấp", trigger: "change" },
+  store_id: [
+    { required: true, message: "Chọn chi nhánh nhận", trigger: "change" },
   ],
-  branch: [{ required: true, message: "Chọn chi nhánh", trigger: "change" }],
-  createdDate: [
-    { required: true, message: "Chọn ngày tạo", trigger: "change" },
-  ],
-  totalCost: [{ required: true, message: "Nhập tổng tiền", trigger: "blur" }],
 };
+const formTotal = computed(() =>
+  form.items.reduce((s, i) => s + (i.quantity || 0) * (i.unit_cost || 0), 0),
+);
 
 const openCreateDialog = () => {
+  form.store_id = stores.value[0]?.id || "";
+  form.notes = "";
+  form.items = [{ variant_id: 1, quantity: 1, unit_cost: 0 }];
   createVisible.value = true;
-  Object.assign(form, {
-    supplier: "",
-    branch: "",
-    createdDate: today(),
-    totalCost: 0,
-    note: "",
-  });
   createFormRef.value?.clearValidate?.();
 };
 
-const nextPOCode = () => {
-  const ymd = today().replaceAll("-", "");
-  const sameDay = purchaseOrders.value.filter((p) =>
-    p.poCode.startsWith("PO" + ymd)
-  );
-  const idx = sameDay.length + 1;
-  return `PO${ymd}-${String(idx).padStart(2, "0")}`;
+const addItem = () => {
+  form.items.push({ variant_id: 1, quantity: 1, unit_cost: 0 });
+};
+const removeItem = (idx) => {
+  form.items.splice(idx, 1);
 };
 
 const submitCreate = () => {
-  createFormRef.value.validate((valid) => {
+  createFormRef.value.validate(async (valid) => {
     if (!valid) return;
+    if (form.items.length === 0) {
+      ElMessage.warning("Thêm ít nhất một sản phẩm");
+      return;
+    }
     creating.value = true;
-    setTimeout(() => {
-      purchaseOrders.value.unshift({
-        poCode: nextPOCode(),
-        supplier: form.supplier,
-        branch: form.branch,
-        createdDate: form.createdDate,
-        totalCost: Number(form.totalCost) || 0,
-        status: "Nháp",
-        note: form.note?.trim() || "",
-      });
-      ElNotification({
-        title: "Đã tạo đơn",
-        message: "Đơn mới đã được thêm vào danh sách",
-        type: "success",
-      });
-      creating.value = false;
-      createVisible.value = false;
-    }, 500);
-  });
-};
-
-// --- Import dialog ---
-const importDialogVisible = ref(false);
-const uploadRef = ref();
-const selectedFile = ref(null);
-const importForm = reactive({ branch: "", supplier: "" });
-
-const handleFileChange = (file) => {
-  selectedFile.value = file?.raw || null;
-};
-const handleExceed = (files) => {
-  uploadRef.value?.clearFiles();
-  const file = files[0];
-  uploadRef.value?.handleStart(file);
-  selectedFile.value = file;
-};
-
-const downloadTemplate = () => {
-  const headers = [
-    "POCode",
-    "Supplier",
-    "Branch",
-    "CreatedDate",
-    "TotalCost",
-    "Status",
-    "Note",
-  ];
-  const example = [
-    "PO20250101-01",
-    "Nhà cung cấp A",
-    "Chi nhánh trung tâm",
-    "2025-01-01",
-    "1000000",
-    "Nháp",
-    "Ghi chú mẫu",
-  ];
-  const csv = [headers.join(","), example.join(",")].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "purchase_orders_template.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-function parseCSV(text) {
-  const rows = [];
-  let cur = [];
-  let cell = "";
-  let inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQ) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else {
-          inQ = false;
-        }
-      } else cell += ch;
-    } else {
-      if (ch === '"') inQ = true;
-      else if (ch === ",") {
-        cur.push(cell);
-        cell = "";
-      } else if (ch === "\n" || ch === "\r") {
-        if (cell !== "" || cur.length) {
-          cur.push(cell);
-          rows.push(cur);
-          cur = [];
-          cell = "";
-        }
-      } else cell += ch;
-    }
-  }
-  if (cell !== "" || cur.length) {
-    cur.push(cell);
-    rows.push(cur);
-  }
-  return rows;
-}
-
-const handleImport = async () => {
-  if (!selectedFile.value) {
-    ElMessage.warning("Chưa chọn file CSV");
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = async (evt) => {
     try {
-      const text = String(evt.target.result || "");
-      const rows = parseCSV(text);
-      if (!rows.length) throw new Error("File trống");
-      const header = rows.shift().map((h) => String(h).trim().toLowerCase());
-      const idx = (n) => header.indexOf(n);
-      const iCode = idx("pocode"),
-        iSupplier = idx("supplier"),
-        iBranch = idx("branch"),
-        iDate = idx("createddate"),
-        iTotal = idx("totalcost"),
-        iStatus = idx("status"),
-        iNote = idx("note");
-      if (iSupplier < 0 || iBranch < 0 || iDate < 0 || iTotal < 0)
-        throw new Error(
-          "Thiếu cột bắt buộc: Supplier/Branch/CreatedDate/TotalCost"
-        );
-
-      let count = 0;
-      for (const r of rows) {
-        const po = {
-          poCode: iCode > -1 && r[iCode] ? String(r[iCode]) : nextPOCode(),
-          supplier: r[iSupplier] || importForm.supplier || "Nhà cung cấp A",
-          branch: r[iBranch] || importForm.branch || "Chi nhánh trung tâm",
-          createdDate: r[iDate] || today(),
-          totalCost: Number(r[iTotal] || 0),
-          status: r[iStatus] || "Nháp",
-          note: r[iNote] || "",
-        };
-        const existIdx = purchaseOrders.value.findIndex(
-          (p) => p.poCode === po.poCode
-        );
-        if (existIdx > -1) purchaseOrders.value.splice(existIdx, 1, po);
-        else purchaseOrders.value.unshift(po);
-        count++;
-      }
+      const payload = {
+        store_id: form.store_id,
+        items: form.items.map((i) => ({
+          variant_id: i.variant_id,
+          quantity: i.quantity,
+          unit_cost: i.unit_cost,
+        })),
+        notes: form.notes || "",
+      };
+      const result = await inventoryService.receiveInventory(payload);
       ElNotification({
-        title: "Nhập file thành công",
-        message: `${count} dòng đã được xử lý`,
+        title: "Nhập kho thành công",
+        message: result.message || "Đã nhập kho",
         type: "success",
       });
-      importDialogVisible.value = false;
-      uploadRef.value?.clearFiles();
-      selectedFile.value = null;
-    } catch (err) {
-      ElMessage.error("Lỗi nhập file: " + (err?.message || "Không xác định"));
+      createVisible.value = false;
+      currentPage.value = 1;
+      fetchTransactions();
+    } catch (error) {
+      console.error("Error receiving inventory:", error);
+      ElMessage.error(error.response?.data?.message || "Không thể nhập kho");
+    } finally {
+      creating.value = false;
     }
-  };
-  reader.readAsText(selectedFile.value);
+  });
 };
 </script>
 

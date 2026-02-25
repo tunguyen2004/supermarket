@@ -62,6 +62,14 @@ const inventoryService = {
     const response = await apiClient.post("api/inventories/return", data);
     return response.data;
   },
+
+  // 8.10 Danh sách giao dịch kho (nhập, xuất, chuyển, ...)
+  async getTransactions(params = {}) {
+    const response = await apiClient.get("api/inventories/transactions", {
+      params,
+    });
+    return response.data;
+  },
 };
 
 export default inventoryService;

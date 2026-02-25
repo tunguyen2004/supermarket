@@ -143,11 +143,11 @@
 
     <div class="pagination-container">
       <el-pagination
-        v-if="filteredSuppliers.length > 0"
+        v-if="totalItems > 0"
         :small="isMobile"
         background
         layout="total, prev, pager, next"
-        :total="filteredSuppliers.length"
+        :total="totalItems"
         :page-size="pageSize"
         v-model:current-page="currentPage"
       />
@@ -171,32 +171,26 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="Mã nhà cung cấp">
-              <el-input v-model="form.code" placeholder="Tự tạo nếu để trống" />
+              <el-input
+                v-model="form.code"
+                placeholder="Tự tạo nếu để trống"
+                disabled
+              />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="Người liên hệ" required>
-              <el-input
-                v-model="form.contactPerson"
-                placeholder="Nhập tên người liên hệ"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="Số điện thoại" required>
               <el-input v-model="form.phone" placeholder="Nhập số điện thoại" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="Email">
+              <el-input v-model="form.email" placeholder="Nhập email" />
+            </el-form-item>
+          </el-col>
         </el-row>
-        <el-form-item label="Email">
-          <el-input
-            v-model="form.email"
-            placeholder="Nhập email"
-            style="width: 100%"
-          />
-        </el-form-item>
         <el-form-item label="Địa chỉ">
           <el-input
             v-model="form.address"
@@ -205,20 +199,28 @@
             placeholder="Nhập địa chỉ"
           />
         </el-form-item>
-        <el-form-item label="Trạng thái">
-          <el-select
-            v-model="form.status"
-            placeholder="Chọn trạng thái"
-            style="width: 150px"
-          >
-            <el-option label="Đang hợp tác" value="Đang hợp tác" />
-            <el-option label="Ngừng hợp tác" value="Ngừng hợp tác" />
-          </el-select>
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Mã số thuế">
+              <el-input v-model="form.tax_code" placeholder="Nhập mã số thuế" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Trạng thái">
+              <el-switch
+                v-model="form.is_active"
+                active-text="Đang hợp tác"
+                inactive-text="Ngừng hợp tác"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">Hủy</el-button>
-        <el-button type="primary" @click="handleSave">Lưu</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave"
+          >Lưu</el-button
+        >
       </template>
     </el-dialog>
   </div>
@@ -228,6 +230,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from "vue";
 import { Search, Plus, Edit, Delete } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import apiClient from "@/services/apiClient";
 
 // --- STATE ---
 const isMobile = ref(false);
@@ -236,7 +239,9 @@ const search = ref("");
 const statusFilter = ref("all");
 const currentPage = ref(1);
 const pageSize = 10;
+const totalItems = ref(0);
 const suppliers = ref([]);
+const saving = ref(false);
 
 // --- DIALOG & FORM STATE ---
 const dialogVisible = ref(false);
@@ -245,56 +250,12 @@ const form = reactive({
   id: null,
   name: "",
   code: "",
-  contactPerson: "",
   phone: "",
   email: "",
   address: "",
-  status: "Đang hợp tác",
+  tax_code: "",
+  is_active: true,
 });
-
-// --- SAMPLE DATA ---
-const sampleSuppliers = [
-  {
-    id: 1,
-    name: "Công ty TNHH An Khang",
-    code: "NCC001",
-    contactPerson: "Nguyễn Văn An",
-    phone: "0901234567",
-    email: "ankhang@example.com",
-    address: "123 Lê Lợi, Quận 1, TP. HCM",
-    status: "Đang hợp tác",
-  },
-  {
-    id: 2,
-    name: "Nhà sách Fahasa",
-    code: "NCC002",
-    contactPerson: "Trần Thị Bích",
-    phone: "0918765432",
-    email: "fahasa@example.com",
-    address: "456 Nguyễn Huệ, Quận 1, TP. HCM",
-    status: "Đang hợp tác",
-  },
-  {
-    id: 3,
-    name: "Công ty văn phòng phẩm Hưng Thịnh",
-    code: "NCC003",
-    contactPerson: "Lê Hoàng Hưng",
-    phone: "0987654321",
-    email: "vpphungthinh@example.com",
-    address: "789 CMT8, Quận 3, TP. HCM",
-    status: "Đang hợp tác",
-  },
-  {
-    id: 4,
-    name: "Nhà phân phối thiết bị ABC",
-    code: "NCC004",
-    contactPerson: "Phạm Thị Cẩm",
-    phone: "0934567890",
-    email: "thietbiabc@example.com",
-    address: "321 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP.HCM",
-    status: "Ngừng hợp tác",
-  },
-];
 
 // --- HELPERS ---
 const checkScreenSize = () => {
@@ -306,86 +267,132 @@ const getStatusInfo = (status) => {
   return { type: "primary" };
 };
 
-// --- COMPUTED ---
-const filteredSuppliers = computed(() => {
-  return suppliers.value.filter((item) => {
-    const searchMatch =
-      !search.value ||
-      item.name.toLowerCase().includes(search.value.toLowerCase()) ||
-      item.code.toLowerCase().includes(search.value.toLowerCase()) ||
-      item.phone.includes(search.value);
-
-    const statusMatch =
-      statusFilter.value === "all" || item.status === statusFilter.value;
-
-    return searchMatch && statusMatch;
-  });
+// Map API data to display format
+const mapSupplier = (s) => ({
+  id: s.id,
+  code: s.code,
+  name: s.name,
+  contactPerson: s.name,
+  phone: s.phone || "",
+  email: s.email || "",
+  address: s.address || "",
+  tax_code: s.tax_code || "",
+  status: s.is_active ? "Đang hợp tác" : "Ngừng hợp tác",
+  is_active: s.is_active,
+  city_name: s.city_name || "",
 });
 
-const pagedSuppliers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredSuppliers.value.slice(start, start + pageSize);
-});
+// --- FETCH ---
+const fetchSuppliers = async () => {
+  try {
+    isLoading.value = true;
+    const params = {
+      page: currentPage.value,
+      limit: pageSize,
+    };
+    if (search.value.trim()) params.search = search.value.trim();
+    if (statusFilter.value === "Đang hợp tác") params.is_active = true;
+    else if (statusFilter.value === "Ngừng hợp tác") params.is_active = false;
+
+    const res = await apiClient.get("/api/suppliers", { params });
+    const data = res.data;
+    suppliers.value = (data.data || []).map(mapSupplier);
+    totalItems.value = data.pagination?.total || 0;
+  } catch (err) {
+    console.error("Fetch suppliers error:", err);
+    ElMessage.error("Không thể tải danh sách nhà cung cấp");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// --- COMPUTED (server-side pagination) ---
+const filteredSuppliers = computed(() => suppliers.value);
+const pagedSuppliers = computed(() => suppliers.value);
 
 // --- ACTIONS ---
 const openDialog = (supplier = null) => {
   if (supplier) {
     isEditMode.value = true;
-    Object.assign(form, supplier);
+    Object.assign(form, {
+      id: supplier.id,
+      name: supplier.name,
+      code: supplier.code,
+      phone: supplier.phone,
+      email: supplier.email,
+      address: supplier.address,
+      tax_code: supplier.tax_code || "",
+      is_active: supplier.status === "Đang hợp tác",
+    });
   } else {
     isEditMode.value = false;
     Object.assign(form, {
       id: null,
       name: "",
       code: "",
-      contactPerson: "",
       phone: "",
       email: "",
       address: "",
-      status: "Đang hợp tác",
+      tax_code: "",
+      is_active: true,
     });
   }
   dialogVisible.value = true;
 };
 
-const handleSave = () => {
-  if (!form.name || !form.contactPerson || !form.phone) {
-    ElMessage.error(
-      "Vui lòng điền các trường bắt buộc: Tên, Người liên hệ, SĐT."
-    );
+const handleSave = async () => {
+  if (!form.name || !form.phone) {
+    ElMessage.error("Vui lòng điền các trường bắt buộc: Tên, SĐT.");
     return;
   }
 
-  if (isEditMode.value) {
-    const index = suppliers.value.findIndex((s) => s.id === form.id);
-    if (index !== -1) {
-      suppliers.value[index] = { ...form };
+  saving.value = true;
+  try {
+    const payload = {
+      name: form.name,
+      phone: form.phone || null,
+      email: form.email || null,
+      address: form.address || null,
+      tax_code: form.tax_code || null,
+      is_active: form.is_active,
+    };
+
+    if (isEditMode.value) {
+      await apiClient.put(`/api/suppliers/${form.id}`, payload);
+      ElMessage.success("Cập nhật nhà cung cấp thành công!");
+    } else {
+      await apiClient.post("/api/suppliers", payload);
+      ElMessage.success("Thêm nhà cung cấp thành công!");
     }
-  } else {
-    let newCode = form.code;
-    if (!newCode) {
-      const nextId = Math.max(0, ...suppliers.value.map((s) => s.id)) + 1;
-      newCode = "NCC" + String(nextId).padStart(3, "0");
-    }
-    suppliers.value.unshift({
-      ...form,
-      id: Date.now(), // Use timestamp for unique ID in demo
-      code: newCode,
-    });
+    dialogVisible.value = false;
+    fetchSuppliers();
+  } catch (err) {
+    console.error("Save supplier error:", err);
+    ElMessage.error(
+      err.response?.data?.message || "Không thể lưu nhà cung cấp",
+    );
+  } finally {
+    saving.value = false;
   }
-  ElMessage.success("Lưu nhà cung cấp thành công!");
-  dialogVisible.value = false;
 };
 
 const handleDelete = (supplier) => {
   ElMessageBox.confirm(
     `Bạn có chắc muốn xóa nhà cung cấp "${supplier.name}" không?`,
     "Xác nhận xóa",
-    { confirmButtonText: "Đồng ý", cancelButtonText: "Hủy", type: "warning" }
+    { confirmButtonText: "Đồng ý", cancelButtonText: "Hủy", type: "warning" },
   )
-    .then(() => {
-      suppliers.value = suppliers.value.filter((s) => s.id !== supplier.id);
-      ElMessage.success("Đã xóa nhà cung cấp.");
+    .then(async () => {
+      try {
+        await apiClient.delete(`/api/suppliers/${supplier.id}`);
+        ElMessage.success("Đã xóa nhà cung cấp.");
+        fetchSuppliers();
+      } catch (err) {
+        console.error("Delete supplier error:", err);
+        ElMessage.error(
+          err.response?.data?.message || "Không thể xóa nhà cung cấp",
+        );
+      }
     })
     .catch(() => {});
 };
@@ -393,15 +400,17 @@ const handleDelete = (supplier) => {
 // --- LIFECYCLE & WATCHERS ---
 watch([search, statusFilter], () => {
   currentPage.value = 1;
+  fetchSuppliers();
+});
+
+watch(currentPage, () => {
+  fetchSuppliers();
 });
 
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
-  setTimeout(() => {
-    suppliers.value = sampleSuppliers;
-    isLoading.value = false;
-  }, 500);
+  fetchSuppliers();
 });
 
 onUnmounted(() => {

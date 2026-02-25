@@ -409,12 +409,12 @@ const fetchInventories = async () => {
       : null;
 
     const params = {
-      search: search.value,
-      store_id: storeId,
-      status: statusFilter.value,
       page: currentPage.value,
       limit: pageSize,
     };
+    if (search.value.trim()) params.search = search.value.trim();
+    if (storeId) params.store_id = storeId;
+    if (statusFilter.value) params.status = statusFilter.value;
 
     const result = await inventoryService.getInventories(params);
 

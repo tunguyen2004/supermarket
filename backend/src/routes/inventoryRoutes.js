@@ -3,21 +3,25 @@
  * @module routes/inventoryRoutes
  */
 
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const inventoryService = require('../services/inventoryService');
-const { verifyToken } = require('../middleware/auth');
-const { requireManagerOrAdmin } = require('../middleware/authorize');
-const { validateBody, validateParams, validateQuery } = require('../middleware/validate');
-const { 
-  receiveInventorySchema, 
-  transferStockSchema, 
+const inventoryService = require("../services/inventoryService");
+const { verifyToken } = require("../middleware/auth");
+const { requireManagerOrAdmin } = require("../middleware/authorize");
+const {
+  validateBody,
+  validateParams,
+  validateQuery,
+} = require("../middleware/validate");
+const {
+  receiveInventorySchema,
+  transferStockSchema,
   returnToSupplierSchema,
   updateInventorySchema,
   inventoryListQuerySchema,
-  inventoryHistoryQuerySchema
-} = require('../validators/inventoryValidator');
-const { variantIdParamSchema } = require('../validators/commonValidator');
+  inventoryHistoryQuerySchema,
+} = require("../validators/inventoryValidator");
+const { variantIdParamSchema } = require("../validators/commonValidator");
 
 /**
  * @swagger
@@ -53,7 +57,12 @@ const { variantIdParamSchema } = require('../validators/commonValidator');
  *       200:
  *         description: Danh sách tồn kho
  */
-router.get('/', verifyToken, validateQuery(inventoryListQuerySchema), inventoryService.getInventories);
+router.get(
+  "/",
+  verifyToken,
+  validateQuery(inventoryListQuerySchema),
+  inventoryService.getInventories,
+);
 
 /**
  * @swagger
@@ -90,7 +99,13 @@ router.get('/', verifyToken, validateQuery(inventoryListQuerySchema), inventoryS
  *       200:
  *         description: Nhập kho thành công
  */
-router.post('/receive', verifyToken, requireManagerOrAdmin, validateBody(receiveInventorySchema), inventoryService.receiveInventory);
+router.post(
+  "/receive",
+  verifyToken,
+  requireManagerOrAdmin,
+  validateBody(receiveInventorySchema),
+  inventoryService.receiveInventory,
+);
 
 /**
  * @swagger
@@ -127,7 +142,13 @@ router.post('/receive', verifyToken, requireManagerOrAdmin, validateBody(receive
  *       200:
  *         description: Chuyển kho thành công
  */
-router.post('/transfer', verifyToken, requireManagerOrAdmin, validateBody(transferStockSchema), inventoryService.transferStock);
+router.post(
+  "/transfer",
+  verifyToken,
+  requireManagerOrAdmin,
+  validateBody(transferStockSchema),
+  inventoryService.transferStock,
+);
 
 /**
  * @swagger
@@ -162,7 +183,63 @@ router.post('/transfer', verifyToken, requireManagerOrAdmin, validateBody(transf
  *       200:
  *         description: Trả hàng thành công
  */
-router.post('/return', verifyToken, requireManagerOrAdmin, validateBody(returnToSupplierSchema), inventoryService.returnToSupplier);
+router.post(
+  "/return",
+  verifyToken,
+  requireManagerOrAdmin,
+  validateBody(returnToSupplierSchema),
+  inventoryService.returnToSupplier,
+);
+
+/**
+ * @swagger
+ * /api/inventories/transactions:
+ *   get:
+ *     tags: [Inventory]
+ *     summary: Danh sách giao dịch kho
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: "Transaction type codes (comma-separated): IMPORT, EXPORT, TRANSFER_OUT, TRANSFER_IN, RETURN, ADJUSTMENT, DAMAGE, EXPIRED"
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: store_id
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Danh sách giao dịch kho
+ */
+router.get(
+  "/transactions",
+  verifyToken,
+  inventoryService.getInventoryTransactions,
+);
 
 /**
  * @swagger
@@ -182,7 +259,12 @@ router.post('/return', verifyToken, requireManagerOrAdmin, validateBody(returnTo
  *       200:
  *         description: Chi tiết tồn kho
  */
-router.get('/:variantId', verifyToken, validateParams(variantIdParamSchema), inventoryService.getInventoryById);
+router.get(
+  "/:variantId",
+  verifyToken,
+  validateParams(variantIdParamSchema),
+  inventoryService.getInventoryById,
+);
 
 /**
  * @swagger
@@ -219,7 +301,14 @@ router.get('/:variantId', verifyToken, validateParams(variantIdParamSchema), inv
  *       200:
  *         description: Điều chỉnh thành công
  */
-router.put('/:variantId', verifyToken, requireManagerOrAdmin, validateParams(variantIdParamSchema), validateBody(updateInventorySchema), inventoryService.updateInventory);
+router.put(
+  "/:variantId",
+  verifyToken,
+  requireManagerOrAdmin,
+  validateParams(variantIdParamSchema),
+  validateBody(updateInventorySchema),
+  inventoryService.updateInventory,
+);
 
 /**
  * @swagger
@@ -261,6 +350,12 @@ router.put('/:variantId', verifyToken, requireManagerOrAdmin, validateParams(var
  *       200:
  *         description: Lịch sử giao dịch
  */
-router.get('/:variantId/history', verifyToken, validateParams(variantIdParamSchema), validateQuery(inventoryHistoryQuerySchema), inventoryService.getInventoryHistory);
+router.get(
+  "/:variantId/history",
+  verifyToken,
+  validateParams(variantIdParamSchema),
+  validateQuery(inventoryHistoryQuerySchema),
+  inventoryService.getInventoryHistory,
+);
 
 module.exports = router;
