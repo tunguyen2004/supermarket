@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const db = require("../config/database");
 
 /**
  * ============================================================================
@@ -10,7 +10,7 @@ const db = require('../config/database');
 /**
  * GET /api/dashboard/overview
  * Lấy số liệu tổng quan cho trang Home Dashboard
- * 
+ *
  * Response:
  * - totalOrders: Tổng số đơn hàng
  * - totalProducts: Tổng số sản phẩm đang active
@@ -42,16 +42,15 @@ const getOverview = async (req, res) => {
     `);
     const totalCustomers = parseInt(customersResult.rows[0]?.total || 0);
 
-
     // 5. Lấy 5 đơn hàng gần nhất
     const recentOrdersResult = await db.query(`
       SELECT 
         o.id,
-        o.order_code as code,
-        COALESCE(c.full_name, 'Khách lẻ') as "customerName",
-        o.date_key as "createdAt",
+        o.order_code as order_code,
+        COALESCE(c.full_name, 'Khách lẻ') as customer_name,
+        o.date_key as created_at,
         o.status,
-        o.final_amount as "totalAmount"
+        o.final_amount as total_amount
       FROM fact_orders o
       LEFT JOIN dim_customers c ON o.customer_id = c.id
       ORDER BY o.created_at DESC
@@ -64,17 +63,16 @@ const getOverview = async (req, res) => {
         totalOrders,
         totalProducts,
         totalCustomers,
-        recentOrders: recentOrdersResult.rows
+        recentOrders: recentOrdersResult.rows,
       },
-      message: 'Dashboard overview retrieved successfully'
+      message: "Dashboard overview retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Dashboard overview error:', error);
+    console.error("Dashboard overview error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy dữ liệu dashboard',
-      error: error.message
+      message: "Lỗi khi lấy dữ liệu dashboard",
+      error: error.message,
     });
   }
 };
@@ -82,7 +80,7 @@ const getOverview = async (req, res) => {
 /**
  * GET /api/dashboard/stats
  * Lấy số liệu thống kê cho trang Reports (có so sánh với kỳ trước)
- * 
+ *
  * Query params:
  * - from: Ngày bắt đầu (YYYY-MM-DD)
  * - to: Ngày kết thúc (YYYY-MM-DD)
@@ -90,21 +88,26 @@ const getOverview = async (req, res) => {
 const getStats = async (req, res) => {
   try {
     const { from, to } = req.query;
-    
+
     // Default: 30 ngày gần nhất
     const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
-    
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
+
     // Tính khoảng thời gian kỳ trước để so sánh
     const periodLength = (endDate - startDate) / (24 * 60 * 60 * 1000);
     const prevEndDate = new Date(startDate - 1);
-    const prevStartDate = new Date(prevEndDate - periodLength * 24 * 60 * 60 * 1000);
+    const prevStartDate = new Date(
+      prevEndDate - periodLength * 24 * 60 * 60 * 1000,
+    );
 
     // Format dates cho SQL
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const formatDate = (d) => d.toISOString().split("T")[0];
 
     // 1. Thống kê kỳ hiện tại
-    const currentStats = await db.query(`
+    const currentStats = await db.query(
+      `
       SELECT 
         COALESCE(SUM(final_amount), 0) as total_revenue,
         COUNT(*) as total_orders,
@@ -116,10 +119,13 @@ const getStats = async (req, res) => {
       WHERE date_key BETWEEN $1 AND $2
         AND status = 'completed'
         AND payment_status = 'paid'
-    `, [formatDate(startDate), formatDate(endDate)]);
+    `,
+      [formatDate(startDate), formatDate(endDate)],
+    );
 
     // 2. Thống kê kỳ trước
-    const prevStats = await db.query(`
+    const prevStats = await db.query(
+      `
       SELECT 
         COALESCE(SUM(final_amount), 0) as total_revenue,
         COUNT(*) as total_orders,
@@ -131,27 +137,37 @@ const getStats = async (req, res) => {
       WHERE date_key BETWEEN $1 AND $2
         AND status = 'completed'
         AND payment_status = 'paid'
-    `, [formatDate(prevStartDate), formatDate(prevEndDate)]);
+    `,
+      [formatDate(prevStartDate), formatDate(prevEndDate)],
+    );
 
     // 3. Đếm khách hàng mới trong kỳ hiện tại
-    const newCustomersResult = await db.query(`
+    const newCustomersResult = await db.query(
+      `
       SELECT COUNT(*) as total 
       FROM dim_customers 
       WHERE created_at BETWEEN $1 AND $2
-    `, [formatDate(startDate), formatDate(endDate) + ' 23:59:59']);
+    `,
+      [formatDate(startDate), formatDate(endDate) + " 23:59:59"],
+    );
 
     // 4. Đếm khách hàng mới kỳ trước
-    const prevNewCustomersResult = await db.query(`
+    const prevNewCustomersResult = await db.query(
+      `
       SELECT COUNT(*) as total 
       FROM dim_customers 
       WHERE created_at BETWEEN $1 AND $2
-    `, [formatDate(prevStartDate), formatDate(prevEndDate) + ' 23:59:59']);
+    `,
+      [formatDate(prevStartDate), formatDate(prevEndDate) + " 23:59:59"],
+    );
 
     // Lấy giá trị
     const current = currentStats.rows[0];
     const prev = prevStats.rows[0];
     const newCustomers = parseInt(newCustomersResult.rows[0]?.total || 0);
-    const prevNewCustomers = parseInt(prevNewCustomersResult.rows[0]?.total || 0);
+    const prevNewCustomers = parseInt(
+      prevNewCustomersResult.rows[0]?.total || 0,
+    );
 
     // Tính % thay đổi
     const calcChange = (current, prev) => {
@@ -170,28 +186,35 @@ const getStats = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        totalRevenue: Math.round(totalRevenue),
-        revenueChange: calcChange(totalRevenue, prevTotalRevenue),
-        totalOrders,
-        ordersChange: calcChange(totalOrders, prevTotalOrders),
-        avgOrderValue: Math.round(avgOrderValue),
-        avgOrderChange: calcChange(avgOrderValue, prevAvgOrderValue),
-        newCustomers,
-        customersChange: calcChange(newCustomers, prevNewCustomers),
+        revenue: {
+          current: Math.round(totalRevenue),
+          change: calcChange(totalRevenue, prevTotalRevenue),
+        },
+        orders: {
+          current: totalOrders,
+          change: calcChange(totalOrders, prevTotalOrders),
+        },
+        avgOrderValue: {
+          current: Math.round(avgOrderValue),
+          change: calcChange(avgOrderValue, prevAvgOrderValue),
+        },
+        newCustomers: {
+          current: newCustomers,
+          change: calcChange(newCustomers, prevNewCustomers),
+        },
         period: {
           from: formatDate(startDate),
-          to: formatDate(endDate)
-        }
+          to: formatDate(endDate),
+        },
       },
-      message: 'Dashboard stats retrieved successfully'
+      message: "Dashboard stats retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Dashboard stats error:', error);
+    console.error("Dashboard stats error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy thống kê dashboard',
-      error: error.message
+      message: "Lỗi khi lấy thống kê dashboard",
+      error: error.message,
     });
   }
 };
@@ -199,7 +222,7 @@ const getStats = async (req, res) => {
 /**
  * GET /api/dashboard/revenue-chart
  * Lấy dữ liệu cho biểu đồ doanh thu
- * 
+ *
  * Query params:
  * - from: Ngày bắt đầu
  * - to: Ngày kết thúc
@@ -207,20 +230,22 @@ const getStats = async (req, res) => {
  */
 const getRevenueChart = async (req, res) => {
   try {
-    const { from, to, groupBy = 'day' } = req.query;
-    
+    const { from, to, groupBy = "day" } = req.query;
+
     const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
 
     let groupExpression, labelFormat;
-    
+
     switch (groupBy) {
-      case 'week':
+      case "week":
         groupExpression = `DATE_TRUNC('week', date_key)`;
         labelFormat = `TO_CHAR(DATE_TRUNC('week', date_key), 'DD/MM')`;
         break;
-      case 'month':
+      case "month":
         groupExpression = `DATE_TRUNC('month', date_key)`;
         labelFormat = `TO_CHAR(DATE_TRUNC('month', date_key), 'MM/YYYY')`;
         break;
@@ -229,21 +254,26 @@ const getRevenueChart = async (req, res) => {
         labelFormat = `TO_CHAR(date_key, 'DD/MM')`;
     }
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT 
         ${labelFormat} as label,
         ${groupExpression} as date_group,
-        COALESCE(SUM(final_amount), 0) as revenue
+        COALESCE(SUM(final_amount), 0) as revenue,
+        COUNT(*) as order_count
       FROM fact_orders 
       WHERE date_key BETWEEN $1 AND $2
         AND status = 'completed'
         AND payment_status = 'paid'
       GROUP BY ${groupExpression}
       ORDER BY date_group ASC
-    `, [formatDate(startDate), formatDate(endDate)]);
+    `,
+      [formatDate(startDate), formatDate(endDate)],
+    );
 
-    const labels = result.rows.map(r => r.label);
-    const data = result.rows.map(r => parseFloat(r.revenue));
+    const labels = result.rows.map((r) => r.label);
+    const revenueData = result.rows.map((r) => parseFloat(r.revenue));
+    const orderCountData = result.rows.map((r) => parseInt(r.order_count));
 
     return res.status(200).json({
       success: true,
@@ -251,20 +281,23 @@ const getRevenueChart = async (req, res) => {
         labels,
         datasets: [
           {
-            label: 'Doanh thu',
-            data
-          }
-        ]
+            label: "Doanh thu",
+            data: revenueData,
+          },
+          {
+            label: "Đơn hàng",
+            data: orderCountData,
+          },
+        ],
       },
-      message: 'Revenue chart data retrieved successfully'
+      message: "Revenue chart data retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Revenue chart error:', error);
+    console.error("Revenue chart error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy dữ liệu biểu đồ doanh thu',
-      error: error.message
+      message: "Lỗi khi lấy dữ liệu biểu đồ doanh thu",
+      error: error.message,
     });
   }
 };
@@ -272,7 +305,7 @@ const getRevenueChart = async (req, res) => {
 /**
  * GET /api/dashboard/top-products
  * Lấy top sản phẩm bán chạy
- * 
+ *
  * Query params:
  * - limit: Số lượng sản phẩm (default: 5)
  * - from, to: Khoảng thời gian
@@ -280,16 +313,20 @@ const getRevenueChart = async (req, res) => {
 const getTopProducts = async (req, res) => {
   try {
     const { limit = 5, from, to } = req.query;
-    
-    const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
-    const formatDate = (d) => d.toISOString().split('T')[0];
 
-    const result = await db.query(`
+    const endDate = to ? new Date(to) : new Date();
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
+
+    const result = await db.query(
+      `
       SELECT 
         p.id,
         p.name,
-        SUM(oi.quantity) as quantity
+        SUM(oi.quantity) as total_sold,
+        COALESCE(SUM(oi.quantity * oi.unit_price), 0) as revenue
       FROM fact_order_items oi
       JOIN fact_orders o ON oi.order_id = o.id
       JOIN dim_product_variants pv ON oi.variant_id = pv.id
@@ -297,26 +334,28 @@ const getTopProducts = async (req, res) => {
       WHERE o.date_key BETWEEN $1 AND $2
         AND o.status = 'completed'
       GROUP BY p.id, p.name
-      ORDER BY quantity DESC
+      ORDER BY total_sold DESC
       LIMIT $3
-    `, [formatDate(startDate), formatDate(endDate), parseInt(limit)]);
+    `,
+      [formatDate(startDate), formatDate(endDate), parseInt(limit)],
+    );
 
     return res.status(200).json({
       success: true,
-      data: result.rows.map(r => ({
+      data: result.rows.map((r) => ({
         id: r.id,
         name: r.name,
-        quantity: parseInt(r.quantity)
+        totalSold: parseInt(r.total_sold),
+        revenue: parseFloat(r.revenue),
       })),
-      message: 'Top products retrieved successfully'
+      message: "Top products retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Top products error:', error);
+    console.error("Top products error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy top sản phẩm',
-      error: error.message
+      message: "Lỗi khi lấy top sản phẩm",
+      error: error.message,
     });
   }
 };
@@ -328,14 +367,17 @@ const getTopProducts = async (req, res) => {
 const getSalesChannels = async (req, res) => {
   try {
     const { from, to } = req.query;
-    
+
     const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
-    const formatDate = (d) => d.toISOString().split('T')[0];
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
 
     // Giả định payment_method hoặc có thêm trường sales_channel
     // Tạm thời dùng payment_method để demo
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT 
         COALESCE(payment_method, 'Tại cửa hàng') as channel,
         COALESCE(SUM(final_amount), 0) as revenue,
@@ -346,17 +388,23 @@ const getSalesChannels = async (req, res) => {
         AND payment_status = 'paid'
       GROUP BY payment_method
       ORDER BY revenue DESC
-    `, [formatDate(startDate), formatDate(endDate)]);
+    `,
+      [formatDate(startDate), formatDate(endDate)],
+    );
 
     // Tính tổng doanh thu để tính phần trăm
-    const totalRevenue = result.rows.reduce((sum, r) => sum + parseFloat(r.revenue), 0);
+    const totalRevenue = result.rows.reduce(
+      (sum, r) => sum + parseFloat(r.revenue),
+      0,
+    );
 
-    const data = result.rows.map(r => ({
-      channel: r.channel || 'Tại cửa hàng',
+    const data = result.rows.map((r) => ({
+      channel: r.channel || "Tại cửa hàng",
       revenue: parseFloat(r.revenue),
-      percentage: totalRevenue > 0 
-        ? Math.round((parseFloat(r.revenue) / totalRevenue) * 100) 
-        : 0
+      percentage:
+        totalRevenue > 0
+          ? Math.round((parseFloat(r.revenue) / totalRevenue) * 100)
+          : 0,
     }));
 
     // Nếu không có dữ liệu, trả về mock data
@@ -364,27 +412,26 @@ const getSalesChannels = async (req, res) => {
       return res.status(200).json({
         success: true,
         data: [
-          { channel: 'Tại cửa hàng', percentage: 45, revenue: 0 },
-          { channel: 'Giao hàng', percentage: 25, revenue: 0 },
-          { channel: 'ShopeeFood', percentage: 20, revenue: 0 },
-          { channel: 'GrabMart', percentage: 10, revenue: 0 }
+          { channel: "Tại cửa hàng", percentage: 45, revenue: 0 },
+          { channel: "Giao hàng", percentage: 25, revenue: 0 },
+          { channel: "ShopeeFood", percentage: 20, revenue: 0 },
+          { channel: "GrabMart", percentage: 10, revenue: 0 },
         ],
-        message: 'Sales channels retrieved successfully (no data)'
+        message: "Sales channels retrieved successfully (no data)",
       });
     }
 
     return res.status(200).json({
       success: true,
       data,
-      message: 'Sales channels retrieved successfully'
+      message: "Sales channels retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Sales channels error:', error);
+    console.error("Sales channels error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy dữ liệu kênh bán hàng',
-      error: error.message
+      message: "Lỗi khi lấy dữ liệu kênh bán hàng",
+      error: error.message,
     });
   }
 };
@@ -396,16 +443,20 @@ const getSalesChannels = async (req, res) => {
 const getTopCustomers = async (req, res) => {
   try {
     const { limit = 5, from, to } = req.query;
-    
-    const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
-    const formatDate = (d) => d.toISOString().split('T')[0];
 
-    const result = await db.query(`
+    const endDate = to ? new Date(to) : new Date();
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
+
+    const result = await db.query(
+      `
       SELECT 
         c.id,
         c.full_name as name,
         COALESCE(SUM(o.final_amount), 0) as "totalSpent",
+        COUNT(DISTINCT o.id) as "totalOrders",
         '' as "avatarUrl"
       FROM dim_customers c
       JOIN fact_orders o ON c.id = o.customer_id
@@ -415,25 +466,27 @@ const getTopCustomers = async (req, res) => {
       GROUP BY c.id, c.full_name
       ORDER BY "totalSpent" DESC
       LIMIT $3
-    `, [formatDate(startDate), formatDate(endDate), parseInt(limit)]);
+    `,
+      [formatDate(startDate), formatDate(endDate), parseInt(limit)],
+    );
 
     return res.status(200).json({
       success: true,
-      data: result.rows.map(r => ({
+      data: result.rows.map((r) => ({
         id: r.id,
         name: r.name,
         totalSpent: parseFloat(r.totalSpent),
-        avatarUrl: r.avatarUrl || ''
+        totalOrders: parseInt(r.totalOrders),
+        avatarUrl: r.avatarUrl || "",
       })),
-      message: 'Top customers retrieved successfully'
+      message: "Top customers retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Top customers error:', error);
+    console.error("Top customers error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy top khách hàng',
-      error: error.message
+      message: "Lỗi khi lấy top khách hàng",
+      error: error.message,
     });
   }
 };
@@ -446,39 +499,49 @@ const getLowStock = async (req, res) => {
   try {
     const { threshold = 20, limit = 10 } = req.query;
 
-    const result = await db.query(`
+    const result = await db.query(
+      `
       SELECT 
         p.id,
         p.name,
+        COALESCE(p.code, '') as code,
         COALESCE(SUM(fis.quantity_on_hand), 0) as stock,
-        '' as "imageUrl"
+        p.image_url as "imageUrl"
       FROM dim_products p
       LEFT JOIN dim_product_variants pv ON p.id = pv.product_id
       LEFT JOIN fact_inventory_stocks fis ON pv.id = fis.variant_id
       WHERE p.is_active = true
-      GROUP BY p.id, p.name
+      GROUP BY p.id, p.name, p.code, p.image_url
       HAVING COALESCE(SUM(fis.quantity_on_hand), 0) <= $1
       ORDER BY stock ASC
       LIMIT $2
-    `, [parseInt(threshold), parseInt(limit)]);
+    `,
+      [parseInt(threshold), parseInt(limit)],
+    );
 
     return res.status(200).json({
       success: true,
-      data: result.rows.map(r => ({
-        id: r.id,
-        name: r.name,
-        stock: parseInt(r.stock),
-        imageUrl: r.imageUrl || ''
-      })),
-      message: 'Low stock products retrieved successfully'
+      data: result.rows.map((r) => {
+        const stock = parseInt(r.stock);
+        const thresh = parseInt(threshold);
+        return {
+          id: r.id,
+          name: r.name,
+          code: r.code || "",
+          currentStock: stock,
+          threshold: thresh,
+          status: stock <= Math.floor(thresh * 0.3) ? "critical" : "warning",
+          imageUrl: r.imageUrl || "",
+        };
+      }),
+      message: "Low stock products retrieved successfully",
     });
-
   } catch (error) {
-    console.error('Low stock error:', error);
+    console.error("Low stock error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi lấy sản phẩm sắp hết hàng',
-      error: error.message
+      message: "Lỗi khi lấy sản phẩm sắp hết hàng",
+      error: error.message,
     });
   }
 };
@@ -490,5 +553,5 @@ module.exports = {
   getTopProducts,
   getSalesChannels,
   getTopCustomers,
-  getLowStock
+  getLowStock,
 };
