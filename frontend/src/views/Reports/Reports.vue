@@ -23,130 +23,199 @@
         range-separator="-"
         start-placeholder="Ngày bắt đầu"
         end-placeholder="Ngày kết thúc"
+        format="DD/MM/YYYY"
+        value-format="YYYY-MM-DD"
         :icons="datePickerIcons"
+        @change="onDateChange"
       />
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon" style="color: #3b82f6; background: #eff6ff">
-          <el-icon><Money /></el-icon>
-        </div>
-        <div class="stat-info">
-          <div class="stat-title">Tổng doanh thu</div>
-          <div class="stat-value">156.820.000đ</div>
-          <div class="stat-trend increase">+12.5% so với kỳ trước</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="color: #16a34a; background: #f0fdf4">
-          <el-icon><Tickets /></el-icon>
-        </div>
-        <div class="stat-info">
-          <div class="stat-title">Tổng đơn hàng</div>
-          <div class="stat-value">1.240</div>
-          <div class="stat-trend increase">+8.2% so với kỳ trước</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="color: #f97316; background: #fff7ed">
-          <el-icon><ShoppingCartFull /></el-icon>
-        </div>
-        <div class="stat-info">
-          <div class="stat-title">Giá trị trung bình đơn</div>
-          <div class="stat-value">126.467đ</div>
-          <div class="stat-trend increase">+4.1% so với kỳ trước</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="color: #8b5cf6; background: #f5f3ff">
-          <el-icon><User /></el-icon>
-        </div>
-        <div class="stat-info">
-          <div class="stat-title">Khách hàng mới</div>
-          <div class="stat-value">82</div>
-          <div class="stat-trend decrease">-5.5% so với kỳ trước</div>
-        </div>
-      </div>
+    <!-- Loading -->
+    <div v-if="loading" class="loading-wrapper">
+      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+      <span style="margin-left: 8px; color: #6b7280">Đang tải dữ liệu...</span>
     </div>
 
-    <div class="content-card">
-      <h2 class="card-section-title">Biểu đồ doanh thu</h2>
-      <div style="height: 250px;">
-        <revenue-line-chart />
-      </div>
-    </div>
-
-    <div class="details-grid">
-      <div class="content-card">
-        <h2 class="card-section-title">Top 5 sản phẩm bán chạy</h2>
-        <div style="height: 300px;">
-          <top-products-chart />
+    <template v-else>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #3b82f6; background: #eff6ff">
+            <el-icon><Money /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-title">Tổng doanh thu</div>
+            <div class="stat-value">
+              {{ formatCurrency(stats.totalRevenue) }}
+            </div>
+            <div
+              class="stat-trend"
+              :class="stats.revenueChange >= 0 ? 'increase' : 'decrease'"
+            >
+              {{ stats.revenueChange >= 0 ? "+" : ""
+              }}{{ stats.revenueChange }}% so với kỳ trước
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #16a34a; background: #f0fdf4">
+            <el-icon><Tickets /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-title">Tổng đơn hàng</div>
+            <div class="stat-value">
+              {{ stats.totalOrders.toLocaleString("vi-VN") }}
+            </div>
+            <div
+              class="stat-trend"
+              :class="stats.ordersChange >= 0 ? 'increase' : 'decrease'"
+            >
+              {{ stats.ordersChange >= 0 ? "+" : "" }}{{ stats.ordersChange }}%
+              so với kỳ trước
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #f97316; background: #fff7ed">
+            <el-icon><ShoppingCartFull /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-title">Giá trị trung bình đơn</div>
+            <div class="stat-value">
+              {{ formatCurrency(stats.avgOrderValue) }}
+            </div>
+            <div
+              class="stat-trend"
+              :class="stats.avgOrderChange >= 0 ? 'increase' : 'decrease'"
+            >
+              {{ stats.avgOrderChange >= 0 ? "+" : ""
+              }}{{ stats.avgOrderChange }}% so với kỳ trước
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #8b5cf6; background: #f5f3ff">
+            <el-icon><User /></el-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-title">Khách hàng mới</div>
+            <div class="stat-value">
+              {{ stats.newCustomers.toLocaleString("vi-VN") }}
+            </div>
+            <div
+              class="stat-trend"
+              :class="stats.customersChange >= 0 ? 'increase' : 'decrease'"
+            >
+              {{ stats.customersChange >= 0 ? "+" : ""
+              }}{{ stats.customersChange }}% so với kỳ trước
+            </div>
+          </div>
         </div>
       </div>
+
       <div class="content-card">
-        <h2 class="card-section-title">Phân loại theo kênh bán hàng</h2>
-        <div style="height: 300px;">
-          <sales-channel-chart />
+        <div class="card-header-row">
+          <h2 class="card-section-title" style="margin-bottom: 0">
+            Biểu đồ doanh thu
+          </h2>
+          <el-radio-group
+            v-model="chartGroupBy"
+            size="small"
+            @change="fetchRevenueChart"
+          >
+            <el-radio-button value="day">Ngày</el-radio-button>
+            <el-radio-button value="week">Tuần</el-radio-button>
+            <el-radio-button value="month">Tháng</el-radio-button>
+          </el-radio-group>
+        </div>
+        <div style="height: 250px">
+          <revenue-line-chart :chart-data="revenueChartData" />
         </div>
       </div>
-    </div>
 
-    <div class="details-grid">
-      <div class="content-card">
-        <h2 class="card-section-title">Khách hàng chi tiêu nhiều nhất</h2>
-        <el-table :data="topCustomers" :show-header="false" style="width: 100%">
-          <el-table-column>
-            <template #default="scope">
-              <div class="customer-info">
-                <el-avatar :size="32" :src="scope.row.avatarUrl">{{
-                  scope.row.name.charAt(0)
-                }}</el-avatar>
-                <span>{{ scope.row.name }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column align="right">
-            <template #default="scope">
-              <span class="top-spent-value">{{
-                formatCurrency(scope.row.totalSpent)
-              }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
+      <div class="details-grid">
+        <div class="content-card">
+          <h2 class="card-section-title">Top 5 sản phẩm bán chạy</h2>
+          <div style="height: 300px">
+            <top-products-chart :chart-data="topProductsData" />
+          </div>
+        </div>
+        <div class="content-card">
+          <h2 class="card-section-title">Phân loại theo kênh bán hàng</h2>
+          <div style="height: 300px">
+            <sales-channel-chart :chart-data="salesChannelsData" />
+          </div>
+        </div>
       </div>
-      <div class="content-card">
-        <h2 class="card-section-title">Sản phẩm sắp hết hàng</h2>
-        <el-table
-          :data="lowStockProducts"
-          :show-header="false"
-          style="width: 100%"
-        >
-          <el-table-column>
-            <template #default="scope">
-              <div class="customer-info">
-                <el-image
-                  class="low-stock-image"
-                  :src="scope.row.imageUrl"
-                  fit="cover"
-                />
-                <span>{{ scope.row.name }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column align="right">
-            <template #default="scope">
-              <el-tag type="danger">Còn lại {{ scope.row.stock }}</el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
+
+      <div class="details-grid">
+        <div class="content-card">
+          <h2 class="card-section-title">Khách hàng chi tiêu nhiều nhất</h2>
+          <div v-if="topCustomers.length === 0" class="empty-hint">
+            Không có dữ liệu
+          </div>
+          <el-table
+            v-else
+            :data="topCustomers"
+            :show-header="false"
+            style="width: 100%"
+          >
+            <el-table-column>
+              <template #default="scope">
+                <div class="customer-info">
+                  <el-avatar :size="32" :src="scope.row.avatarUrl">{{
+                    scope.row.name.charAt(0)
+                  }}</el-avatar>
+                  <span>{{ scope.row.name }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column align="right">
+              <template #default="scope">
+                <span class="top-spent-value">{{
+                  formatCurrency(scope.row.totalSpent)
+                }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <div class="content-card">
+          <h2 class="card-section-title">Sản phẩm sắp hết hàng</h2>
+          <div v-if="lowStockProducts.length === 0" class="empty-hint">
+            Tất cả sản phẩm đều đủ hàng
+          </div>
+          <el-table
+            v-else
+            :data="lowStockProducts"
+            :show-header="false"
+            style="width: 100%"
+          >
+            <el-table-column>
+              <template #default="scope">
+                <div class="customer-info">
+                  <el-avatar :size="32" shape="square">
+                    <el-icon><Box /></el-icon>
+                  </el-avatar>
+                  <span>{{ scope.row.name }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column align="right">
+              <template #default="scope">
+                <el-tag :type="scope.row.stock === 0 ? 'danger' : 'warning'">
+                  Còn lại {{ scope.row.stock }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
+import apiClient from "@/services/apiClient";
 import RevenueLineChart from "./RevenueLineChart.vue";
 import TopProductsChart from "../../components/TopProductsChart.vue";
 import SalesChannelChart from "../../components/SalesChannelChart.vue";
@@ -160,7 +229,10 @@ import {
   ArrowRight,
   DArrowLeft,
   DArrowRight,
+  Loading,
+  Box,
 } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 
 // Responsive State
 const isMobile = ref(false);
@@ -170,13 +242,17 @@ const checkScreenSize = () => {
 onMounted(() => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
+  fetchAll();
 });
 onBeforeUnmount(() => {
   window.removeEventListener("resize", checkScreenSize);
 });
 
-// Data
-const dateRange = ref("");
+// Date range — default last 30 days
+const now = new Date();
+const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+const fmt = (d) => d.toISOString().split("T")[0];
+const dateRange = ref([fmt(thirtyDaysAgo), fmt(now)]);
 const datePickerIcons = {
   prefix: Calendar,
   prev: ArrowLeft,
@@ -185,39 +261,144 @@ const datePickerIcons = {
   dNext: DArrowRight,
 };
 
-const topCustomers = ref([
-  {
-    name: "Nguyễn Thị Bình",
-    totalSpent: 8250000,
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-  },
-  {
-    name: "Đỗ Ngọc Giang",
-    totalSpent: 5400000,
-    avatarUrl: "https://i.pravatar.cc/150?u=a042581f4e29026706d",
-  },
-  { name: "Trần Văn An", totalSpent: 15600000, avatarUrl: "" },
-]);
+// State
+const loading = ref(true);
+const chartGroupBy = ref("day");
 
-const lowStockProducts = ref([
-  {
-    name: "Mì Hảo Hảo",
-    stock: 15,
-    imageUrl: "https://i.imgur.com/GCRzZ3c.png",
-  },
-  {
-    name: "Trứng gà 10 quả",
-    stock: 0,
-    imageUrl: "https://i.imgur.com/7g2jBGY.png",
-  },
-  {
-    name: "Bột ngọt Ajinomoto",
-    stock: 8,
-    imageUrl: "https://i.imgur.com/8mB3H6f.png",
-  },
-]);
+const stats = ref({
+  totalRevenue: 0,
+  revenueChange: 0,
+  totalOrders: 0,
+  ordersChange: 0,
+  avgOrderValue: 0,
+  avgOrderChange: 0,
+  newCustomers: 0,
+  customersChange: 0,
+});
 
-const formatCurrency = (value) => value.toLocaleString("vi-VN") + "đ";
+const revenueChartData = ref({ labels: [], datasets: [] });
+const topProductsData = ref([]);
+const salesChannelsData = ref([]);
+const topCustomers = ref([]);
+const lowStockProducts = ref([]);
+
+// Helpers
+const formatCurrency = (value) => {
+  if (!value && value !== 0) return "0đ";
+  return Math.round(value).toLocaleString("vi-VN") + "đ";
+};
+
+function getDateParams() {
+  if (dateRange.value && dateRange.value.length === 2) {
+    return { from: dateRange.value[0], to: dateRange.value[1] };
+  }
+  return { from: fmt(thirtyDaysAgo), to: fmt(now) };
+}
+
+function onDateChange() {
+  fetchAll();
+}
+
+// Fetch all data
+async function fetchAll() {
+  loading.value = true;
+  try {
+    const params = getDateParams();
+    await Promise.all([
+      fetchStats(params),
+      fetchRevenueChart(null, params),
+      fetchTopProducts(params),
+      fetchSalesChannels(params),
+      fetchTopCustomers(params),
+      fetchLowStock(),
+    ]);
+  } catch (err) {
+    console.error("Dashboard fetch error:", err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function fetchStats(params) {
+  try {
+    const p = params || getDateParams();
+    const res = await apiClient.get("/api/dashboard/stats", { params: p });
+    if (res.data?.success) {
+      stats.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Stats error:", err);
+  }
+}
+
+async function fetchRevenueChart(groupBy, params) {
+  try {
+    const p = params || getDateParams();
+    const res = await apiClient.get("/api/dashboard/revenue-chart", {
+      params: { ...p, groupBy: groupBy || chartGroupBy.value },
+    });
+    if (res.data?.success) {
+      revenueChartData.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Revenue chart error:", err);
+  }
+}
+
+async function fetchTopProducts(params) {
+  try {
+    const p = params || getDateParams();
+    const res = await apiClient.get("/api/dashboard/top-products", {
+      params: { ...p, limit: 5 },
+    });
+    if (res.data?.success) {
+      topProductsData.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Top products error:", err);
+  }
+}
+
+async function fetchSalesChannels(params) {
+  try {
+    const p = params || getDateParams();
+    const res = await apiClient.get("/api/dashboard/sales-channels", {
+      params: p,
+    });
+    if (res.data?.success) {
+      salesChannelsData.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Sales channels error:", err);
+  }
+}
+
+async function fetchTopCustomers(params) {
+  try {
+    const p = params || getDateParams();
+    const res = await apiClient.get("/api/dashboard/top-customers", {
+      params: { ...p, limit: 5 },
+    });
+    if (res.data?.success) {
+      topCustomers.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Top customers error:", err);
+  }
+}
+
+async function fetchLowStock() {
+  try {
+    const res = await apiClient.get("/api/dashboard/low-stock", {
+      params: { threshold: 20, limit: 10 },
+    });
+    if (res.data?.success) {
+      lowStockProducts.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Low stock error:", err);
+  }
+}
 </script>
 
 <style scoped>
@@ -310,6 +491,24 @@ const formatCurrency = (value) => value.toLocaleString("vi-VN") + "đ";
   font-weight: 600;
   color: #1f2937;
   margin: 0 0 20px 0;
+}
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+}
+.empty-hint {
+  text-align: center;
+  color: #9ca3af;
+  padding: 24px 0;
+  font-size: 0.9rem;
 }
 .chart-placeholder {
   width: 100%;

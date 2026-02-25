@@ -3,9 +3,7 @@
     <PageHeader title="Tra cứu đơn hàng" />
 
     <div class="p-4">
-      <div
-        class="grid grid-cols-[380px_1fr] gap-4 min-h-[calc(100vh-64px-32px)]"
-      >
+      <div class="grid grid-cols-[380px_1fr] gap-4 h-[calc(100vh-64px-32px)]">
         <!-- LEFT: Order list -->
         <aside
           class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col"

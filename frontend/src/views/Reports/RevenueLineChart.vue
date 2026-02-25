@@ -3,38 +3,84 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import Chart from 'chart.js/auto';
+import { ref, onMounted, watch } from "vue";
+import Chart from "chart.js/auto";
+
+const props = defineProps({
+  chartData: {
+    type: Object,
+    default: () => ({ labels: [], datasets: [] }),
+  },
+});
 
 const chartCanvas = ref(null);
+let chartInstance = null;
 
-onMounted(() => {
-  const ctx = chartCanvas.value.getContext('2d');
-  new Chart(ctx, {
-    type: 'line',
+function renderChart() {
+  if (!chartCanvas.value) return;
+  const ctx = chartCanvas.value.getContext("2d");
+
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  const labels = props.chartData?.labels || [];
+  const data = props.chartData?.datasets?.[0]?.data || [];
+
+  chartInstance = new Chart(ctx, {
+    type: "line",
     data: {
-      labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7'],
-      datasets: [{
-        label: 'Doanh thu',
-        data: [65000000, 59000000, 80000000, 81000000, 56000000, 55000000, 40000000],
-        fill: false,
-        borderColor: '#3b82f6',
-        tension: 0.1
-      }]
+      labels,
+      datasets: [
+        {
+          label: "Doanh thu",
+          data,
+          fill: true,
+          backgroundColor: "rgba(59,130,246,0.08)",
+          borderColor: "#3b82f6",
+          pointBackgroundColor: "#3b82f6",
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 3,
+        },
+      ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: "index",
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ctx.parsed.y.toLocaleString("vi-VN") + "đ",
+          },
+        },
+      },
       scales: {
         y: {
+          beginAtZero: true,
           ticks: {
-            callback: function(value) {
-              return value.toLocaleString('vi-VN') + 'đ';
-            }
-          }
-        }
-      }
-    }
+            callback: function (value) {
+              if (value >= 1000000) return (value / 1000000).toFixed(0) + "M";
+              if (value >= 1000) return (value / 1000).toFixed(0) + "K";
+              return value.toLocaleString("vi-VN") + "đ";
+            },
+          },
+        },
+      },
+    },
   });
-});
+}
+
+onMounted(() => renderChart());
+
+watch(
+  () => props.chartData,
+  () => renderChart(),
+  { deep: true },
+);
 </script>
