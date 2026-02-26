@@ -102,27 +102,129 @@
               </button>
             </div>
 
-            <!-- Bank Transfer: Beneficiary Row -->
-            <div v-if="activeMethod === 'bank'" class="transfer-section">
-              <button
-                class="beneficiary-row"
-                @click="showBeneficiaryModal = true"
-                :disabled="isProcessing"
-              >
-                <span class="beneficiary-label">
-                  Thiết lập tài khoản thụ hưởng
-                </span>
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
-              <div v-if="selectedBeneficiary" class="selected-beneficiary">
-                <div class="beneficiary-info">
-                  <div class="beneficiary-name">
-                    {{ selectedBeneficiary.name }}
+            <!-- Delivery: Shipping Info -->
+            <div v-if="activeMethod === 'delivery'" class="delivery-section">
+              <div class="delivery-header">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span>Thông tin giao hàng</span>
+              </div>
+
+              <!-- Carrier Selection Grid -->
+              <div class="carrier-grid-label">Đối tác vận chuyển <span class="required">*</span></div>
+              <div v-if="isLoadingCarriers" class="carrier-loading">
+                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+              </div>
+              <div v-else class="carrier-grid">
+                <button
+                  v-for="carrier in carriers"
+                  :key="carrier.id"
+                  class="carrier-card"
+                  :class="{ active: deliveryInfo.carrierId === carrier.id }"
+                  @click="selectCarrier(carrier)"
+                  :disabled="isProcessing"
+                >
+                  <div class="carrier-icon">
+                    <i :class="carrier.code === 'INTERNAL' ? 'fa-solid fa-store' : 'fa-solid fa-truck'"></i>
                   </div>
-                  <div class="beneficiary-account">
-                    {{ selectedBeneficiary.bank }} -
-                    {{ selectedBeneficiary.accountNumber }}
+                  <div class="carrier-info">
+                    <span class="carrier-name">{{ carrier.name }}</span>
+                    <span class="carrier-fee">{{ formatPrice(carrier.fee) }}</span>
                   </div>
+                  <div v-if="deliveryInfo.carrierId === carrier.id" class="carrier-check">
+                    <i class="fa-solid fa-circle-check"></i>
+                  </div>
+                </button>
+              </div>
+
+              <div class="delivery-form">
+                <div class="delivery-row-2col">
+                  <div class="delivery-field">
+                    <label class="delivery-label">Người nhận <span class="required">*</span></label>
+                    <input
+                      type="text"
+                      class="delivery-input"
+                      v-model="deliveryInfo.receiverName"
+                      placeholder="Tên người nhận"
+                      :disabled="isProcessing"
+                    />
+                  </div>
+                  <div class="delivery-field">
+                    <label class="delivery-label">SĐT <span class="required">*</span></label>
+                    <input
+                      type="tel"
+                      class="delivery-input"
+                      v-model="deliveryInfo.receiverPhone"
+                      placeholder="0xxx xxx xxx"
+                      :disabled="isProcessing"
+                    />
+                  </div>
+                </div>
+
+                <div class="delivery-field">
+                  <label class="delivery-label">Địa chỉ giao <span class="required">*</span></label>
+                  <textarea
+                    class="delivery-textarea"
+                    v-model="deliveryInfo.shippingAddress"
+                    placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP"
+                    rows="2"
+                    :disabled="isProcessing"
+                  ></textarea>
+                </div>
+
+                <div class="delivery-row-2col">
+                  <div class="delivery-field">
+                    <label class="delivery-label">Phí ship</label>
+                    <input
+                      type="text"
+                      class="delivery-input"
+                      v-model="deliveryInfo.shippingFeeDisplay"
+                      @focus="deliveryInfo.shippingFeeDisplay = deliveryInfo.shippingFee.toString()"
+                      @blur="deliveryInfo.shippingFeeDisplay = formatPrice(deliveryInfo.shippingFee)"
+                      @input="handleShippingFeeInput"
+                      placeholder="0"
+                      :disabled="isProcessing"
+                    />
+                  </div>
+                  <div class="delivery-field">
+                    <label class="delivery-label">Thanh toán khi nhận</label>
+                    <div class="delivery-toggle">
+                      <label class="toggle-switch">
+                        <input
+                          type="checkbox"
+                          v-model="deliveryInfo.codEnabled"
+                          :disabled="isProcessing"
+                        />
+                        <span class="toggle-slider"></span>
+                      </label>
+                      <span class="delivery-cod-label">COD</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="delivery-field">
+                  <label class="delivery-label">Ghi chú giao hàng</label>
+                  <input
+                    type="text"
+                    class="delivery-input"
+                    v-model="deliveryInfo.note"
+                    placeholder="Giao giờ hành chính, gọi trước..."
+                    :disabled="isProcessing"
+                  />
+                </div>
+              </div>
+
+              <div class="delivery-summary">
+                <div class="delivery-summary-row">
+                  <span>Tiền hàng</span>
+                  <span>{{ formatPrice(totalPayable) }}</span>
+                </div>
+                <div class="delivery-summary-row">
+                  <span>Phí giao hàng ({{ deliveryInfo.carrierCode || '—' }})</span>
+                  <span>{{ formatPrice(deliveryInfo.shippingFee) }}</span>
+                </div>
+                <div class="delivery-summary-row delivery-total">
+                  <span>Tổng thu</span>
+                  <span>{{ formatPrice(totalPayable + deliveryInfo.shippingFee) }}</span>
                 </div>
               </div>
             </div>
@@ -280,6 +382,7 @@ import {
 } from "vue";
 import { ElMessage } from "element-plus";
 import posService from "@/services/posService";
+import shipmentService from "@/services/shipmentService";
 
 const props = defineProps({
   modelValue: {
@@ -314,6 +417,61 @@ const amountInputRef = ref(null);
 const showBeneficiaryModal = ref(false);
 const selectedBeneficiary = ref(null);
 const isLoadingQR = ref(false);
+
+// Delivery state
+const carriers = ref([]);
+const isLoadingCarriers = ref(false);
+
+// Default fees per carrier code (VND)
+const carrierFeeMap = {
+  INTERNAL: 0,
+  GHN: 25000,
+  GHTK: 15000,
+  VNP: 20000,
+  JT: 30000,
+  BEST: 22000,
+};
+
+const deliveryInfo = ref({
+  carrierId: null,
+  carrierCode: '',
+  receiverName: '',
+  receiverPhone: '',
+  shippingAddress: '',
+  shippingFee: 0,
+  shippingFeeDisplay: '0 ₫',
+  codEnabled: true,
+  note: '',
+});
+
+const handleShippingFeeInput = (e) => {
+  const value = e.target.value.replace(/\D/g, '');
+  deliveryInfo.value.shippingFee = parseInt(value) || 0;
+};
+
+const selectCarrier = (carrier) => {
+  deliveryInfo.value.carrierId = carrier.id;
+  deliveryInfo.value.carrierCode = carrier.code;
+  const fee = carrierFeeMap[carrier.code] ?? 20000;
+  deliveryInfo.value.shippingFee = fee;
+  deliveryInfo.value.shippingFeeDisplay = formatPrice(fee);
+};
+
+const loadCarriers = async () => {
+  if (carriers.value.length > 0) return;
+  isLoadingCarriers.value = true;
+  try {
+    const res = await shipmentService.getCarriers();
+    carriers.value = (res.data || res).map(c => ({
+      ...c,
+      fee: carrierFeeMap[c.code] ?? 20000,
+    }));
+  } catch (e) {
+    console.error('Failed to load carriers:', e);
+  } finally {
+    isLoadingCarriers.value = false;
+  }
+};
 const qrData = ref(null);
 const qrPaymentConfirmed = ref(false);
 const qrErrorMessage = ref("");
@@ -323,7 +481,7 @@ const qrTransactionInfo = ref(null);
 const paymentMethods = [
   { id: "cash", label: "Tiền mặt", icon: "fa-solid fa-money-bill-wave" },
   { id: "bank_qr", label: "QR Code", icon: "fa-solid fa-qrcode" },
-  { id: "bank", label: "Chuyển khoản", icon: "fa-solid fa-building-columns" },
+  { id: "delivery", label: "Giao hàng", icon: "fa-solid fa-truck-fast" },
   { id: "card", label: "Thanh toán thẻ", icon: "fa-solid fa-credit-card" },
 ];
 
@@ -337,6 +495,15 @@ const remaining = computed(() => {
 const canComplete = computed(() => {
   if (activeMethod.value === "bank_qr") {
     return qrPaymentConfirmed.value && !isProcessing.value;
+  }
+  if (activeMethod.value === "delivery") {
+    return (
+      deliveryInfo.value.carrierId &&
+      deliveryInfo.value.receiverName.trim() &&
+      deliveryInfo.value.receiverPhone.trim() &&
+      deliveryInfo.value.shippingAddress.trim() &&
+      !isProcessing.value
+    );
   }
   return amountReceived.value >= totalPayable.value && !isProcessing.value;
 });
@@ -366,9 +533,18 @@ const selectMethod = (methodId) => {
   selectedChip.value = null;
 
   // Auto-fill exact amount for non-cash methods
-  if (methodId !== "cash") {
+  if (methodId !== "cash" && methodId !== "delivery") {
     amountReceived.value = totalPayable.value;
     amountReceivedDisplay.value = formatPrice(totalPayable.value);
+  }
+
+  // For delivery: load carriers & set amount = total + shipping fee
+  if (methodId === "delivery") {
+    loadCarriers();
+    const total = totalPayable.value + deliveryInfo.value.shippingFee;
+    amountReceived.value = total;
+    amountReceivedDisplay.value = formatPrice(total);
+    return;
   }
 
   // Auto-generate QR code when selecting QR method
@@ -495,6 +671,19 @@ const handleComplete = async () => {
       change: amountReceived.value - totalPayable.value,
       beneficiary:
         activeMethod.value === "bank" ? selectedBeneficiary.value : null,
+      delivery:
+        activeMethod.value === "delivery"
+          ? {
+              carrierId: deliveryInfo.value.carrierId,
+              carrierCode: deliveryInfo.value.carrierCode,
+              receiverName: deliveryInfo.value.receiverName,
+              receiverPhone: deliveryInfo.value.receiverPhone,
+              shippingAddress: deliveryInfo.value.shippingAddress,
+              shippingFee: deliveryInfo.value.shippingFee,
+              codEnabled: deliveryInfo.value.codEnabled,
+              note: deliveryInfo.value.note,
+            }
+          : null,
     };
 
     // Simulate API call
@@ -518,7 +707,7 @@ const handleClose = () => {
 };
 
 const cyclePaymentMethod = () => {
-  const methods = ["cash", "bank_qr", "bank", "card"];
+  const methods = ["cash", "bank_qr", "delivery", "card"];
   const currentIndex = methods.indexOf(activeMethod.value);
   const nextIndex = (currentIndex + 1) % methods.length;
   selectMethod(methods[nextIndex]);
@@ -580,6 +769,17 @@ watch(
       qrErrorMessage.value = "";
       qrTransactionInfo.value = null;
       stopQRPolling();
+      deliveryInfo.value = {
+        carrierId: null,
+        carrierCode: '',
+        receiverName: '',
+        receiverPhone: '',
+        shippingAddress: '',
+        shippingFee: 0,
+        shippingFeeDisplay: '0 ₫',
+        codEnabled: true,
+        note: '',
+      };
 
       // Focus input after opening
       nextTick(() => {
@@ -880,60 +1080,287 @@ onBeforeUnmount(() => {
 }
 
 /* Transfer Section */
-.transfer-section {
+.delivery-section {
   margin-bottom: 24px;
+  animation: fadeInUp 0.3s ease;
 }
 
-.beneficiary-row {
-  width: 100%;
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.delivery-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 16px;
+}
+
+.delivery-header i {
+  font-size: 1.1rem;
+}
+
+/* Carrier Grid */
+.carrier-grid-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.carrier-grid-label .required {
+  color: #ef4444;
+}
+
+.carrier-loading {
+  text-align: center;
   padding: 16px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: white;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.carrier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.carrier-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
   cursor: pointer;
   transition: all 0.2s;
+  text-align: center;
 }
 
-.beneficiary-row:hover:not(:disabled) {
+.carrier-card:hover:not(:disabled) {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.carrier-card.active {
   border-color: #1e40af;
-  background: #f8fafc;
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
 }
 
-.beneficiary-label {
-  font-size: 0.9rem;
+.carrier-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.carrier-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #e0e7ff;
+  color: #3b5bdb;
+  font-size: 0.85rem;
+}
+
+.carrier-card.active .carrier-icon {
+  background: #1e40af;
+  color: #fff;
+}
+
+.carrier-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.carrier-name {
+  font-size: 0.7rem;
   font-weight: 600;
+  color: #334155;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.carrier-fee {
+  font-size: 0.7rem;
+  font-weight: 700;
   color: #1e40af;
 }
 
-.beneficiary-row i {
-  color: #94a3b8;
+.carrier-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: #1e40af;
+  font-size: 0.75rem;
 }
 
-.selected-beneficiary {
-  margin-top: 12px;
-  padding: 12px;
-  background: #eff6ff;
-  border-radius: 8px;
+.delivery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.beneficiary-info {
+.delivery-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.beneficiary-name {
-  font-size: 0.9rem;
+.delivery-label {
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #475569;
 }
 
-.beneficiary-account {
-  font-size: 0.8rem;
-  color: #64748b;
+.delivery-label .required {
+  color: #ef4444;
+}
+
+.delivery-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.delivery-input:focus {
+  border-color: #1e40af;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.08);
+}
+
+.delivery-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delivery-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: all 0.2s;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.delivery-textarea:focus {
+  border-color: #1e40af;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.08);
+}
+
+.delivery-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.delivery-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 24px;
+  transition: all 0.25s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  left: 3px;
+  top: 3px;
+  transition: all 0.25s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: #1e40af;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.delivery-cod-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.delivery-summary {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: #f0f4ff;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.delivery-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.delivery-summary-row.delivery-total {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e40af;
+  padding-top: 8px;
+  border-top: 1px dashed #93c5fd;
 }
 
 /* Card Section */

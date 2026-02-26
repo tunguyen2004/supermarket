@@ -613,6 +613,42 @@ const updateCustomerGroup = async (req, res) => {
   }
 };
 
+/**
+ * 9. Lấy danh sách tỉnh/thành phố - GET /api/customers/cities
+ */
+const getCities = async (req, res) => {
+  try {
+    const { region_id } = req.query;
+    let queryStr = `
+      SELECT c.id, c.code, c.name, c.region_id, r.name as region_name
+      FROM subdim_cities c
+      JOIN subdim_regions r ON r.id = c.region_id
+    `;
+    const params = [];
+
+    if (region_id) {
+      queryStr += ' WHERE c.region_id = $1';
+      params.push(region_id);
+    }
+
+    queryStr += ' ORDER BY c.region_id, c.name';
+
+    const result = await db.query(queryStr, params);
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy danh sách tỉnh/thành phố',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getCustomers,
   searchCustomers,
@@ -621,5 +657,6 @@ module.exports = {
   updateCustomer,
   deleteCustomer,
   getCustomerGroups,
-  updateCustomerGroup
+  updateCustomerGroup,
+  getCities,
 };

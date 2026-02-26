@@ -224,7 +224,7 @@
         label-width="130px"
       >
         <el-form-item label="Đơn gốc" prop="originalOrderCode">
-          <el-input v-model="form.originalOrderCode" placeholder="VD: DH1234" />
+          <el-input v-model="form.originalOrderCode" placeholder="VD: POS-20260226-00001" />
         </el-form-item>
         <el-form-item label="Khách hàng" prop="customerName">
           <el-input v-model="form.customerName" placeholder="Tên khách" />

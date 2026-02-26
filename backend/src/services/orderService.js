@@ -1,4 +1,5 @@
 const db = require("../config/database");
+const { generateTransactionCode } = require("../utils/codeGenerator");
 
 /**
  * ============================================================================
@@ -1069,7 +1070,7 @@ const returnOrder = async (req, res) => {
       );
 
       // Create inventory transaction
-      const transactionCode = `RTN-INV-${Date.now()}-${item.variant_id}`;
+      const transactionCode = await generateTransactionCode(client, 'RET');
       await client.query(
         `INSERT INTO fact_inventory_transactions 
          (transaction_code, date_key, transaction_type_id, store_id, variant_id,

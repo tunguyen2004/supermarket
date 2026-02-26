@@ -313,7 +313,7 @@ const fetchProducts = async () => {
       type: p.category_name || p.category || "",
       isActive: p.is_active,
       stock: p.stock !== undefined ? p.stock : 0,
-      imageUrl: p.imageUrl || "",
+      imageUrl: p.image_url || "",
     }));
 
     products.value = items;

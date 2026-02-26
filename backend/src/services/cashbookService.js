@@ -16,6 +16,7 @@
  */
 
 const db = require('../config/database');
+const { generateCashbookCode } = require('../utils/codeGenerator');
 
 /**
  * Helper: Đảm bảo ngày tồn tại trong dim_time
@@ -320,7 +321,7 @@ const createTransaction = async (req, res) => {
 
     // Generate transaction code
     const codePrefix = transactionDirection === 1 ? 'PT' : 'PC'; // Phiếu thu / Phiếu chi
-    const transactionCode = `${codePrefix}-${Date.now()}`;
+    const transactionCode = await generateCashbookCode(client, transactionDirection);
 
     // Insert transaction
     const insertQuery = `

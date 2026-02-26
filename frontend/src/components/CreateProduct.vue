@@ -26,21 +26,21 @@
               <el-input
                 v-model="form.code"
                 maxlength="50"
-                placeholder="Nhập mã sản phẩm (ví dụ: MILK002)"
+                placeholder="VD: SUA-TH-TRUE-MILK"
               />
             </el-form-item>
             <el-form-item label="Mã SKU" prop="sku">
               <el-input
                 v-model="form.sku"
                 maxlength="50"
-                placeholder="Nhập mã SKU (tối đa 50 ký tự)"
+                placeholder="VD: SUA-TH-TRUE-MILK-1L"
               />
             </el-form-item>
             <el-form-item label="Mã vạch/Barcode" prop="barcode">
               <el-input
                 v-model="form.barcode"
                 maxlength="50"
-                placeholder="Nhập mã vạch/Barcode (tối đa 50 ký tự)"
+                placeholder="VD: 8934567890123"
               />
             </el-form-item>
             <el-form-item label="Đơn vị tính" prop="unit_id">
@@ -108,14 +108,15 @@
           <h3 class="form-section-title">Ảnh sản phẩm</h3>
           <el-upload
             class="avatar-uploader"
-            action=""
+            action="#"
+            :auto-upload="false"
             :show-file-list="false"
             :before-upload="beforeImageUpload"
             :on-change="handleImageChange"
           >
             <img
-              v-if="form.imageUrl"
-              :src="form.imageUrl"
+              v-if="form.imagePreview"
+              :src="form.imagePreview"
               class="product-image-preview"
               alt="Ảnh sản phẩm"
             />
@@ -203,11 +204,13 @@ import {
   getBrands,
   getCategories,
   getUnits,
+  uploadProductImage,
 } from "@/services/productService";
 
 const router = useRouter();
 
 const formRef = ref();
+const imageFile = ref(null); // File ảnh chờ upload
 
 const form = reactive({
   code: "", // Mã sản phẩm
@@ -217,6 +220,7 @@ const form = reactive({
   unit_id: "", // Đơn vị tính (ID)
   description: "",
   imageUrl: "",
+  imagePreview: "", // URL preview local
   category_id: "", // Danh mục (ID)
   brand_id: "", // Nhãn hiệu (ID)
   type: "", // Loại sản phẩm (bỏ hoặc giữ lại nếu API ko cần)
@@ -292,15 +296,43 @@ function currencyParser(value) {
   return String(value).replace(/[^\d.-]/g, "");
 }
 
-function beforeImageUpload(file) {
-  // ... (giữ nguyên logic upload nếu cần)
-  return true;
+function beforeImageUpload(rawFile) {
+  const isImage = rawFile.type.startsWith("image/");
+  const isLt2M = rawFile.size / 1024 / 1024 < 2;
+  if (!isImage) {
+    ElMessage.error("Chỉ được upload file ảnh!");
+    return false;
+  }
+  if (!isLt2M) {
+    ElMessage.error("Dung lượng ảnh tối đa 2MB!");
+    return false;
+  }
+  return false; // Prevent auto upload, handle manually
 }
-function handleImageChange(file) {
-  // ... (giữ nguyên logic nếu cần)
+function handleImageChange(uploadFile) {
+  if (!uploadFile.raw) return;
+  const isImage = uploadFile.raw.type.startsWith("image/");
+  const isLt2M = uploadFile.raw.size / 1024 / 1024 < 2;
+  if (!isImage || !isLt2M) return;
+  imageFile.value = uploadFile.raw;
+  form.imagePreview = URL.createObjectURL(uploadFile.raw);
 }
 async function addImageFromUrl() {
-  // ... (giữ nguyên logic)
+  try {
+    const { value } = await ElMessageBox.prompt("Nhập URL hình ảnh", "Thêm ảnh từ URL", {
+      confirmButtonText: "Xác nhận",
+      cancelButtonText: "Hủy",
+      inputPattern: /^https?:\/\/.+/,
+      inputErrorMessage: "URL không hợp lệ",
+    });
+    if (value) {
+      form.imageUrl = value;
+      form.imagePreview = value;
+      imageFile.value = null; // URL mode, no file
+    }
+  } catch {
+    // cancelled
+  }
 }
 
 function goBack() {
@@ -319,6 +351,7 @@ async function submit() {
           brand_id: form.brand_id,
           unit_id: form.unit_id,
           description: form.description,
+          image_url: form.imageUrl || null,
           is_active: form.is_active,
           sku: form.sku,
           barcode: form.barcode,
@@ -326,7 +359,21 @@ async function submit() {
           selling_price: Number(form.selling_price) || 0,
         };
 
-        await createProduct(payload);
+        const res = await createProduct(payload);
+        const productId = res.data?.data?.id;
+
+        // Upload ảnh nếu có file
+        if (productId && imageFile.value) {
+          try {
+            await uploadProductImage(productId, imageFile.value);
+          } catch (imgErr) {
+            console.error("Upload ảnh lỗi:", imgErr);
+            ElMessage.warning("Thêm sản phẩm thành công nhưng upload ảnh thất bại.");
+            goBack();
+            return;
+          }
+        }
+
         ElMessage.success("Thêm sản phẩm thành công!");
         goBack();
       } catch (error) {

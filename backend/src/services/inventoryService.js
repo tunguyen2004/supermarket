@@ -18,6 +18,7 @@
  */
 
 const { pool, query } = require("../config/database");
+const { generateTransactionCode, getDateStr } = require("../utils/codeGenerator");
 
 /**
  * @GET /api/inventories
@@ -352,7 +353,7 @@ const updateInventory = async (req, res) => {
     await ensureDateExists(client, today);
 
     // Create transaction record
-    const transactionCode = `ADJ-${Date.now()}`;
+    const transactionCode = await generateTransactionCode(client, 'ADJ');
     await client.query(
       `
             INSERT INTO fact_inventory_transactions 
@@ -590,7 +591,7 @@ const receiveInventory = async (req, res) => {
       }
 
       // Create transaction
-      const transactionCode = `RCV-${Date.now()}-${variant_id}`;
+      const transactionCode = await generateTransactionCode(client, 'RCV');
       await client.query(
         `
                 INSERT INTO fact_inventory_transactions 
@@ -780,7 +781,7 @@ const transferStock = async (req, res) => {
       }
 
       // Create transactions
-      const transferCode = `TRF-${Date.now()}-${variant_id}`;
+      const transferCode = await generateTransactionCode(client, 'TRF');
 
       // Transfer OUT transaction
       await client.query(
@@ -945,7 +946,7 @@ const returnToSupplier = async (req, res) => {
       );
 
       // Create transaction
-      const transactionCode = `RTN-${Date.now()}-${variant_id}`;
+      const transactionCode = await generateTransactionCode(client, 'RTN');
       await client.query(
         `
                 INSERT INTO fact_inventory_transactions 
@@ -1344,7 +1345,7 @@ async function searchProductsForLookup(req, res) {
                 pv.selling_price as price,
                 COALESCE(SUM(fis.quantity_available), 0) as total_stock,
                 COUNT(DISTINCT fis.store_id) as store_count,
-                (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+                COALESCE(p.image_url, (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1)) as image_url
             FROM dim_products p
             INNER JOIN dim_product_variants pv ON p.id = pv.product_id
             LEFT JOIN fact_inventory_stocks fis ON pv.id = fis.variant_id ${storeCondition}
@@ -1423,7 +1424,7 @@ async function getProductInventoryDetail(req, res) {
                 p.code,
                 p.description,
                 p.is_active,
-                (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+                COALESCE(p.image_url, (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1)) as image_url
             FROM dim_products p
             LEFT JOIN dim_product_variants pv ON p.id = pv.product_id
             WHERE p.id = $1

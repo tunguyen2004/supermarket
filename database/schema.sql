@@ -667,6 +667,50 @@ CREATE INDEX idx_chat_history_created_at ON fact_chat_history(created_at DESC);
 CREATE INDEX idx_chat_history_intent ON fact_chat_history(intent);
 
 -- =========================
+-- SUBMITTED REPORTS (Staff nộp báo cáo cuối ngày)
+-- =========================
+CREATE TABLE fact_submitted_reports (
+    id SERIAL PRIMARY KEY,
+    report_code VARCHAR(30) NOT NULL UNIQUE,
+    report_type VARCHAR(30) NOT NULL DEFAULT 'end_of_day',
+    title VARCHAR(200) NOT NULL,
+    period_from DATE NOT NULL,
+    period_to DATE NOT NULL,
+    staff_filter_id INTEGER REFERENCES dim_users(id),
+    submitted_by INTEGER NOT NULL REFERENCES dim_users(id),
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+
+    -- Snapshot data (JSONB)
+    revenue_summary JSONB,
+    actual_summary JSONB,
+    by_payment_method JSONB,
+    by_staff JSONB,
+    products_summary JSONB,
+    top_products JSONB,
+    returns_data JSONB,
+
+    -- Quick-access summary
+    total_orders INTEGER DEFAULT 0,
+    net_revenue NUMERIC(15,2) DEFAULT 0,
+    total_discount NUMERIC(15,2) DEFAULT 0,
+    unique_customers INTEGER DEFAULT 0,
+    grand_total NUMERIC(15,2) DEFAULT 0,
+
+    status VARCHAR(20) DEFAULT 'submitted',
+    reviewed_by INTEGER REFERENCES dim_users(id),
+    reviewed_at TIMESTAMP,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_submitted_reports_code ON fact_submitted_reports(report_code);
+CREATE INDEX idx_submitted_reports_submitted_by ON fact_submitted_reports(submitted_by);
+CREATE INDEX idx_submitted_reports_date ON fact_submitted_reports(period_from, period_to);
+CREATE INDEX idx_submitted_reports_status ON fact_submitted_reports(status);
+
+-- =========================
 -- COMPLETION MESSAGE
 -- =========================
 DO $$

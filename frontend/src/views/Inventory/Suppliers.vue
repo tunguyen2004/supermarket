@@ -173,7 +173,7 @@
             <el-form-item label="Mã nhà cung cấp">
               <el-input
                 v-model="form.code"
-                placeholder="Tự tạo nếu để trống"
+                placeholder="Tự động: NCC-202602-00001"
                 disabled
               />
             </el-form-item>
@@ -201,10 +201,24 @@
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="Mã số thuế">
-              <el-input v-model="form.tax_code" placeholder="Nhập mã số thuế" />
+            <el-form-item label="Tỉnh/Thành phố">
+              <el-select v-model="form.city_id" placeholder="Chọn tỉnh/thành phố" clearable filterable>
+                <el-option
+                  v-for="city in cities"
+                  :key="city.id"
+                  :label="city.name"
+                  :value="city.id"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="Mã số thuế">
+              <el-input v-model="form.tax_code" placeholder="VD: 0312345678" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Trạng thái">
               <el-switch
@@ -253,9 +267,12 @@ const form = reactive({
   phone: "",
   email: "",
   address: "",
+  city_id: null,
   tax_code: "",
   is_active: true,
 });
+
+const cities = ref([]);
 
 // --- HELPERS ---
 const checkScreenSize = () => {
@@ -276,6 +293,7 @@ const mapSupplier = (s) => ({
   phone: s.phone || "",
   email: s.email || "",
   address: s.address || "",
+  city_id: s.city_id || null,
   tax_code: s.tax_code || "",
   status: s.is_active ? "Đang hợp tác" : "Ngừng hợp tác",
   is_active: s.is_active,
@@ -321,6 +339,7 @@ const openDialog = (supplier = null) => {
       phone: supplier.phone,
       email: supplier.email,
       address: supplier.address,
+      city_id: supplier.city_id || null,
       tax_code: supplier.tax_code || "",
       is_active: supplier.status === "Đang hợp tác",
     });
@@ -333,6 +352,7 @@ const openDialog = (supplier = null) => {
       phone: "",
       email: "",
       address: "",
+      city_id: null,
       tax_code: "",
       is_active: true,
     });
@@ -353,6 +373,7 @@ const handleSave = async () => {
       phone: form.phone || null,
       email: form.email || null,
       address: form.address || null,
+      city_id: form.city_id || null,
       tax_code: form.tax_code || null,
       is_active: form.is_active,
     };
@@ -407,10 +428,14 @@ watch(currentPage, () => {
   fetchSuppliers();
 });
 
-onMounted(() => {
+onMounted(async () => {
   checkScreenSize();
   window.addEventListener("resize", checkScreenSize);
   fetchSuppliers();
+  try {
+    const res = await apiClient.get("/api/customers/cities");
+    if (res.data.success) cities.value = res.data.data;
+  } catch (e) { console.error("Error fetching cities:", e); }
 });
 
 onUnmounted(() => {

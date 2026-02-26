@@ -1,4 +1,5 @@
 const db = require("../config/database");
+const { generateShipmentCode } = require("../utils/codeGenerator");
 
 /**
  * ============================================================================
@@ -51,7 +52,7 @@ setInterval(
  * - subtotal: Tổng tiền trước giảm giá
  * - discount_amount: Số tiền giảm giá
  * - discount_code: Mã giảm giá (nullable)
- * - payment_method: cash/card/bank/momo/zalopay/vnpay
+ * - payment_method: cash/card/bank/delivery/momo/zalopay/vnpay
  * - amount_received: Số tiền khách đưa
  * - change: Tiền thừa
  * - notes: Ghi chú
@@ -66,12 +67,20 @@ const checkout = async (req, res) => {
       items,
       subtotal,
       discount_amount = 0,
+      member_discount_amount = 0,
       discount_code,
       discount_id,
       payment_method = "cash",
       amount_received,
       change = 0,
       notes,
+      shipping_fee = 0,
+      shipping_address = null,
+      delivery_note = null,
+      receiver_name = null,
+      receiver_phone = null,
+      carrier_id = null,
+      cod_enabled = false,
     } = req.body;
 
     const userId = req.user?.id;
@@ -202,10 +211,38 @@ const checkout = async (req, res) => {
       });
     }
 
-    // Calculate final amount
+    // Calculate final amount (include both manual/code discount and member discount)
     const finalSubtotal = subtotal || calculatedSubtotal;
-    const finalAmount = finalSubtotal - discount_amount;
+
+    // Server-side member discount: look up customer's group discount from DB
+    let serverMemberDiscount = 0;
+    let customerGroupInfo = null;
+    if (customer_id) {
+      const groupResult = await client.query(
+        `SELECT cg.discount_percentage, cg.name as group_name, cg.code as group_code
+         FROM dim_customers dc
+         JOIN subdim_customer_groups cg ON dc.customer_group_id = cg.id
+         WHERE dc.id = $1`,
+        [customer_id],
+      );
+      if (groupResult.rows.length > 0 && parseFloat(groupResult.rows[0].discount_percentage) > 0) {
+        const pct = parseFloat(groupResult.rows[0].discount_percentage);
+        serverMemberDiscount = Math.round(finalSubtotal * pct / 100);
+        customerGroupInfo = groupResult.rows[0];
+      }
+    }
+
+    // Use server-calculated member discount (authoritative) instead of frontend value
+    const effectiveMemberDiscount = serverMemberDiscount;
+    const totalDiscount = parseFloat(discount_amount) + effectiveMemberDiscount;
+    // For delivery orders, add shipping fee to final amount
+    const effectiveShippingFee = payment_method === 'delivery' ? parseFloat(shipping_fee) || 0 : 0;
+    const finalAmount = Math.max(0, finalSubtotal - totalDiscount) + effectiveShippingFee;
     const taxAmount = 0; // Configure if needed
+
+    // Determine order status: delivery orders start as 'processing'
+    const orderStatus = payment_method === 'delivery' ? 'processing' : 'completed';
+    const paymentStatus = payment_method === 'delivery' && !req.body.cod_enabled ? 'pending' : 'paid';
 
     // Create order
     const orderResult = await client.query(
@@ -214,12 +251,12 @@ const checkout = async (req, res) => {
         order_code, date_key, store_id, customer_id,
         subtotal, discount_amount, tax_amount, shipping_fee,
         final_amount, payment_method, payment_status,
-        status, internal_note, created_by
+        status, internal_note, shipping_address, created_by
       ) VALUES (
         $1, $2, $3, $4,
         $5, $6, $7, $8,
-        $9, $10, 'paid',
-        'completed', $11, $12
+        $9, $10, $11,
+        $12, $13, $14, $15
       )
       RETURNING id, order_code
     `,
@@ -229,12 +266,15 @@ const checkout = async (req, res) => {
         store_id,
         customer_id || null,
         finalSubtotal,
-        discount_amount,
+        totalDiscount,
         taxAmount,
-        0, // shipping_fee
+        effectiveShippingFee,
         finalAmount,
         payment_method,
-        notes || null,
+        paymentStatus,
+        orderStatus,
+        [notes, delivery_note].filter(Boolean).join(' | ') || null,
+        shipping_address || null,
         userId,
       ],
     );
@@ -287,7 +327,7 @@ const checkout = async (req, res) => {
         parseFloat(balanceAfter) + parseFloat(item.quantity);
 
       // Generate transaction code
-      const txCode = `POS-${orderCode}-${item.variant_id}`;
+      const txCode = `EXP-${orderCode.replace('POS-', '')}-${item.variant_id}`;
 
       await client.query(
         `
@@ -327,10 +367,17 @@ const checkout = async (req, res) => {
       `,
         [discount_id, orderId, customer_id, discount_amount],
       );
+      // Also increment the counter on dim_discounts for quick reads
+      await client.query(
+        `UPDATE dim_discounts SET current_uses = current_uses + 1 WHERE id = $1`,
+        [discount_id],
+      );
     }
 
-    // Update customer lifetime value if customer is specified
+    // Update customer lifetime value and auto-upgrade group if customer is specified
+    let upgradedGroup = null;
     if (customer_id) {
+      // Update lifetime value
       await client.query(
         `
         UPDATE dim_customers
@@ -339,21 +386,150 @@ const checkout = async (req, res) => {
       `,
         [finalAmount, customer_id],
       );
+
+      // Auto-upgrade customer group based on new total_lifetime_value
+      const upgradeResult = await client.query(
+        `
+        UPDATE dim_customers dc
+        SET customer_group_id = (
+          SELECT cg.id 
+          FROM subdim_customer_groups cg
+          WHERE cg.min_purchase_amount <= dc.total_lifetime_value
+          ORDER BY cg.min_purchase_amount DESC
+          LIMIT 1
+        )
+        WHERE dc.id = $1
+        AND (
+          dc.customer_group_id IS NULL 
+          OR dc.customer_group_id != (
+            SELECT cg2.id 
+            FROM subdim_customer_groups cg2
+            WHERE cg2.min_purchase_amount <= dc.total_lifetime_value
+            ORDER BY cg2.min_purchase_amount DESC
+            LIMIT 1
+          )
+        )
+        RETURNING dc.customer_group_id
+      `,
+        [customer_id],
+      );
+
+      // If group was upgraded, fetch the new group info
+      if (upgradeResult.rows.length > 0) {
+        const newGroupResult = await client.query(
+          `SELECT cg.code, cg.name, cg.discount_percentage 
+           FROM subdim_customer_groups cg WHERE cg.id = $1`,
+          [upgradeResult.rows[0].customer_group_id],
+        );
+        if (newGroupResult.rows.length > 0) {
+          upgradedGroup = newGroupResult.rows[0];
+        }
+      }
+    }
+
+    // Auto-create shipment record for delivery orders
+    let shipmentData = null;
+    if (payment_method === 'delivery' && shipping_address) {
+      // Generate shipment code using standard pattern: SHP-YYYYMMDD-00001
+      const shipmentCode = await generateShipmentCode(client);
+      // Auto-generate tracking code from shipment code
+      const trackingCode = shipmentCode.replace('SHP-', 'TRK-');
+
+      // Get initial status (pending)
+      const statusResult = await client.query(
+        `SELECT id FROM subdim_shipment_statuses WHERE code = 'pending' LIMIT 1`
+      );
+      const pendingStatusId = statusResult.rows[0]?.id || 1;
+
+      // Get store info for sender
+      const storeResult = await client.query(
+        `SELECT name, phone, address FROM dim_stores WHERE id = $1`,
+        [store_id]
+      );
+      const store = storeResult.rows[0] || {};
+
+      // Get carrier name for response
+      let carrierName = null;
+      if (carrier_id) {
+        const carrierResult = await client.query(
+          `SELECT name FROM dim_carriers WHERE id = $1`,
+          [carrier_id]
+        );
+        carrierName = carrierResult.rows[0]?.name || null;
+      }
+
+      const codAmount = cod_enabled ? finalAmount : 0;
+
+      const shipmentResult = await client.query(
+        `INSERT INTO fact_shipments (
+          shipment_code, order_id, carrier_id, tracking_code, status_id,
+          sender_store_id, sender_name, sender_phone, sender_address,
+          recipient_name, recipient_phone, recipient_address,
+          shipping_fee, cod_amount, total_fee,
+          notes, created_by
+        ) VALUES (
+          $1, $2, $3, $4, $5,
+          $6, $7, $8, $9,
+          $10, $11, $12,
+          $13, $14, $15,
+          $16, $17
+        ) RETURNING id, shipment_code, tracking_code`,
+        [
+          shipmentCode,
+          orderId,
+          carrier_id || null,
+          trackingCode,
+          pendingStatusId,
+          store_id,
+          store.name || null,
+          store.phone || null,
+          store.address || null,
+          receiver_name || null,
+          receiver_phone || null,
+          shipping_address,
+          effectiveShippingFee,
+          codAmount,
+          effectiveShippingFee,
+          delivery_note || null,
+          userId,
+        ]
+      );
+
+      // Add initial tracking record
+      if (shipmentResult.rows[0]) {
+        await client.query(
+          `INSERT INTO fact_shipment_tracking (shipment_id, status_id, description, created_by)
+           VALUES ($1, $2, $3, $4)`,
+          [shipmentResult.rows[0].id, pendingStatusId, 'Đơn hàng giao mới được tạo từ POS', userId]
+        );
+        shipmentData = {
+          ...shipmentResult.rows[0],
+          carrier_name: carrierName,
+        };
+      }
     }
 
     await client.query("COMMIT");
 
     return res.status(201).json({
       success: true,
-      message: "Thanh toán thành công",
+      message: upgradedGroup 
+        ? `Thanh toán thành công! 🎉 Khách hàng được nâng hạng lên ${upgradedGroup.name} (giảm ${upgradedGroup.discount_percentage}%)`
+        : "Thanh toán thành công",
       data: {
         order_id: orderId,
         order_code: orderCode,
         final_amount: finalAmount,
+        discount_amount: totalDiscount,
+        member_discount_amount: effectiveMemberDiscount,
+        member_discount_percent: customerGroupInfo ? parseFloat(customerGroupInfo.discount_percentage) : 0,
+        customer_group: customerGroupInfo ? customerGroupInfo.group_name : null,
         payment_method: payment_method,
         amount_received: amount_received,
         change: change,
         receipt_url: `/api/pos/orders/${orderId}/receipt`,
+        upgraded_group: upgradedGroup || null,
+        shipment: shipmentData || null,
       },
     });
   } catch (error) {
@@ -408,7 +584,7 @@ const searchProducts = async (req, res) => {
           v.variant_name,
           v.selling_price as price,
           COALESCE(fi.quantity_available, 0) as stock,
-          (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+          COALESCE(p.image_url, (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1)) as image
         FROM dim_products p
         INNER JOIN dim_product_variants v ON p.id = v.product_id
         LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
@@ -432,7 +608,7 @@ const searchProducts = async (req, res) => {
           v.variant_name,
           v.selling_price as price,
           COALESCE(fi.quantity_available, 0) as stock,
-          (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+          COALESCE(p.image_url, (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1)) as image
         FROM dim_products p
         INNER JOIN dim_product_variants v ON p.id = v.product_id
         LEFT JOIN fact_inventory_stocks fi ON v.id = fi.variant_id AND fi.store_id = $2
@@ -772,7 +948,7 @@ const getDraftById = async (req, res) => {
         p.name as product_name,
         v.variant_name,
         v.sku,
-        (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image
+        COALESCE(p.image_url, (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1)) as image
       FROM fact_order_items oi
       JOIN dim_product_variants v ON oi.variant_id = v.id
       JOIN dim_products p ON v.product_id = p.id
@@ -1160,10 +1336,10 @@ const validateDiscountCode = async (req, res) => {
         d.name,
         dt.code as type_code,
         dt.name as type_name,
-        d.value,
+        d.discount_value as value,
         d.min_order_amount,
         d.max_discount_amount,
-        d.max_uses,
+        d.max_uses_total as max_uses,
         d.max_uses_per_customer,
         d.start_date,
         d.end_date,
@@ -1787,6 +1963,74 @@ const checkQRPayment = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/pos/discounts/active
+ * Lấy danh sách mã giảm giá đang hoạt động cho POS
+ */
+const getActiveDiscountsForPOS = async (req, res) => {
+  try {
+    const { customer_id, order_amount } = req.query;
+
+    const result = await db.query(
+      `
+      SELECT 
+        d.id,
+        d.code,
+        d.name,
+        d.description,
+        dt.code as type_code,
+        dt.name as type_name,
+        d.discount_value as value,
+        d.min_order_amount,
+        d.max_discount_amount,
+        d.max_uses_total,
+        d.max_uses_per_customer,
+        d.start_date,
+        d.end_date,
+        d.current_uses,
+        (SELECT COUNT(*) FROM fact_discount_usages WHERE discount_id = d.id) as used_count
+      FROM dim_discounts d
+      JOIN subdim_discount_types dt ON d.discount_type_id = dt.id
+      WHERE d.is_active = true
+        AND d.start_date <= NOW()
+        AND d.end_date >= NOW()
+        AND (d.max_uses_total IS NULL OR (SELECT COUNT(*) FROM fact_discount_usages WHERE discount_id = d.id) < d.max_uses_total)
+      ORDER BY d.created_at DESC
+      `
+    );
+
+    const discounts = result.rows.map(d => ({
+      id: d.id,
+      code: d.code,
+      name: d.name,
+      description: d.description,
+      type_code: d.type_code,
+      type_name: d.type_name,
+      value: parseFloat(d.value),
+      min_order_amount: d.min_order_amount ? parseFloat(d.min_order_amount) : 0,
+      max_discount_amount: d.max_discount_amount ? parseFloat(d.max_discount_amount) : null,
+      max_uses_total: d.max_uses_total,
+      max_uses_per_customer: d.max_uses_per_customer,
+      start_date: d.start_date,
+      end_date: d.end_date,
+      used_count: parseInt(d.used_count),
+      remaining_uses: d.max_uses_total ? d.max_uses_total - parseInt(d.used_count) : null,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: discounts,
+    });
+  } catch (error) {
+    console.error("Get active discounts error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách mã giảm giá",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   checkout,
   searchProducts,
@@ -1803,4 +2047,5 @@ module.exports = {
   generateQRCode,
   handleSepayWebhook,
   checkQRPayment,
+  getActiveDiscountsForPOS,
 };

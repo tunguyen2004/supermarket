@@ -84,6 +84,10 @@
           class="search-item"
           @mousedown="selectProduct(product)"
         >
+          <div class="search-thumb">
+            <img v-if="product.image" :src="product.image" :alt="product.name" />
+            <span v-else>📦</span>
+          </div>
           <div class="flex-1">
             <div class="product-name">{{ product.name }}</div>
             <div class="product-meta">
@@ -482,6 +486,30 @@ header {
 
 .search-item:hover {
   background: #f8fafc;
+}
+
+.search-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.search-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-thumb span {
+  font-size: 1rem;
+  opacity: 0.3;
 }
 
 .product-name {

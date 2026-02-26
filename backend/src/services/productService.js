@@ -89,7 +89,14 @@ const getProducts = async (req, res) => {
         COALESCE(
           (SELECT selling_price FROM dim_product_variants WHERE product_id = p.id LIMIT 1),
           0
-        ) as price
+        ) as price,
+        COALESCE(
+          (SELECT SUM(fis.quantity_on_hand)
+           FROM fact_inventory_stocks fis
+           JOIN dim_product_variants pv ON fis.variant_id = pv.id
+           WHERE pv.product_id = p.id),
+          0
+        )::integer as stock
       FROM dim_products p
       LEFT JOIN subdim_categories c ON p.category_id = c.id
       LEFT JOIN subdim_brands b ON p.brand_id = b.id
@@ -193,13 +200,28 @@ const createProduct = async (req, res) => {
         VALUES ($1, $2, $3, $4, $5)
         RETURNING *
       `;
-      await client.query(variantQuery, [
+      const variantResult = await client.query(variantQuery, [
         product.id,
         sku || `${code}-SKU`,
         barcode || null,
         cost_price || null,
         selling_price
       ]);
+
+      const variantId = variantResult.rows[0].id;
+
+      // Auto-create inventory records for all active stores
+      const storesResult = await client.query(
+        'SELECT id FROM dim_stores WHERE is_active = true'
+      );
+      for (const store of storesResult.rows) {
+        await client.query(
+          `INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, last_updated)
+           VALUES ($1, $2, 0, CURRENT_TIMESTAMP)
+           ON CONFLICT (store_id, variant_id) DO NOTHING`,
+          [store.id, variantId]
+        );
+      }
     }
 
     // ========== COMMIT TRANSACTION ==========

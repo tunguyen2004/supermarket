@@ -300,7 +300,7 @@
                             type="text"
                             class="form-input"
                             :class="{ 'has-error': errors.taxCode }"
-                            placeholder="Nhập mã số thuế"
+                            placeholder="VD: 0312345678"
                             :disabled="isSubmitting"
                           />
                           <button
@@ -532,44 +532,84 @@ const errors = reactive({
   invoiceEmail: "",
 });
 
-// Mock data for provinces/districts/wards (replace with API)
-const provinces = ref([
-  { id: "1", name: "Hà Nội" },
-  { id: "2", name: "Hồ Chí Minh" },
-  { id: "3", name: "Đà Nẵng" },
-]);
-
+// Dữ liệu tỉnh/thành phố từ API
+const provinces = ref([]);
 const districts = ref([]);
 const wards = ref([]);
 
-const handleProvinceChange = () => {
+const fetchProvinces = async () => {
+  try {
+    const response = await customerService.getCities();
+    if (response.success) {
+      provinces.value = response.data;
+    }
+  } catch (error) {
+    console.error("Error fetching provinces:", error);
+  }
+};
+
+const handleProvinceChange = async () => {
   form.districtId = null;
   form.wardId = null;
   districts.value = [];
   wards.value = [];
 
-  // TODO: Fetch districts based on provinceId
-  // Mock data
   if (form.provinceId) {
-    districts.value = [
-      { id: "101", name: "Quận Ba Đình" },
-      { id: "102", name: "Quận Hoàn Kiếm" },
-    ];
+    // Tìm province code để gọi API quận/huyện
+    const province = provinces.value.find(p => p.id === form.provinceId);
+    if (province) {
+      try {
+        const res = await fetch(`https://provinces.open-api.vn/api/p/${getProvinceApiCode(province.name)}?depth=2`);
+        const data = await res.json();
+        if (data.districts) {
+          districts.value = data.districts.map(d => ({ id: d.code, name: d.name }));
+        }
+      } catch (err) {
+        console.error("Error fetching districts:", err);
+      }
+    }
   }
 };
 
-const handleDistrictChange = () => {
+const handleDistrictChange = async () => {
   form.wardId = null;
   wards.value = [];
 
-  // TODO: Fetch wards based on districtId
-  // Mock data
   if (form.districtId) {
-    wards.value = [
-      { id: "1001", name: "Phường Phúc Xá" },
-      { id: "1002", name: "Phường Trúc Bạch" },
-    ];
+    try {
+      const res = await fetch(`https://provinces.open-api.vn/api/d/${form.districtId}?depth=2`);
+      const data = await res.json();
+      if (data.wards) {
+        wards.value = data.wards.map(w => ({ id: w.code, name: w.name }));
+      }
+    } catch (err) {
+      console.error("Error fetching wards:", err);
+    }
   }
+};
+
+// Mapping tên tỉnh -> mã API provinces.open-api.vn
+const provinceApiMap = {
+  'Hà Nội': 1, 'Hà Giang': 2, 'Cao Bằng': 4, 'Bắc Kạn': 6,
+  'Tuyên Quang': 8, 'Lào Cai': 10, 'Điện Biên': 11, 'Lai Châu': 12,
+  'Sơn La': 14, 'Yên Bái': 15, 'Hoà Bình': 17, 'Thái Nguyên': 19,
+  'Lạng Sơn': 20, 'Quảng Ninh': 22, 'Bắc Giang': 24, 'Phú Thọ': 25,
+  'Vĩnh Phúc': 26, 'Bắc Ninh': 27, 'Hải Dương': 30, 'Hải Phòng': 31,
+  'Hưng Yên': 33, 'Thái Bình': 34, 'Hà Nam': 35, 'Nam Định': 36,
+  'Ninh Bình': 37, 'Thanh Hoá': 38, 'Nghệ An': 40, 'Hà Tĩnh': 42,
+  'Quảng Bình': 44, 'Quảng Trị': 45, 'Thừa Thiên Huế': 46, 'Đà Nẵng': 48,
+  'Quảng Nam': 49, 'Quảng Ngãi': 51, 'Bình Định': 52, 'Phú Yên': 54,
+  'Khánh Hoà': 56, 'Ninh Thuận': 58, 'Bình Thuận': 60, 'Kon Tum': 62,
+  'Gia Lai': 64, 'Đắk Lắk': 66, 'Đắk Nông': 67, 'Lâm Đồng': 68,
+  'Bình Phước': 70, 'Tây Ninh': 72, 'Bình Dương': 74, 'Đồng Nai': 75,
+  'Bà Rịa - Vũng Tàu': 77, 'TP Hồ Chí Minh': 79, 'Long An': 80,
+  'Tiền Giang': 82, 'Bến Tre': 83, 'Trà Vinh': 84, 'Vĩnh Long': 86,
+  'Đồng Tháp': 87, 'An Giang': 89, 'Kiên Giang': 91, 'Cần Thơ': 92,
+  'Hậu Giang': 93, 'Sóc Trăng': 94, 'Bạc Liêu': 95, 'Cà Mau': 96,
+};
+
+const getProvinceApiCode = (name) => {
+  return provinceApiMap[name] || 1;
 };
 
 const fetchCompanyInfo = async () => {
@@ -670,6 +710,8 @@ const handleSubmit = async () => {
         name: response.data.full_name,
         phone: response.data.phone,
         email: response.data.email,
+        group_name: response.data.group_name || null,
+        discount_percentage: parseFloat(response.data.discount_percentage) || 0,
       };
 
       ElMessage.success("Thêm khách hàng thành công");
@@ -799,6 +841,7 @@ watch(
 
 onMounted(() => {
   window.addEventListener("keydown", handleKeyPress);
+  fetchProvinces();
 });
 
 onBeforeUnmount(() => {

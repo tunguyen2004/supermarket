@@ -206,12 +206,10 @@
 
             <!-- Staff -->
             <div class="footer-staff">
-              <i class="fa-regular fa-user footer-staff-icon"></i>
-              <select class="footer-select" v-model="selectedStaff">
-                <option value="admin">Admin dohuyy</option>
-                <option value="staff1">Nhân viên 1</option>
-                <option value="staff2">Nhân viên 2</option>
-              </select>
+              <div class="footer-staff-avatar">
+                {{ staffInitials }}
+              </div>
+              <span class="footer-staff-name">{{ staffDisplayName }}</span>
             </div>
 
             <!-- Divider -->
@@ -246,7 +244,19 @@
             </div>
             <div class="customer-info">
               <div class="customer-name">{{ selectedCustomer.name }}</div>
-              <div class="customer-phone">{{ selectedCustomer.phone }}</div>
+              <div class="customer-meta-row">
+                <span class="customer-phone">{{ selectedCustomer.phone }}</span>
+                <span v-if="selectedCustomer.group_name" class="customer-group-badge"
+                  :class="{
+                    'badge-vip': selectedCustomer.group_name?.includes('VIP'),
+                    'badge-gold': selectedCustomer.group_name?.includes('Vàng'),
+                    'badge-bronze': selectedCustomer.group_name?.includes('Đồng'),
+                    'badge-silver': selectedCustomer.group_name?.includes('Bạc'),
+                  }">
+                  {{ selectedCustomer.group_name }}
+                  <template v-if="memberDiscountPercent > 0"> (-{{ memberDiscountPercent }}%)</template>
+                </span>
+              </div>
             </div>
             <button
               class="btn-remove-customer"
@@ -268,13 +278,28 @@
             </div>
 
             <div class="summary-row discount-row">
-              <span class="summary-label">Giảm giá</span>
+              <span class="summary-label">
+                Giảm giá
+                <span v-if="currentOrder.discountCode" class="applied-code-tag">
+                  {{ currentOrder.discountCode }}
+                </span>
+              </span>
               <button class="btn-discount" @click="showDiscountModal = true">
-                <span class="mr-1">⚙️</span>
+                <span class="mr-1"><i class="fa-solid fa-ticket"></i></span>
                 <kbd class="kbd">F6</kbd>
               </button>
               <span class="summary-value discount-value">
                 -{{ formatPrice(discount) }}
+              </span>
+            </div>
+
+            <div v-if="memberDiscount > 0" class="summary-row member-discount-row">
+              <span class="summary-label">
+                <i class="fa-solid fa-crown mr-1" style="color: #f59e0b;"></i>
+                CK thành viên ({{ memberDiscountPercent }}%)
+              </span>
+              <span class="summary-value member-discount-value">
+                -{{ formatPrice(memberDiscount) }}
               </span>
             </div>
 
@@ -286,7 +311,7 @@
 
           <!-- Checkout Button -->
           <button
-            class="btn-checkout-main mt-[250px]"
+            class="btn-checkout-main"
             :disabled="currentOrder.items.length === 0"
             @click="checkout"
           >
@@ -304,47 +329,100 @@
       </div>
     </div>
 
-    <!-- Discount Modal -->
+    <!-- Discount Modal - Card Grid -->
     <el-dialog
       v-model="showDiscountModal"
-      title="Giảm giá đơn hàng"
-      width="450px"
+      title="Chọn mã giảm giá"
+      width="720px"
+      @opened="loadActiveDiscounts"
     >
-      <div class="space-y-4">
-        <!-- Discount Code Section -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Mã giảm giá</label>
-          <el-input
-            v-model="currentOrder.discountCode"
-            placeholder="Nhập mã giảm giá (tùy chọn)"
-            clearable
-          />
-          <p class="text-xs text-gray-500 mt-1">
-            Để trống nếu muốn áp dụng giảm giá trực tiếp
-          </p>
-        </div>
+      <!-- Loading -->
+      <div v-if="isLoadingDiscounts" class="discount-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span>Đang tải mã giảm giá...</span>
+      </div>
 
-        <!-- Manual Discount Section -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Loại giảm giá</label>
-          <el-radio-group v-model="discountType">
-            <el-radio label="percent">Phần trăm (%)</el-radio>
-            <el-radio label="fixed">Số tiền cố định</el-radio>
-          </el-radio-group>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-2">Giá trị giảm</label>
-          <el-input-number
-            v-model="discountValue"
-            :min="0"
-            :max="discountType === 'percent' ? 100 : subtotal"
-            style="width: 100%"
-          />
+      <!-- Empty -->
+      <div v-else-if="activeDiscounts.length === 0" class="discount-empty">
+        <i class="fa-solid fa-ticket text-4xl mb-3" style="opacity: 0.3;"></i>
+        <p>Không có mã giảm giá nào đang hoạt động</p>
+      </div>
+
+      <!-- Discount Cards Grid -->
+      <div v-else class="discount-grid">
+        <div
+          v-for="dc in activeDiscounts"
+          :key="dc.id"
+          class="discount-card"
+          :class="{
+            'discount-card--selected': currentOrder.discountId === dc.id,
+            'discount-card--percent': dc.type_code === 'PERCENTAGE',
+            'discount-card--fixed': dc.type_code === 'FIXED_AMOUNT',
+            'discount-card--disabled': dc.min_order_amount > subtotal,
+          }"
+          @click="selectDiscountCard(dc)"
+        >
+          <!-- Badge type -->
+          <div class="discount-card__badge">
+            <span v-if="dc.type_code === 'PERCENTAGE'">%</span>
+            <span v-else>₫</span>
+          </div>
+
+          <!-- Selected check -->
+          <div v-if="currentOrder.discountId === dc.id" class="discount-card__check">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+
+          <!-- Value -->
+          <div class="discount-card__value">
+            <template v-if="dc.type_code === 'PERCENTAGE'">{{ dc.value }}%</template>
+            <template v-else>{{ formatDiscountPrice(dc.value) }}</template>
+          </div>
+
+          <!-- Name -->
+          <div class="discount-card__name">{{ dc.name }}</div>
+
+          <!-- Code -->
+          <div class="discount-card__code">
+            <i class="fa-solid fa-ticket mr-1"></i>{{ dc.code }}
+          </div>
+
+          <!-- Details -->
+          <div class="discount-card__details">
+            <div v-if="dc.min_order_amount > 0" class="discount-card__condition">
+              <i class="fa-solid fa-cart-shopping"></i>
+              Đơn tối thiểu {{ formatDiscountPrice(dc.min_order_amount) }}
+            </div>
+            <div v-if="dc.max_discount_amount" class="discount-card__condition">
+              <i class="fa-solid fa-arrow-down"></i>
+              Giảm tối đa {{ formatDiscountPrice(dc.max_discount_amount) }}
+            </div>
+            <div v-if="dc.remaining_uses !== null" class="discount-card__condition">
+              <i class="fa-solid fa-layer-group"></i>
+              Còn {{ dc.remaining_uses }} lượt
+            </div>
+          </div>
+
+          <!-- Expiry -->
+          <div class="discount-card__expiry">
+            <i class="fa-regular fa-clock"></i>
+            HSD: {{ formatDate(dc.end_date) }}
+          </div>
+
+          <!-- Min order warning -->
+          <div v-if="dc.min_order_amount > subtotal" class="discount-card__warning">
+            Chưa đủ điều kiện đơn hàng
+          </div>
         </div>
       </div>
+
       <template #footer>
-        <el-button @click="showDiscountModal = false">Hủy</el-button>
-        <el-button type="primary" @click="applyDiscount">Áp dụng</el-button>
+        <div class="discount-modal-footer">
+          <el-button @click="removeDiscount" :disabled="!currentOrder.discountId">
+            <i class="fa-solid fa-xmark mr-1"></i> Bỏ giảm giá
+          </el-button>
+          <el-button @click="showDiscountModal = false">Đóng</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -540,6 +618,20 @@ const user = JSON.parse(localStorage.getItem("user") || "{}");
 const currentStoreId = ref(user.store_id || 1);
 const currentStoreName = ref(user.store_name || "");
 
+// Logged-in staff display
+const staffDisplayName = computed(() => {
+  return user.full_name || user.username || 'Nhân viên';
+});
+const staffInitials = computed(() => {
+  const name = staffDisplayName.value || '';
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+});
+
 // Product search state
 const productSearchResults = ref([]);
 const isSearchingProducts = ref(false);
@@ -646,8 +738,18 @@ const discount = computed(() => {
   return currentOrder.value.discount;
 });
 
+// Member discount based on customer group
+const memberDiscountPercent = computed(() => {
+  return parseFloat(selectedCustomer.value?.discount_percentage) || 0;
+});
+
+const memberDiscount = computed(() => {
+  if (!selectedCustomer.value || memberDiscountPercent.value <= 0) return 0;
+  return Math.round(subtotal.value * memberDiscountPercent.value / 100);
+});
+
 const total = computed(() => {
-  return Math.max(0, subtotal.value - discount.value);
+  return Math.max(0, subtotal.value - discount.value - memberDiscount.value);
 });
 
 // Product search and add to cart with API
@@ -844,6 +946,95 @@ const updateQuantity = (index, newQty) => {
   if (newQty < 1) {
     currentOrder.value.items[index].quantity = 1;
   }
+};
+
+// ===== DISCOUNT CARD SELECTION =====
+const activeDiscounts = ref([]);
+const isLoadingDiscounts = ref(false);
+
+const loadActiveDiscounts = async () => {
+  try {
+    isLoadingDiscounts.value = true;
+    const params = {};
+    if (selectedCustomer.value?.id) params.customer_id = selectedCustomer.value.id;
+    if (subtotal.value > 0) params.order_amount = subtotal.value;
+    const response = await posService.getActiveDiscounts(params);
+    if (response.success) {
+      activeDiscounts.value = response.data;
+    } else {
+      activeDiscounts.value = [];
+    }
+  } catch (error) {
+    console.error('Error loading active discounts:', error);
+    activeDiscounts.value = [];
+  } finally {
+    isLoadingDiscounts.value = false;
+  }
+};
+
+const selectDiscountCard = async (dc) => {
+  // If already selected, deselect
+  if (currentOrder.value.discountId === dc.id) {
+    removeDiscount();
+    return;
+  }
+
+  // Check min order amount
+  if (dc.min_order_amount > subtotal.value) {
+    ElMessage.warning(`Đơn hàng tối thiểu ${formatDiscountPrice(dc.min_order_amount)} để dùng mã này`);
+    return;
+  }
+
+  try {
+    // Validate with backend
+    const discountData = {
+      code: dc.code,
+      order_amount: subtotal.value,
+      customer_id: selectedCustomer.value?.id || null,
+    };
+    const response = await posService.validateDiscountCode(discountData);
+
+    if (response.success && response.data) {
+      const result = response.data;
+      currentOrder.value.discountId = result.discount_id || dc.id;
+      currentOrder.value.discountCode = result.code || dc.code;
+
+      if (result.type === 'PERCENTAGE' || dc.type_code === 'PERCENTAGE') {
+        currentOrder.value.discountType = 'percent';
+        currentOrder.value.discount = result.value || dc.value;
+      } else {
+        currentOrder.value.discountType = 'fixed';
+        currentOrder.value.discount = result.discount_amount || dc.value;
+      }
+
+      ElMessage.success(`Đã áp dụng mã ${dc.code}: ${dc.name}`);
+    } else {
+      ElMessage.warning(response.message || 'Mã giảm giá không hợp lệ');
+    }
+  } catch (error) {
+    console.error('Error applying discount card:', error);
+    ElMessage.error('Lỗi áp dụng mã giảm giá');
+  }
+};
+
+const removeDiscount = () => {
+  currentOrder.value.discount = 0;
+  currentOrder.value.discountCode = '';
+  currentOrder.value.discountId = null;
+  currentOrder.value.discountType = 'fixed';
+  discountType.value = 'fixed';
+  discountValue.value = 0;
+  ElMessage.info('Đã bỏ giảm giá');
+};
+
+const formatDiscountPrice = (value) => {
+  return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 const applyDiscount = async () => {
@@ -1070,14 +1261,23 @@ const handlePaymentComplete = async (paymentData) => {
       customer_id: selectedCustomer.value?.id || null,
       items: formattedItems,
       subtotal: subtotal.value,
-      discount_amount: currentOrder.value.discount || 0,
+      discount_amount: discount.value || 0,
+      member_discount_amount: memberDiscount.value || 0,
       discount_code: currentOrder.value.discountCode || null,
       discount_id: currentOrder.value.discountId || null,
       payment_method:
-        paymentData.paymentMethod || currentOrder.value.paymentMethod || "cash",
-      amount_received: paymentData.amountPaid || total.value,
-      change: (paymentData.amountPaid || total.value) - total.value,
+        paymentData.method || paymentData.paymentMethod || currentOrder.value.paymentMethod || "cash",
+      amount_received: paymentData.amountReceived || paymentData.amountPaid || total.value,
+      change: paymentData.change || (paymentData.amountPaid || total.value) - total.value,
       notes: currentOrder.value.notes || null,
+      // Delivery data
+      shipping_fee: paymentData.delivery?.shippingFee || 0,
+      shipping_address: paymentData.delivery?.shippingAddress || null,
+      delivery_note: paymentData.delivery?.note || null,
+      receiver_name: paymentData.delivery?.receiverName || null,
+      receiver_phone: paymentData.delivery?.receiverPhone || null,
+      carrier_id: paymentData.delivery?.carrierId || null,
+      cod_enabled: paymentData.delivery?.codEnabled ?? false,
     };
 
     const loading = ElLoading.service({
@@ -1093,7 +1293,18 @@ const handlePaymentComplete = async (paymentData) => {
       );
 
       if (response.success) {
-        ElMessage.success("Thanh toán thành công!");
+        // Show upgrade notification if customer was upgraded
+        if (response.data?.upgraded_group) {
+          const g = response.data.upgraded_group;
+          ElMessage({
+            message: `🎉 Khách hàng được nâng hạng lên ${g.name} (giảm ${g.discount_percentage}%)!`,
+            type: 'success',
+            duration: 5000,
+            showClose: true,
+          });
+        } else {
+          ElMessage.success("Thanh toán thành công!");
+        }
 
         // Auto-print receipt if enabled
         if (autoPrint.value && response.data.receiptId) {
@@ -1110,10 +1321,13 @@ const handlePaymentComplete = async (paymentData) => {
         currentOrder.value.items = [];
         currentOrder.value.notes = "";
         currentOrder.value.discount = 0;
+        currentOrder.value.discountType = "fixed";
         currentOrder.value.discountCode = "";
         currentOrder.value.discountId = null;
         currentOrder.value.draftId = null;
         selectedCustomer.value = null;
+        discountType.value = "fixed";
+        discountValue.value = 0;
 
         // Close drawer
         showPaymentDrawer.value = false;
@@ -1223,12 +1437,18 @@ const handleKeyPress = async (e) => {
 .pos-page {
   background-color: #f1f5f9;
   min-height: 100vh;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ===== MAIN LAYOUT ===== */
 .pos-main {
   display: grid;
-  grid-template-columns: 70% 30%;
+  grid-template-columns: 1fr 360px;
   gap: 16px;
   padding: 16px;
   min-height: calc(100vh - 48px);
@@ -1242,11 +1462,12 @@ const handleKeyPress = async (e) => {
 
 .cart-panel {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid #e2e8f0;
 }
 
 .cart-header {
@@ -1361,11 +1582,12 @@ const handleKeyPress = async (e) => {
 
 .cart-row {
   border-bottom: 1px solid #f1f5f9;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cart-row:hover {
   background: #f8fafc;
+  box-shadow: inset 3px 0 0 var(--primary, #2563eb);
 }
 
 .cart-table td {
@@ -1541,14 +1763,18 @@ const handleKeyPress = async (e) => {
 .right-column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  max-height: calc(100vh - 80px);
+  position: sticky;
+  top: 64px;
 }
 
 .payment-section {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   padding: 16px;
+  border: 1px solid #e2e8f0;
 }
 
 /* Customer Section */
@@ -1584,7 +1810,13 @@ const handleKeyPress = async (e) => {
 }
 
 .customer-section {
-  margin-bottom: 12px;
+  margin-bottom: 0;
+}
+
+.summary-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .selected-customer {
@@ -1629,6 +1861,51 @@ const handleKeyPress = async (e) => {
   color: #64748b;
 }
 
+.customer-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.customer-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.badge-vip {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.badge-gold {
+  background: linear-gradient(135deg, #fef9c3, #fef08a);
+  color: #854d0e;
+  border-color: #eab308;
+}
+
+.badge-bronze {
+  background: linear-gradient(135deg, #ffedd5, #fed7aa);
+  color: #9a3412;
+  border-color: #f97316;
+}
+
+.badge-silver {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  color: #334155;
+  border-color: #94a3b8;
+}
+
 .btn-remove-customer {
   width: 28px;
   height: 28px;
@@ -1648,15 +1925,19 @@ const handleKeyPress = async (e) => {
 /* Summary Section */
 .summary-title {
   font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #0f172a;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .summary-rows {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  flex: 1;
 }
 
 .summary-row {
@@ -1706,6 +1987,40 @@ const handleKeyPress = async (e) => {
   color: #dc2626 !important;
 }
 
+.applied-code-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  background: #dbeafe;
+  color: #2563eb;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'Consolas', 'Monaco', monospace;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+}
+
+.member-discount-row {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-radius: 6px;
+  padding: 8px 12px !important;
+  margin: 4px 0;
+}
+
+.member-discount-row .summary-label {
+  color: #92400e;
+  font-weight: 500;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+}
+
+.member-discount-value {
+  color: #d97706 !important;
+  font-weight: 600;
+}
+
 .total-row {
   margin-top: 16px;
   padding-top: 16px;
@@ -1727,8 +2042,8 @@ const handleKeyPress = async (e) => {
 .btn-checkout-main {
   width: 100%;
   padding: 16px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
   font-size: 1.1rem;
   font-weight: 700;
@@ -1737,15 +2052,16 @@ const handleKeyPress = async (e) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  margin-top: auto;
   margin-bottom: 12px;
 }
 
 .btn-checkout-main:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.4);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+  transform: translateY(-2px);
 }
 
 .btn-checkout-main:disabled {
@@ -1778,13 +2094,14 @@ const handleKeyPress = async (e) => {
 /* ===== FOOTER BAR ===== */
 .footer-bar {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  gap: 20px;
-  margin-top: 16px;
+  padding: 12px 16px;
+  gap: 16px;
+  margin-top: 12px;
 }
 
 .footer-left {
@@ -1926,40 +2243,35 @@ const handleKeyPress = async (e) => {
 .footer-staff {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.footer-staff-icon {
-  color: #94a3b8;
-  font-size: 0.9rem;
-}
-
-.footer-select {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  color: #1e293b;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s;
+  gap: 10px;
+  padding: 6px 12px;
   background: #f8fafc;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
-.footer-select:hover {
-  border-color: #cbd5e1;
-  background-color: #f1f5f9;
+.footer-staff-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.footer-select:focus {
-  border-color: #1e40af;
-  box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.1);
+.footer-staff-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
 }
 
 /* Footer Accent Button */
@@ -2056,6 +2368,11 @@ const handleKeyPress = async (e) => {
   .pos-main {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .right-column {
+    position: static;
+    max-height: none;
   }
 
   .footer-bar {
@@ -2158,5 +2475,228 @@ const handleKeyPress = async (e) => {
 
 .mt-1 {
   margin-top: 0.25rem;
+}
+
+/* ===== DISCOUNT CARDS GRID ===== */
+.discount-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.discount-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.discount-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.discount-card {
+  position: relative;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 14px 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  min-height: 180px;
+}
+
+.discount-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+  transform: translateY(-3px);
+}
+
+.discount-card--selected {
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.2);
+  transform: translateY(-2px);
+}
+
+.discount-card--percent .discount-card__badge {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.discount-card--fixed .discount-card__badge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.discount-card--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.discount-card--disabled:hover {
+  border-color: #e2e8f0;
+  box-shadow: none;
+  transform: none;
+}
+
+.discount-card__badge {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 32px;
+  height: 32px;
+  border-radius: 0 12px 0 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.discount-card__check {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  color: #2563eb;
+  font-size: 1.25rem;
+}
+
+.discount-card__value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e40af;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.discount-card--percent .discount-card__value {
+  color: #ea580c;
+}
+
+.discount-card--fixed .discount-card__value {
+  color: #059669;
+}
+
+.discount-card__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.discount-card__code {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #f1f5f9;
+  border: 1px dashed #94a3b8;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.5px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.discount-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.discount-card__condition {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: #64748b;
+  justify-content: center;
+}
+
+.discount-card__condition i {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.discount-card__expiry {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: auto;
+}
+
+.discount-card__expiry i {
+  font-size: 0.65rem;
+}
+
+.discount-card__warning {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 0 0 12px 12px;
+  text-align: center;
+}
+
+.discount-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Discount grid scrollbar */
+.discount-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.discount-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.discount-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.discount-grid::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .discount-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

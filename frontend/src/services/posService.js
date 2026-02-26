@@ -201,6 +201,25 @@ class PosService {
   }
 
   /**
+   * Lấy danh sách mã giảm giá đang hoạt động cho POS
+   * @param {Object} params - Query parameters
+   * @param {number} params.customer_id - ID khách hàng (optional)
+   * @param {number} params.order_amount - Tổng tiền đơn hàng (optional)
+   * @returns {Promise<Array>} Danh sách mã giảm giá
+   */
+  async getActiveDiscounts(params = {}) {
+    try {
+      const response = await apiClient.get("/api/pos/discounts/active", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error getting active discounts:", error);
+      throw new Error(
+        error.response?.data?.message || "Lỗi khi lấy danh sách mã giảm giá",
+      );
+    }
+  }
+
+  /**
    * Kiểm tra mã giảm giá
    * @param {Object} discountData - Dữ liệu mã giảm giá
    * @param {string} discountData.code - Mã giảm giá

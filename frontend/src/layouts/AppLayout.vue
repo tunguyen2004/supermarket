@@ -4,11 +4,13 @@
     <AppHeader />
     <div class="main-content">
       <AppSidebar />
-      <div class="content">
-        <!-- Nội dung của Dashboard sẽ được render ở đây -->
-        <!-- <div class="test">Test render</div> -->
-        <router-view />
-      </div>
+      <main class="content">
+        <router-view v-slot="{ Component, route }">
+          <transition name="page" mode="out-in">
+            <component :is="Component" :key="route.path" />
+          </transition>
+        </router-view>
+      </main>
     </div>
   </div>
 </template>
@@ -30,21 +32,20 @@ export default {
 .app-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  background: var(--app-bg, #f4f6fa);
 }
 
 .main-content {
   display: flex;
   flex: 1;
-}
-.main-content {
-  margin-top: 60px; /* Để tránh header */
-  margin-left: 250px; /* Căn chỉnh với sidebar */
-  transition: margin-left 0.2s;
+  margin-top: 60px;
+  margin-left: 260px;
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sidebar.collapsed ~ .main-content {
-  margin-left: 70px;
+  margin-left: 80px;
 }
 
 @media (max-width: 900px) {
@@ -55,14 +56,24 @@ export default {
 
 .content {
   flex: 1;
-  width: 100vh;
-  /* padding: 20px; */
+  min-width: 0;
+  min-height: calc(100vh - 60px);
 }
-.test {
-  color: red;
-  font-weight: bold;
-  font-size: 20px;
-  background: black;
-  margin: 50px;
+
+/* Page transitions */
+.page-enter-active {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.page-leave-active {
+  animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) reverse;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>

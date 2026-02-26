@@ -792,10 +792,290 @@ const getStaffList = async (req, res) => {
   }
 };
 
+// ============================================================================
+//                    SUBMITTED REPORTS (NỘP BÁO CÁO)
+// ============================================================================
+
+const { generateSequentialCode, getDateStr } = require("../utils/codeGenerator");
+
+/**
+ * POST /api/reports/submit
+ * Staff nộp báo cáo cuối ngày — snapshot dữ liệu hiện tại vào DB
+ */
+const submitReport = async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const {
+      title,
+      period_from,
+      period_to,
+      staff_filter_id,
+      notes,
+      revenue_summary,
+      actual_summary,
+      by_payment_method,
+      by_staff,
+      products_summary,
+      top_products,
+      returns_data,
+    } = req.body;
+
+    if (!title || !period_from || !period_to) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập tiêu đề và khoảng thời gian",
+      });
+    }
+
+    await client.query("BEGIN");
+
+    // Generate report code: RPT-YYYYMMDD-NNNNN
+    const reportCode = await generateSequentialCode(
+      client,
+      "RPT",
+      "fact_submitted_reports",
+      "report_code"
+    );
+
+    const summary = revenue_summary || {};
+    const actual = actual_summary || {};
+
+    const result = await client.query(
+      `INSERT INTO fact_submitted_reports 
+        (report_code, title, period_from, period_to, staff_filter_id, submitted_by, notes,
+         revenue_summary, actual_summary, by_payment_method, by_staff,
+         products_summary, top_products, returns_data,
+         total_orders, net_revenue, total_discount, unique_customers, grand_total)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+       RETURNING id, report_code, submitted_at`,
+      [
+        reportCode,
+        title,
+        period_from,
+        period_to,
+        staff_filter_id || null,
+        req.user.id,
+        notes || null,
+        JSON.stringify(revenue_summary || {}),
+        JSON.stringify(actual_summary || {}),
+        JSON.stringify(by_payment_method || []),
+        JSON.stringify(by_staff || []),
+        JSON.stringify(products_summary || {}),
+        JSON.stringify(top_products || []),
+        JSON.stringify(returns_data || {}),
+        summary.total_orders || 0,
+        summary.net_revenue || 0,
+        summary.total_discount || 0,
+        summary.unique_customers || 0,
+        actual.grand_total || actual.net_actual || 0,
+      ]
+    );
+
+    await client.query("COMMIT");
+
+    const row = result.rows[0];
+    return res.status(201).json({
+      success: true,
+      message: `Nộp báo cáo thành công! Mã báo cáo: ${row.report_code}`,
+      data: {
+        id: row.id,
+        report_code: row.report_code,
+        submitted_at: row.submitted_at,
+      },
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Submit report error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi nộp báo cáo",
+      error: error.message,
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * GET /api/reports/submitted
+ * Admin xem danh sách báo cáo đã nộp (phân trang)
+ */
+const getSubmittedReports = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    const { search, status, from, to } = req.query;
+
+    let where = "WHERE 1=1";
+    const params = [];
+    let paramIdx = 1;
+
+    if (search) {
+      where += ` AND (r.report_code ILIKE $${paramIdx} OR r.title ILIKE $${paramIdx})`;
+      params.push(`%${search}%`);
+      paramIdx++;
+    }
+    if (status) {
+      where += ` AND r.status = $${paramIdx}`;
+      params.push(status);
+      paramIdx++;
+    }
+    if (from) {
+      where += ` AND r.period_from >= $${paramIdx}`;
+      params.push(from);
+      paramIdx++;
+    }
+    if (to) {
+      where += ` AND r.period_to <= $${paramIdx}`;
+      params.push(to);
+      paramIdx++;
+    }
+
+    // Count
+    const countResult = await db.query(
+      `SELECT COUNT(*) FROM fact_submitted_reports r ${where}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].count);
+
+    // Data
+    const dataResult = await db.query(
+      `SELECT 
+        r.id, r.report_code, r.title, r.report_type, r.status,
+        r.period_from, r.period_to,
+        r.total_orders, r.net_revenue, r.total_discount, r.unique_customers, r.grand_total,
+        r.submitted_at, r.notes,
+        r.revenue_summary, r.actual_summary, r.by_payment_method, r.by_staff,
+        r.products_summary, r.top_products, r.returns_data,
+        r.reviewed_at,
+        u.full_name as submitted_by_name,
+        u2.full_name as reviewed_by_name
+       FROM fact_submitted_reports r
+       JOIN dim_users u ON r.submitted_by = u.id
+       LEFT JOIN dim_users u2 ON r.reviewed_by = u2.id
+       ${where}
+       ORDER BY r.submitted_at DESC
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      [...params, limit, offset]
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: dataResult.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Get submitted reports error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách báo cáo",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/reports/submitted/:id
+ * Xem chi tiết một báo cáo đã nộp
+ */
+const getSubmittedReportById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+        r.*,
+        u.full_name as submitted_by_name,
+        u2.full_name as reviewed_by_name
+       FROM fact_submitted_reports r
+       JOIN dim_users u ON r.submitted_by = u.id
+       LEFT JOIN dim_users u2 ON r.reviewed_by = u2.id
+       WHERE r.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy báo cáo",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Get submitted report detail error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy chi tiết báo cáo",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * PATCH /api/reports/submitted/:id/status
+ * Admin duyệt / từ chối báo cáo
+ */
+const updateReportStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Trạng thái không hợp lệ (approved / rejected)",
+      });
+    }
+
+    const result = await db.query(
+      `UPDATE fact_submitted_reports
+       SET status = $1, reviewed_by = $2, reviewed_at = NOW(), updated_at = NOW()
+       WHERE id = $3
+       RETURNING id, report_code, status`,
+      [status, req.user.id, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy báo cáo",
+      });
+    }
+
+    const statusLabel = status === "approved" ? "duyệt" : "từ chối";
+    return res.status(200).json({
+      success: true,
+      message: `Đã ${statusLabel} báo cáo ${result.rows[0].report_code}`,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Update report status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi cập nhật trạng thái báo cáo",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getDailyReport,
   getActualRevenue,
   getSoldProducts,
   getDailyPrintReport,
   getStaffList,
+  submitReport,
+  getSubmittedReports,
+  getSubmittedReportById,
+  updateReportStatus,
 };

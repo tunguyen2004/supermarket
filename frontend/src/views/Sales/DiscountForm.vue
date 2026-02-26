@@ -31,7 +31,7 @@
               <el-form-item label="Mã khuyến mại" prop="code">
                 <el-input
                   v-model="form.code"
-                  placeholder="VD: SUMMER2025"
+                  placeholder="VD: SALE2025"
                   maxlength="20"
                   :disabled="isEditMode"
                   @input="form.code = form.code.toUpperCase()"

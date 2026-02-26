@@ -89,7 +89,7 @@
               >
                 <el-input
                   v-model="form.trackingCode"
-                  placeholder="Nhập mã tracking từ đối tác (tùy chọn)"
+                  placeholder="VD: GHN-A1B2C3D4"
                 />
               </el-form-item>
             </el-col>

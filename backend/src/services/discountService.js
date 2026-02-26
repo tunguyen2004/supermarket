@@ -100,7 +100,7 @@ const getDiscounts = async (req, res) => {
         d.min_order_amount,
         d.max_uses_total,
         d.max_uses_per_customer,
-        d.current_uses,
+        COALESCE((SELECT COUNT(*) FROM fact_discount_usages du WHERE du.discount_id = d.id), 0) as current_uses,
         d.applies_to,
         d.start_date,
         d.end_date,

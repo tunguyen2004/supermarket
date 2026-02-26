@@ -89,6 +89,26 @@ router.post('/',
 
 /**
  * @swagger
+ * /api/customers/cities:
+ *   get:
+ *     summary: Danh sách tỉnh/thành phố
+ *     tags: [Customers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: region_id
+ *         schema:
+ *           type: integer
+ *         description: Lọc theo vùng miền (1=Bắc, 2=Trung, 3=Nam)
+ */
+router.get('/cities',
+  verifyToken,
+  customerService.getCities
+);
+
+/**
+ * @swagger
  * /api/customers/{id}:
  *   get:
  *     summary: Chi tiết khách hàng

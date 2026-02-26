@@ -337,6 +337,31 @@ router.get("/orders/:id/receipt", verifyToken, posService.getReceipt);
 
 /**
  * @swagger
+ * /api/pos/discounts/active:
+ *   get:
+ *     summary: Lấy danh sách mã giảm giá đang hoạt động cho POS
+ *     tags: [POS]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: customer_id
+ *         schema:
+ *           type: integer
+ *         description: ID khách hàng (optional)
+ *       - in: query
+ *         name: order_amount
+ *         schema:
+ *           type: number
+ *         description: Tổng tiền đơn hàng (optional)
+ *     responses:
+ *       200:
+ *         description: Danh sách mã giảm giá đang hoạt động
+ */
+router.get("/discounts/active", verifyToken, posService.getActiveDiscountsForPOS);
+
+/**
+ * @swagger
  * /api/pos/discounts/validate:
  *   post:
  *     summary: Kiểm tra mã giảm giá

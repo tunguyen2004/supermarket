@@ -38,16 +38,18 @@
         :data="pagedOrders"
         v-loading="isLoading"
         style="width: 100%"
+        :default-sort="{ prop: sortKey, order: sortDir === 'DESC' ? 'descending' : 'ascending' }"
+        @sort-change="handleSortChange"
       >
-        <el-table-column prop="orderCode" label="Mã đơn hàng" width="140" />
+        <el-table-column prop="orderCode" label="Mã đơn hàng" width="140" sortable="custom" />
         <el-table-column label="Khách hàng" min-width="180">
           <template #default="scope">
             <div class="customer-cell">{{ scope.row.customerName }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="orderDate" label="Ngày tạo" width="160" />
+        <el-table-column prop="orderDate" label="Ngày tạo" width="160" sortable="custom" />
         <el-table-column prop="createdBy" label="Người tạo" width="150" />
-        <el-table-column label="Tổng tiền" width="150" align="right">
+        <el-table-column label="Tổng tiền" width="150" align="right" prop="totalAmount" sortable="custom">
           <template #default="scope">
             <span class="total-amount">{{
               formatCurrency(scope.row.totalAmount)
@@ -190,6 +192,8 @@ const currentPage = ref(1);
 const pageSize = 10;
 const totalItems = ref(0);
 const orders = ref([]);
+const sortKey = ref("created_at");
+const sortDir = ref("DESC");
 const isModalVisible = ref(false);
 const selectedOrder = ref(null);
 
@@ -229,8 +233,8 @@ const fetchOrders = async () => {
       customer_type: activeTab.value === "walk_in" ? "walk_in" : undefined,
       from: fromDate || undefined,
       to: toDate || undefined,
-      sort: "created_at",
-      order: "DESC",
+      sort: sortKey.value,
+      order: sortDir.value,
     };
 
     const result = await orderService.getOrders(params);
@@ -309,6 +313,26 @@ watch([activeTab, search, dateRange], () => {
 watch(currentPage, () => {
   fetchOrders();
 });
+
+// Map frontend prop -> backend sort field
+const propToSortField = {
+  orderCode: "order_code",
+  orderDate: "created_at",
+  totalAmount: "final_amount",
+};
+
+const handleSortChange = ({ prop, order: dir }) => {
+  if (!dir) {
+    // Reset to default sort
+    sortKey.value = "created_at";
+    sortDir.value = "DESC";
+  } else {
+    sortKey.value = propToSortField[prop] || "created_at";
+    sortDir.value = dir === "ascending" ? "ASC" : "DESC";
+  }
+  currentPage.value = 1;
+  fetchOrders();
+};
 
 const createOrder = () => {
   router.push({ name: "NewOrder" });

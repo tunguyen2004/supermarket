@@ -446,7 +446,7 @@ const fetchInventories = async () => {
         if (imageUrl) {
           const fullUrl = imageUrl.startsWith("http")
             ? imageUrl
-            : `http://localhost:5000${imageUrl}`;
+            : imageUrl;
           // Update reactive data directly
           inventories.value[index].imageUrl = fullUrl;
         }

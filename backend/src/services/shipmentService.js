@@ -17,6 +17,7 @@
  */
 
 const db = require("../config/database");
+const { generateShipmentCode } = require("../utils/codeGenerator");
 
 /**
  * 1. Danh sách vận đơn - GET /api/shipments
@@ -333,7 +334,7 @@ const createShipment = async (req, res) => {
     const statusId = statusResult.rows[0].id;
 
     // Generate shipment code
-    const shipmentCode = `SHP-${Date.now()}`;
+    const shipmentCode = await generateShipmentCode(client);
 
     // Calculate total fee
     const totalFee = parseFloat(shipping_fee) + parseFloat(insurance_fee);
@@ -725,6 +726,36 @@ const updateShipmentStatus = async (req, res) => {
     updateParams.push(id);
 
     await client.query(updateQuery, updateParams);
+
+    // Sync order status based on shipment status
+    const shipmentRow = existingResult.rows[0];
+    if (status === 'delivered') {
+      // Mark the linked order as completed
+      await client.query(
+        `UPDATE fact_orders SET status = 'completed', payment_status = 'paid', updated_at = NOW()
+         WHERE id = (SELECT order_id FROM fact_shipments WHERE id = $1)`,
+        [id]
+      );
+    } else if (status === 'cancelled') {
+      await client.query(
+        `UPDATE fact_orders SET status = 'cancelled', updated_at = NOW()
+         WHERE id = (SELECT order_id FROM fact_shipments WHERE id = $1)`,
+        [id]
+      );
+    } else if (status === 'returned') {
+      await client.query(
+        `UPDATE fact_orders SET status = 'returned', updated_at = NOW()
+         WHERE id = (SELECT order_id FROM fact_shipments WHERE id = $1)`,
+        [id]
+      );
+    } else if (['in_transit', 'out_for_delivery', 'picking', 'picked'].includes(status)) {
+      await client.query(
+        `UPDATE fact_orders SET status = 'processing', updated_at = NOW()
+         WHERE id = (SELECT order_id FROM fact_shipments WHERE id = $1)
+         AND status != 'completed'`,
+        [id]
+      );
+    }
 
     // Add tracking record
     await client.query(

@@ -112,6 +112,10 @@ const loadRecentCustomers = async () => {
         id: c.id,
         name: c.full_name,
         phone: c.phone || "",
+        email: c.email,
+        address: c.address,
+        group_name: c.group_name,
+        discount_percentage: c.discount_percentage,
       }));
     }
   } catch (error) {

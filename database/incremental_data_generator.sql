@@ -268,8 +268,8 @@ BEGIN
     -- SINH TỪNG ĐƠN HÀNG
     -- =========================
     FOR i IN 1..v_actual_orders LOOP
-        -- Tạo order_code unique: DH + YYYYMMDD + sequence
-        v_order_code := 'DH' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(i::TEXT, 4, '0');
+        -- Tạo order_code unique: POS-YYYYMMDD-XXXXX (giống POS frontend)
+        v_order_code := 'POS-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(i::TEXT, 5, '0');
         
         -- Kiểm tra duplicate (idempotent)
         IF EXISTS (SELECT 1 FROM fact_orders WHERE order_code = v_order_code) THEN
@@ -477,7 +477,7 @@ BEGIN
             WHERE oi.order_id = r_order.id
         LOOP
             v_seq := v_seq + 1;
-            v_trans_code := 'EXP' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_seq::TEXT, 5, '0');
+            v_trans_code := 'EXP-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(v_seq::TEXT, 5, '0');
             
             -- Lấy tồn kho hiện tại
             SELECT COALESCE(quantity_on_hand, 0) INTO v_balance_before
@@ -535,7 +535,7 @@ BEGIN
         -- Chỉ 70% được bổ sung (mô phỏng delay nhập hàng)
         IF RANDOM() < 0.70 THEN
             v_seq := v_seq + 1;
-            v_trans_code := 'IMP' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_seq::TEXT, 5, '0');
+            v_trans_code := 'IMP-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(v_seq::TEXT, 5, '0');
             
             -- Nhập đến 80% max_stock
             v_quantity := GREATEST(
@@ -550,7 +550,7 @@ BEGIN
             IF RANDOM() < 0.10 THEN
                 v_reference_code := NULL;
             ELSE
-                v_reference_code := 'PO' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_imports::TEXT, 3, '0');
+                v_reference_code := 'PO-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(v_imports::TEXT, 3, '0');
             END IF;
             
             INSERT INTO fact_inventory_transactions (
@@ -586,7 +586,7 @@ BEGIN
     
     FOR i IN 1..FLOOR(RANDOM() * 3 + 1)::INT LOOP
         v_seq := v_seq + 1;
-        v_trans_code := 'ADJ' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_seq::TEXT, 5, '0');
+        v_trans_code := 'ADJ-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(v_seq::TEXT, 5, '0');
         
         -- Random store và variant
         SELECT store_id, variant_id, quantity_on_hand INTO v_store_id, v_variant_id, v_balance_before
@@ -631,7 +631,7 @@ BEGIN
     IF RANDOM() < 0.05 THEN
         FOR i IN 1..FLOOR(RANDOM() * 3 + 1)::INT LOOP
             v_seq := v_seq + 1;
-            v_trans_code := 'DMG' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_seq::TEXT, 5, '0');
+            v_trans_code := 'DMG-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(v_seq::TEXT, 5, '0');
             
             -- Thường là sản phẩm tươi sống hoặc sữa
             SELECT fis.store_id, fis.variant_id, fis.quantity_on_hand, pv.cost_price
@@ -759,7 +759,7 @@ BEGIN
         END IF;
         
         v_seq := v_seq + 1;
-        v_shipment_code := 'SH' || TO_CHAR(p_date, 'YYYYMMDD') || LPAD(v_seq::TEXT, 4, '0');
+        v_shipment_code := 'SHP-' || TO_CHAR(p_date, 'YYYYMMDD') || '-' || LPAD(v_seq::TEXT, 5, '0');
         
         -- Kiểm tra duplicate (idempotent)
         IF EXISTS (SELECT 1 FROM fact_shipments WHERE shipment_code = v_shipment_code) THEN

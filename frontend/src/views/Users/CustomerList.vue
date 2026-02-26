@@ -176,7 +176,7 @@
     >
       <el-form :model="form" label-position="top">
         <el-form-item label="Mã khách hàng">
-          <el-input v-model="form.code" placeholder="Nhập mã khách hàng" />
+          <el-input v-model="form.code" placeholder="Tự động: KH-202602-00001" />
         </el-form-item>
         <el-form-item label="Tên khách hàng" required>
           <el-input
@@ -202,9 +202,10 @@
           />
         </el-form-item>
         <el-form-item label="Giới tính">
-          <el-select v-model="form.gender" placeholder="Chọn giới tính">
-            <el-option label="Nam" value="Nam" />
-            <el-option label="Nữ" value="Nữ" />
+          <el-select v-model="form.gender" placeholder="Chọn giới tính" clearable>
+            <el-option label="Nam" value="male" />
+            <el-option label="Nữ" value="female" />
+            <el-option label="Khác" value="other" />
           </el-select>
         </el-form-item>
         <el-form-item label="Nhóm khách hàng">
@@ -220,8 +221,8 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="Thành phố">
-          <el-select v-model="form.city_id" placeholder="Chọn thành phố">
+        <el-form-item label="Tỉnh/Thành phố">
+          <el-select v-model="form.city_id" placeholder="Chọn tỉnh/thành phố" clearable filterable>
             <el-option
               v-for="city in cities"
               :key="city.id"
@@ -282,7 +283,7 @@
                   <span>{{ selectedCustomer.address }}</span>
                 </div>
                 <div class="info-item">
-                  <label>Thành phố:</label>
+                  <label>Tỉnh/Thành phố:</label>
                   <span>{{ selectedCustomer.city_name }}</span>
                 </div>
                 <div class="info-item">
@@ -297,7 +298,7 @@
                 </div>
                 <div class="info-item">
                   <label>Giới tính:</label>
-                  <span>{{ selectedCustomer.gender }}</span>
+                  <span>{{ genderMap[selectedCustomer.gender] || selectedCustomer.gender || 'Chưa có' }}</span>
                 </div>
               </div>
             </el-col>
@@ -460,10 +461,12 @@ const form = reactive({
   email: "",
   address: "",
   date_of_birth: "",
-  gender: "Nam",
+  gender: null,
   customer_group_id: null,
   city_id: null,
 });
+
+const genderMap = { male: 'Nam', female: 'Nữ', other: 'Khác' };
 
 const formatCurrency = (value) =>
   value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
@@ -607,7 +610,7 @@ const openDrawer = (customer = null) => {
       email: "",
       address: "",
       date_of_birth: "",
-      gender: "Nam",
+      gender: null,
       customer_group_id: null,
       city_id: null,
     });

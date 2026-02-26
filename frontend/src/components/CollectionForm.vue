@@ -10,7 +10,7 @@
         <el-input v-model="form.name" placeholder="Nhập tên danh mục"></el-input>
       </el-form-item>
       <el-form-item label="Mã danh mục" prop="code">
-        <el-input v-model="form.code" placeholder="Nhập mã danh mục (e.g., DM001)"></el-input>
+        <el-input v-model="form.code" placeholder="VD: FOOD, DRINK, SNACK"></el-input>
       </el-form-item>
     </el-form>
     <template #footer>

@@ -1,6 +1,9 @@
 <template>
   <div class="orders-empty">
     <img v-if="icon" :src="icon" alt="empty" class="orders-empty-img" />
+    <div v-else class="orders-empty-placeholder">
+      <i class="fa-regular fa-folder-open"></i>
+    </div>
     <div class="orders-empty-title">{{ title }}</div>
     <div class="orders-empty-desc">{{ description }}</div>
     <div v-if="$slots.actions" class="orders-empty-actions">
@@ -19,7 +22,6 @@ defineProps({
 </script>
 
 <style scoped>
-/* ...copy style từ NotData.vue cho .orders-empty... */
 .orders-empty {
   position: absolute;
   left: 0;
@@ -29,28 +31,51 @@ defineProps({
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .orders-empty-img {
-  width: 72px;
-  margin-bottom: 16px;
-  opacity: 0.95;
+  width: 80px;
+  margin-bottom: 20px;
+  opacity: 0.8;
+  filter: saturate(0.8);
+}
+.orders-empty-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #94a3b8;
 }
 .orders-empty-title {
-  font-size: 1.25rem;
-  font-weight: 500;
-  margin-bottom: 4px;
-  color: #222;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1e293b;
   text-align: center;
 }
 .orders-empty-desc {
-  color: #888;
-  margin-bottom: 18px;
+  color: #94a3b8;
+  margin-bottom: 20px;
   text-align: center;
+  font-size: 0.9rem;
+  max-width: 360px;
+  line-height: 1.5;
 }
 .orders-empty-actions {
   display: flex;
   justify-content: center;
   width: 100%;
-  gap: 16px;
+  gap: 12px;
 }
 </style>

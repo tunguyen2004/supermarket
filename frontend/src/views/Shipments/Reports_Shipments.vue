@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted, onActivated } from "vue";
 import { Chart, registerables } from "chart.js";
 import { ArrowDown } from "@element-plus/icons-vue";
 import shipmentService from "@/services/shipmentService";
@@ -363,6 +363,11 @@ const handleBranchChange = (command) => {
 onMounted(async () => {
   await fetchStores();
   initCharts();
+  await fetchDashboardData();
+});
+
+// Re-fetch data when component is re-activated (keep-alive) or navigated back
+onActivated(async () => {
   await fetchDashboardData();
 });
 

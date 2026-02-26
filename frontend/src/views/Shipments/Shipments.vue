@@ -59,7 +59,15 @@
           label="Khách hàng"
           min-width="180"
         />
-        <el-table-column prop="carrier" label="Đối tác GH" width="140" />
+        <el-table-column label="Đối tác GH" width="160">
+          <template #default="scope">
+            <span v-if="scope.row.carrier && scope.row.carrier !== 'N/A'" class="carrier-cell">
+              <i class="fa-solid fa-truck" style="color: #3b82f6; margin-right: 4px;"></i>
+              {{ scope.row.carrier }}
+            </span>
+            <span v-else style="color: #94a3b8; font-style: italic;">Chưa gán</span>
+          </template>
+        </el-table-column>
         <el-table-column label="Phí vận chuyển" width="150" align="right">
           <template #default="scope">
             <span class="shipping-fee">{{

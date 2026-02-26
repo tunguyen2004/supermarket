@@ -97,16 +97,17 @@ class CustomerService {
     }
   }
 
-  // Lấy danh sách thành phố
-  //   async getCities() {
-  //     try {
-  //       const response = await axios.get("/api/cities");
-  //       return response.data;
-  //     } catch (error) {
-  //       console.error("Error fetching cities:", error);
-  //       throw error;
-  //     }
-  //   }
+  // Lấy danh sách tỉnh/thành phố
+  async getCities(regionId = null) {
+    try {
+      const params = regionId ? { region_id: regionId } : {};
+      const response = await axios.get("/api/customers/cities", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+      throw error;
+    }
+  }
 }
 
 export default new CustomerService();

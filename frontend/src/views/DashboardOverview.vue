@@ -535,34 +535,47 @@ export default {
 .dashboard-overview {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
-  background: #f0f2f5;
+  padding: 24px;
+  background: var(--app-bg, #f4f6fa);
   min-height: 100vh;
-  animation: fadeIn 0.5s ease-out;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.dashboard-overview > * {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.dashboard-overview > *:nth-child(1) { animation-delay: 0ms; }
+.dashboard-overview > *:nth-child(2) { animation-delay: 60ms; }
+.dashboard-overview > *:nth-child(3) { animation-delay: 120ms; }
+.dashboard-overview > *:nth-child(4) { animation-delay: 180ms; }
+.dashboard-overview > *:nth-child(5) { animation-delay: 240ms; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .welcome-banner {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
   color: #fff;
   border-radius: 16px;
-  padding: 24px 32px;
+  padding: 28px 32px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.2);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.2);
   position: relative;
   overflow: hidden;
+}
+
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
 }
 
 .welcome-banner img {
@@ -601,18 +614,19 @@ export default {
 
 .stat-card {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 20px;
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+  border-color: transparent;
 }
 
 .stat-icon {
@@ -693,11 +707,17 @@ export default {
 
 .chart-container {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: box-shadow 0.3s;
+}
+
+.chart-container:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .main-chart {
@@ -729,12 +749,18 @@ export default {
 
 .data-card {
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: box-shadow 0.3s;
+}
+
+.data-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
@@ -789,9 +815,14 @@ export default {
 
 .data-table td {
   padding: 12px 20px;
-  border-bottom: 1px solid #f0f4f8;
-  color: #455a64;
-  font-size: 0.95rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.data-table tr:hover td {
+  background: #f8fafc;
 }
 
 .data-table tr:last-child td {
@@ -885,8 +916,13 @@ export default {
 .list-item {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f4f8;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.list-item:hover {
+  background: #f8fafc;
 }
 
 .list-item:last-child {

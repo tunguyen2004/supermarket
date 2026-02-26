@@ -313,4 +313,141 @@ router.get('/staff',
   reportService.getStaffList
 );
 
+// ============ SUBMITTED REPORTS (NỘP BÁO CÁO) ============
+
+/**
+ * @swagger
+ * /api/reports/submit:
+ *   post:
+ *     summary: Staff nộp báo cáo cuối ngày
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, period_from, period_to]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               period_from:
+ *                 type: string
+ *                 format: date
+ *               period_to:
+ *                 type: string
+ *                 format: date
+ *               notes:
+ *                 type: string
+ *               revenue_summary:
+ *                 type: object
+ *               actual_summary:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Nộp báo cáo thành công
+ *       400:
+ *         description: Thiếu thông tin
+ */
+router.post('/submit',
+  verifyToken,
+  reportService.submitReport
+);
+
+/**
+ * @swagger
+ * /api/reports/submitted:
+ *   get:
+ *     summary: Danh sách báo cáo đã nộp (admin)
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [submitted, approved, rejected]
+ *     responses:
+ *       200:
+ *         description: Danh sách báo cáo
+ */
+router.get('/submitted',
+  verifyToken,
+  reportService.getSubmittedReports
+);
+
+/**
+ * @swagger
+ * /api/reports/submitted/{id}:
+ *   get:
+ *     summary: Chi tiết báo cáo đã nộp
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Chi tiết báo cáo
+ *       404:
+ *         description: Không tìm thấy
+ */
+router.get('/submitted/:id',
+  verifyToken,
+  reportService.getSubmittedReportById
+);
+
+/**
+ * @swagger
+ * /api/reports/submitted/{id}/status:
+ *   patch:
+ *     summary: Admin duyệt / từ chối báo cáo
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [approved, rejected]
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ */
+router.patch('/submitted/:id/status',
+  verifyToken,
+  reportService.updateReportStatus
+);
+
 module.exports = router;

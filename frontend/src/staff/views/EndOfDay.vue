@@ -100,7 +100,7 @@
           </div>
         </div>
 
-        <div class="ml-auto">
+        <div class="ml-auto flex items-center gap-2">
           <button
             class="h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 transition text-white font-semibold flex items-center gap-2"
             @click="printReport"
@@ -108,6 +108,14 @@
           >
             <i class="fa-solid fa-print"></i>
             {{ printing ? "Đang tải..." : "In báo cáo" }}
+          </button>
+          <button
+            class="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition text-white font-semibold flex items-center gap-2"
+            @click="showSubmitDialog = true"
+            :disabled="submitting || loading"
+          >
+            <i class="fa-solid fa-paper-plane"></i>
+            {{ submitting ? "Đang nộp..." : "Nộp báo cáo" }}
           </button>
         </div>
       </div>
@@ -613,6 +621,99 @@
       </template>
     </div>
 
+    <!-- Submit Report Dialog -->
+    <div v-if="showSubmitDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showSubmitDialog = false">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-slate-800">Nộp báo cáo cuối ngày</h3>
+          <button class="text-slate-400 hover:text-slate-600" @click="showSubmitDialog = false">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <!-- Report info summary -->
+          <div class="bg-blue-50 rounded-xl p-4 space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-blue-600 font-medium">Kỳ báo cáo</span>
+              <span class="font-semibold">{{ dateRange.from }} → {{ dateRange.to }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-blue-600 font-medium">Nhân viên</span>
+              <span class="font-semibold">{{ selectedStaffName }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-blue-600 font-medium">Doanh thu thuần</span>
+              <span class="font-semibold text-emerald-600">{{ formatCurrency(revenueSummary.net_revenue) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-blue-600 font-medium">Tổng đơn</span>
+              <span class="font-semibold">{{ revenueSummary.total_orders }}</span>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Tiêu đề báo cáo</label>
+            <input
+              v-model="submitForm.title"
+              type="text"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              :placeholder="defaultReportTitle"
+            />
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Ghi chú (tuỳ chọn)</label>
+            <textarea
+              v-model="submitForm.notes"
+              rows="3"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
+              placeholder="Ghi chú thêm..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+          <button
+            class="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+            @click="showSubmitDialog = false"
+          >Hủy</button>
+          <button
+            class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition flex items-center gap-2"
+            :disabled="submitting"
+            @click="handleSubmitReport"
+          >
+            <i class="fa-solid fa-paper-plane" v-if="!submitting"></i>
+            <i class="fa-solid fa-spinner fa-spin" v-else></i>
+            {{ submitting ? "Đang nộp..." : "Xác nhận nộp" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success dialog with report code -->
+    <div v-if="showSuccessDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showSuccessDialog = false">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-center">
+        <div class="p-8 space-y-4">
+          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+            <i class="fa-solid fa-check text-3xl text-emerald-600"></i>
+          </div>
+          <h3 class="text-xl font-bold text-slate-800">Nộp báo cáo thành công!</h3>
+          <div class="bg-slate-50 rounded-xl p-4">
+            <div class="text-sm text-slate-500 mb-1">Mã báo cáo</div>
+            <div class="text-2xl font-bold text-blue-600 tracking-wide">{{ submittedCode }}</div>
+          </div>
+          <p class="text-sm text-slate-500">Admin có thể xem báo cáo này trong mục Danh sách báo cáo</p>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200">
+          <button
+            class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+            @click="showSuccessDialog = false"
+          >Đóng</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Print iframe (hidden) -->
     <iframe ref="printFrame" class="hidden"></iframe>
   </div>
@@ -627,6 +728,7 @@ import {
   getSoldProducts as fetchSoldProductsApi,
   getDailyPrintReport,
   getStaffList,
+  submitReport,
 } from "@/services/reportService";
 
 // ========== State ==========
@@ -691,6 +793,19 @@ const sortBy = ref("quantity");
 const sortOrder = ref("DESC");
 
 const printFrame = ref(null);
+
+// Submit report
+const submitting = ref(false);
+const showSubmitDialog = ref(false);
+const showSuccessDialog = ref(false);
+const submittedCode = ref("");
+const submitForm = ref({ title: "", notes: "" });
+
+const defaultReportTitle = computed(() => {
+  const { from, to } = dateRange.value;
+  const tabLabel = tabs.find(t => t.key === activeTab.value)?.label || 'Tùy chọn';
+  return `Báo cáo cuối ngày - ${tabLabel} (${from} → ${to})`;
+});
 
 // ========== Computed ==========
 const dateRange = computed(() => {
@@ -860,6 +975,47 @@ async function printReport() {
     alert("Lỗi khi tạo báo cáo in: " + e.message);
   } finally {
     printing.value = false;
+  }
+}
+
+async function handleSubmitReport() {
+  submitting.value = true;
+  try {
+    const { from, to } = dateRange.value;
+    const payload = {
+      title: submitForm.value.title || defaultReportTitle.value,
+      period_from: from,
+      period_to: to,
+      staff_filter_id: selectedStaffId.value || null,
+      notes: submitForm.value.notes || null,
+      revenue_summary: { ...revenueSummary.value },
+      actual_summary: { ...actualSummary.value },
+      by_payment_method: [...revenueByPayment.value],
+      by_staff: [...revenueByStaff.value],
+      products_summary: { ...productsSummary.value },
+      top_products: products.value.slice(0, 10).map(p => ({
+        product_name: p.product_name,
+        sku: p.sku,
+        quantity_sold: p.quantity_sold,
+        net_revenue: p.net_revenue,
+      })),
+      returns_data: { ...returns.value },
+    };
+
+    const { data: res } = await submitReport(payload);
+    if (res.success) {
+      submittedCode.value = res.data.report_code;
+      showSubmitDialog.value = false;
+      showSuccessDialog.value = true;
+      submitForm.value = { title: "", notes: "" };
+    } else {
+      alert(res.message || "Lỗi khi nộp báo cáo");
+    }
+  } catch (e) {
+    console.error("Submit report error:", e);
+    alert("Lỗi khi nộp báo cáo: " + (e.response?.data?.message || e.message));
+  } finally {
+    submitting.value = false;
   }
 }
 

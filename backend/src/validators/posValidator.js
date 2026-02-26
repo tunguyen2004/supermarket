@@ -31,14 +31,22 @@ const checkoutSchema = Joi.object({
     }),
   subtotal: Joi.number().min(0).optional(),
   discount_amount: Joi.number().min(0).default(0),
+  member_discount_amount: Joi.number().min(0).default(0),
   discount_code: Joi.string().max(50).allow("", null).optional(),
   discount_id: Joi.number().integer().positive().allow(null).optional(),
   payment_method: Joi.string()
-    .valid("cash", "card", "bank", "bank_qr", "momo", "zalopay", "vnpay")
+    .valid("cash", "card", "bank", "bank_qr", "delivery", "momo", "zalopay", "vnpay")
     .default("cash"),
   amount_received: Joi.number().min(0).optional(),
   change: Joi.number().min(0).default(0),
   notes: Joi.string().max(500).allow("", null).optional(),
+  shipping_fee: Joi.number().min(0).default(0),
+  shipping_address: Joi.string().max(500).allow("", null).optional(),
+  delivery_note: Joi.string().max(500).allow("", null).optional(),
+  receiver_name: Joi.string().max(200).allow("", null).optional(),
+  receiver_phone: Joi.string().max(20).allow("", null).optional(),
+  carrier_id: Joi.number().integer().positive().allow(null).optional(),
+  cod_enabled: Joi.boolean().default(false),
 });
 
 // Draft order schema
