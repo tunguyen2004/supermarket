@@ -5,7 +5,7 @@
  * API Server chính sử dụng Express.js
  * Cổng mặc định: 5000
  * Database: PostgreSQL
- * 
+ *
  * Modules:
  * - Module 1: Authentication (Đăng nhập, Đăng xuất)
  * - Module 2: Staff Management (Quản lý Nhân viên)
@@ -19,23 +19,23 @@
  * ============================================================================
  */
 
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const helmet = require('helmet');
-const compression = require('compression');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const helmet = require("helmet");
+const compression = require("compression");
+require("dotenv").config();
 
 // ============ IMPORTS ============
-const db = require('./config/database');
-const router = require('./routes');
-const { setupSwagger } = require('./config/swagger');
-const { apiLimiter } = require('./middleware/rateLimiter');
+const db = require("./config/database");
+const router = require("./routes");
+const { setupSwagger } = require("./config/swagger");
+const { apiLimiter } = require("./middleware/rateLimiter");
 
 // ============ INITIALIZE EXPRESS APP ============
 const app = express();
 const PORT = process.env.PORT || 5000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV = process.env.NODE_ENV || "development";
 
 // ============ SECURITY MIDDLEWARE ============
 
@@ -43,9 +43,11 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
  * Helmet - Security Headers
  * Thiết lập các HTTP headers bảo mật
  */
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }, // Cho phép load ảnh từ uploads
-}));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Cho phép load ảnh từ uploads
+  }),
+);
 
 /**
  * Compression Middleware
@@ -59,25 +61,33 @@ app.use(compression());
  * CORS Middleware
  * Cho phép client từ các nguồn khác nhau gọi API
  */
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['http://localhost:8080', 'http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",")
+      : [
+          "http://localhost:8080",
+          "http://localhost:3000",
+          "https://mini-supermarket-fe.vercel.app",
+        ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 /**
  * Body Parser Middleware
  * Phân tích request body dạng JSON
  */
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 /**
  * Static Files Middleware
  * Phục vụ các file tĩnh từ thư mục uploads
  */
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 /**
  * Request Logger Middleware
@@ -93,7 +103,7 @@ app.use((req, res, next) => {
  * Rate Limiter Middleware
  * Giới hạn số lượng requests per IP
  */
-app.use('/api/', apiLimiter);
+app.use("/api/", apiLimiter);
 
 // ============ SWAGGER DOCUMENTATION ============
 
@@ -108,26 +118,26 @@ setupSwagger(app);
  * @GET /
  * Endpoint gốc - Thông tin server
  */
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
-    message: '🎉 Supermarket Management System API',
-    version: '1.0.0',
-    status: 'running',
+    message: "🎉 Supermarket Management System API",
+    version: "1.0.0",
+    status: "running",
     environment: NODE_ENV,
-    documentation: '/api/docs',
+    documentation: "/api/docs",
     baseURL: `http://localhost:${PORT}/api`,
     modules: {
-      'Module 1': 'Authentication (/api/auth)',
-      'Module 2': 'Staff Management (/api/staff)',
-      'Module 3': 'Profile Management (/api/users)',
-      'Module 4': 'Product Management (/api/products)',
-      'Module 5': 'Collection Management (/api/collections)',
-      'Module 6': 'Dashboard & Reports (/api/dashboard)',
-      'Module 7': 'Catalog - Price List (/api/catalogs)',
-      'Module 8': 'Inventory Management (/api/inventories)',
-      'Module 9': 'Order Management (/api/orders)',
+      "Module 1": "Authentication (/api/auth)",
+      "Module 2": "Staff Management (/api/staff)",
+      "Module 3": "Profile Management (/api/users)",
+      "Module 4": "Product Management (/api/products)",
+      "Module 5": "Collection Management (/api/collections)",
+      "Module 6": "Dashboard & Reports (/api/dashboard)",
+      "Module 7": "Catalog - Price List (/api/catalogs)",
+      "Module 8": "Inventory Management (/api/inventories)",
+      "Module 9": "Order Management (/api/orders)",
     },
-    contact: 'admin@supermarket.com',
+    contact: "admin@supermarket.com",
   });
 });
 
@@ -135,10 +145,10 @@ app.get('/', (req, res) => {
  * @GET /api/health
  * Health check endpoint - Kiểm tra server có đang chạy không
  */
-app.get('/api/health', (req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({
-    status: 'OK',
-    message: 'Server is running ✅',
+    status: "OK",
+    message: "Server is running ✅",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: NODE_ENV,
@@ -149,14 +159,14 @@ app.get('/api/health', (req, res) => {
  * @GET /api/status
  * Trạng thái server chi tiết
  */
-app.get('/api/status', async (req, res) => {
+app.get("/api/status", async (req, res) => {
   try {
     // Kiểm tra kết nối database
-    const dbTest = await db.query('SELECT NOW()');
-    
+    const dbTest = await db.query("SELECT NOW()");
+
     res.json({
-      status: 'OK',
-      message: 'System is healthy',
+      status: "OK",
+      message: "System is healthy",
       timestamp: new Date().toISOString(),
       server: {
         uptime: process.uptime(),
@@ -169,10 +179,10 @@ app.get('/api/status', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Database health check failed:', error);
+    console.error("Database health check failed:", error);
     res.status(503).json({
-      status: 'ERROR',
-      message: 'Database connection failed',
+      status: "ERROR",
+      message: "Database connection failed",
       database: {
         connected: false,
         error: error.message,
@@ -186,7 +196,7 @@ app.get('/api/status', async (req, res) => {
 /**
  * Sử dụng router chính từ routes/index.js
  * Chứa tất cả các routes cho 5 modules
- * 
+ *
  * Route structure:
  * /api/auth/* - Authentication routes
  * /api/staff/* - Staff management routes
@@ -196,7 +206,7 @@ app.get('/api/status', async (req, res) => {
  * /api/brands/* - Brand routes
  * /api/units/* - Unit routes
  */
-app.use('/api', router);
+app.use("/api", router);
 
 // ============ UTILITY ENDPOINTS ============
 
@@ -204,58 +214,162 @@ app.use('/api', router);
  * @GET /api/endpoints
  * Liệt kê tất cả các endpoints có sẵn
  */
-app.get('/api/endpoints', (req, res) => {
+app.get("/api/endpoints", (req, res) => {
   const endpoints = {
-    'Authentication': [
-      { method: 'POST', path: '/api/auth/login', description: 'Đăng nhập' },
-      { method: 'GET', path: '/api/auth/me', description: 'Lấy thông tin user' },
-      { method: 'POST', path: '/api/auth/logout', description: 'Đăng xuất' },
-      { method: 'POST', path: '/api/auth/refresh', description: 'Refresh token' },
+    Authentication: [
+      { method: "POST", path: "/api/auth/login", description: "Đăng nhập" },
+      {
+        method: "GET",
+        path: "/api/auth/me",
+        description: "Lấy thông tin user",
+      },
+      { method: "POST", path: "/api/auth/logout", description: "Đăng xuất" },
+      {
+        method: "POST",
+        path: "/api/auth/refresh",
+        description: "Refresh token",
+      },
     ],
-    'Staff Management': [
-      { method: 'GET', path: '/api/staff', description: 'Danh sách nhân viên' },
-      { method: 'POST', path: '/api/staff', description: 'Thêm nhân viên' },
-      { method: 'GET', path: '/api/staff/:id', description: 'Chi tiết nhân viên' },
-      { method: 'PUT', path: '/api/staff/:id', description: 'Cập nhật nhân viên' },
-      { method: 'DELETE', path: '/api/staff/:id', description: 'Xóa nhân viên' },
-      { method: 'PUT', path: '/api/staff/:id/role', description: 'Phân quyền nhân viên' },
+    "Staff Management": [
+      { method: "GET", path: "/api/staff", description: "Danh sách nhân viên" },
+      { method: "POST", path: "/api/staff", description: "Thêm nhân viên" },
+      {
+        method: "GET",
+        path: "/api/staff/:id",
+        description: "Chi tiết nhân viên",
+      },
+      {
+        method: "PUT",
+        path: "/api/staff/:id",
+        description: "Cập nhật nhân viên",
+      },
+      {
+        method: "DELETE",
+        path: "/api/staff/:id",
+        description: "Xóa nhân viên",
+      },
+      {
+        method: "PUT",
+        path: "/api/staff/:id/role",
+        description: "Phân quyền nhân viên",
+      },
     ],
-    'Profile Management': [
-      { method: 'GET', path: '/api/users/profile', description: 'Xem profile' },
-      { method: 'PUT', path: '/api/users/profile', description: 'Cập nhật profile' },
-      { method: 'PUT', path: '/api/users/change-password', description: 'Đổi mật khẩu' },
-      { method: 'POST', path: '/api/users/avatar', description: 'Upload avatar' },
+    "Profile Management": [
+      { method: "GET", path: "/api/users/profile", description: "Xem profile" },
+      {
+        method: "PUT",
+        path: "/api/users/profile",
+        description: "Cập nhật profile",
+      },
+      {
+        method: "PUT",
+        path: "/api/users/change-password",
+        description: "Đổi mật khẩu",
+      },
+      {
+        method: "POST",
+        path: "/api/users/avatar",
+        description: "Upload avatar",
+      },
     ],
-    'Product Management': [
-      { method: 'GET', path: '/api/products', description: 'Danh sách sản phẩm' },
-      { method: 'POST', path: '/api/products', description: 'Thêm sản phẩm' },
-      { method: 'GET', path: '/api/products/:id', description: 'Chi tiết sản phẩm' },
-      { method: 'PUT', path: '/api/products/:id', description: 'Cập nhật sản phẩm' },
-      { method: 'DELETE', path: '/api/products/:id', description: 'Xóa sản phẩm' },
-      { method: 'PATCH', path: '/api/products/bulk-status', description: 'Cập nhật trạng thái hàng loạt' },
-      { method: 'GET', path: '/api/products/export', description: 'Export CSV' },
-      { method: 'POST', path: '/api/products/import', description: 'Import CSV' },
-      { method: 'GET', path: '/api/brands', description: 'Danh sách thương hiệu' },
-      { method: 'GET', path: '/api/units', description: 'Danh sách đơn vị tính' },
+    "Product Management": [
+      {
+        method: "GET",
+        path: "/api/products",
+        description: "Danh sách sản phẩm",
+      },
+      { method: "POST", path: "/api/products", description: "Thêm sản phẩm" },
+      {
+        method: "GET",
+        path: "/api/products/:id",
+        description: "Chi tiết sản phẩm",
+      },
+      {
+        method: "PUT",
+        path: "/api/products/:id",
+        description: "Cập nhật sản phẩm",
+      },
+      {
+        method: "DELETE",
+        path: "/api/products/:id",
+        description: "Xóa sản phẩm",
+      },
+      {
+        method: "PATCH",
+        path: "/api/products/bulk-status",
+        description: "Cập nhật trạng thái hàng loạt",
+      },
+      {
+        method: "GET",
+        path: "/api/products/export",
+        description: "Export CSV",
+      },
+      {
+        method: "POST",
+        path: "/api/products/import",
+        description: "Import CSV",
+      },
+      {
+        method: "GET",
+        path: "/api/brands",
+        description: "Danh sách thương hiệu",
+      },
+      {
+        method: "GET",
+        path: "/api/units",
+        description: "Danh sách đơn vị tính",
+      },
     ],
-    'Collection Management': [
-      { method: 'GET', path: '/api/collections', description: 'Danh sách danh mục' },
-      { method: 'POST', path: '/api/collections', description: 'Thêm danh mục' },
-      { method: 'GET', path: '/api/collections/tree', description: 'Cây danh mục' },
-      { method: 'GET', path: '/api/collections/:id', description: 'Chi tiết danh mục' },
-      { method: 'PUT', path: '/api/collections/:id', description: 'Cập nhật danh mục' },
-      { method: 'DELETE', path: '/api/collections/:id', description: 'Xóa danh mục' },
+    "Collection Management": [
+      {
+        method: "GET",
+        path: "/api/collections",
+        description: "Danh sách danh mục",
+      },
+      {
+        method: "POST",
+        path: "/api/collections",
+        description: "Thêm danh mục",
+      },
+      {
+        method: "GET",
+        path: "/api/collections/tree",
+        description: "Cây danh mục",
+      },
+      {
+        method: "GET",
+        path: "/api/collections/:id",
+        description: "Chi tiết danh mục",
+      },
+      {
+        method: "PUT",
+        path: "/api/collections/:id",
+        description: "Cập nhật danh mục",
+      },
+      {
+        method: "DELETE",
+        path: "/api/collections/:id",
+        description: "Xóa danh mục",
+      },
     ],
-    'System': [
-      { method: 'GET', path: '/', description: 'Root endpoint' },
-      { method: 'GET', path: '/api/health', description: 'Health check' },
-      { method: 'GET', path: '/api/status', description: 'Trạng thái hệ thống' },
-      { method: 'GET', path: '/api/endpoints', description: 'Liệt kê endpoints' },
+    System: [
+      { method: "GET", path: "/", description: "Root endpoint" },
+      { method: "GET", path: "/api/health", description: "Health check" },
+      {
+        method: "GET",
+        path: "/api/status",
+        description: "Trạng thái hệ thống",
+      },
+      {
+        method: "GET",
+        path: "/api/endpoints",
+        description: "Liệt kê endpoints",
+      },
     ],
   };
 
   res.json({
-    status: 'OK',
+    status: "OK",
     count: Object.values(endpoints).reduce((sum, arr) => sum + arr.length, 0),
     endpoints,
   });
@@ -269,10 +383,10 @@ app.get('/api/endpoints', (req, res) => {
  */
 app.use((req, res) => {
   res.status(404).json({
-    status: 'ERROR',
-    code: 'ROUTE_NOT_FOUND',
+    status: "ERROR",
+    code: "ROUTE_NOT_FOUND",
     message: `Route not found: ${req.method} ${req.path}`,
-    suggestion: 'Check API documentation or use GET /api/endpoints',
+    suggestion: "Check API documentation or use GET /api/endpoints",
     timestamp: new Date().toISOString(),
   });
 });
@@ -282,13 +396,13 @@ app.use((req, res) => {
  * Xử lý tất cả lỗi từ middleware và routes
  */
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error("Error:", err);
 
   // Lỗi validation
   if (err.statusCode === 400) {
     return res.status(400).json({
-      status: 'ERROR',
-      code: 'VALIDATION_ERROR',
+      status: "ERROR",
+      code: "VALIDATION_ERROR",
       message: err.message,
       timestamp: new Date().toISOString(),
     });
@@ -297,28 +411,28 @@ app.use((err, req, res, next) => {
   // Lỗi authentication
   if (err.statusCode === 401) {
     return res.status(401).json({
-      status: 'ERROR',
-      code: 'UNAUTHORIZED',
-      message: 'Unauthorized access',
+      status: "ERROR",
+      code: "UNAUTHORIZED",
+      message: "Unauthorized access",
       timestamp: new Date().toISOString(),
     });
   }
 
   // Lỗi database
-  if (err.code === 'ECONNREFUSED') {
+  if (err.code === "ECONNREFUSED") {
     return res.status(503).json({
-      status: 'ERROR',
-      code: 'DATABASE_CONNECTION_ERROR',
-      message: 'Database connection failed',
+      status: "ERROR",
+      code: "DATABASE_CONNECTION_ERROR",
+      message: "Database connection failed",
       timestamp: new Date().toISOString(),
     });
   }
 
   // Lỗi chung
   res.status(err.statusCode || 500).json({
-    status: 'ERROR',
-    code: err.code || 'INTERNAL_SERVER_ERROR',
-    message: err.message || 'Internal server error',
+    status: "ERROR",
+    code: err.code || "INTERNAL_SERVER_ERROR",
+    message: err.message || "Internal server error",
     timestamp: new Date().toISOString(),
   });
 });
@@ -331,11 +445,13 @@ app.use((err, req, res, next) => {
 const initializeServer = async () => {
   try {
     // Test database connection
-    await db.query('SELECT NOW()');
-    console.log('✅ Database connected successfully');
+    await db.query("SELECT NOW()");
+    console.log("✅ Database connected successfully");
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    console.error('Server will continue running but database operations will fail');
+    console.error("❌ Database connection failed:", error.message);
+    console.error(
+      "Server will continue running but database operations will fail",
+    );
   }
 };
 
@@ -375,32 +491,32 @@ const server = app.listen(PORT, async () => {
 /**
  * Xử lý shutdown server một cách an toàn
  */
-process.on('SIGTERM', () => {
-  console.log('\n📛 SIGTERM received. Gracefully shutting down...');
-  
+process.on("SIGTERM", () => {
+  console.log("\n📛 SIGTERM received. Gracefully shutting down...");
+
   server.close(() => {
-    console.log('✅ Server closed');
+    console.log("✅ Server closed");
     process.exit(0);
   });
 
   // Force shutdown sau 30 giây
   setTimeout(() => {
-    console.error('❌ Forced shutdown after timeout');
+    console.error("❌ Forced shutdown after timeout");
     process.exit(1);
   }, 30000);
 });
 
-process.on('SIGINT', () => {
-  console.log('\n📛 SIGINT received. Gracefully shutting down...');
-  
+process.on("SIGINT", () => {
+  console.log("\n📛 SIGINT received. Gracefully shutting down...");
+
   server.close(() => {
-    console.log('✅ Server closed');
+    console.log("✅ Server closed");
     process.exit(0);
   });
 
   // Force shutdown sau 30 giây
   setTimeout(() => {
-    console.error('❌ Forced shutdown after timeout');
+    console.error("❌ Forced shutdown after timeout");
     process.exit(1);
   }, 30000);
 });
