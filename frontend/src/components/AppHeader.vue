@@ -1,31 +1,233 @@
 <!-- src/components/Header.vue (updated) -->
 <template>
   <header class="header">
-    <!-- Search -->
-    <div class="search-container">
+    <!-- Global Search -->
+    <div class="search-container" ref="searchContainerRef">
       <span class="search-icon">
         <i class="fa fa-search"></i>
       </span>
       <input
+        ref="searchInputRef"
         v-model="searchQuery"
-        @focus="showSuggestions = true"
+        @focus="onSearchFocus"
         @blur="onInputBlur"
+        @keydown="onSearchKeydown"
         class="search-input"
         placeholder="Tìm kiếm sản phẩm, đơn hàng, khách hàng..."
         type="text"
       />
+      <span
+        v-if="searchQuery"
+        class="search-clear"
+        @mousedown.prevent="clearSearch"
+      >
+        <i class="fa fa-times"></i>
+      </span>
 
-      <div v-if="showSuggestions" class="suggestions-box" @mousedown.prevent>
-        <div class="suggestion-header">Gợi ý tìm kiếm</div>
+      <div v-if="showDropdown" class="search-dropdown" @mousedown.prevent>
+        <!-- Loading -->
+        <div v-if="isSearching" class="search-loading">
+          <i class="fa fa-spinner fa-spin"></i>
+          <span>Đang tìm kiếm...</span>
+        </div>
 
+        <!-- Kết quả tìm kiếm -->
+        <template v-else-if="searchQuery.trim().length > 0 && hasResults">
+          <!-- Sản phẩm -->
+          <div v-if="searchResults.products.length" class="result-section">
+            <div class="result-section-header">
+              <i class="fa fa-box"></i>
+              <span>Sản phẩm</span>
+              <span class="result-count">{{
+                searchResults.products.length
+              }}</span>
+            </div>
+            <div
+              v-for="(item, idx) in searchResults.products"
+              :key="'p-' + item.id"
+              class="result-item"
+              :class="{
+                active: highlightIndex === getGlobalIndex('products', idx),
+              }"
+              @click="goToProduct(item)"
+              @mouseenter="highlightIndex = getGlobalIndex('products', idx)"
+            >
+              <div class="result-thumb">
+                <img
+                  v-if="item.image_url"
+                  :src="getImageUrl(item.image_url)"
+                  alt=""
+                />
+                <i v-else class="fa fa-image"></i>
+              </div>
+              <div class="result-info">
+                <div
+                  class="result-name"
+                  v-html="highlightMatch(item.name)"
+                ></div>
+                <div class="result-meta">
+                  <span class="meta-code">{{ item.code }}</span>
+                  <span v-if="item.category_name" class="meta-cat">{{
+                    item.category_name
+                  }}</span>
+                </div>
+              </div>
+              <div class="result-price">{{ formatPrice(item.price) }}</div>
+            </div>
+          </div>
+
+          <!-- Đơn hàng -->
+          <div v-if="searchResults.orders.length" class="result-section">
+            <div class="result-section-header">
+              <i class="fa fa-receipt"></i>
+              <span>Đơn hàng</span>
+              <span class="result-count">{{
+                searchResults.orders.length
+              }}</span>
+            </div>
+            <div
+              v-for="(item, idx) in searchResults.orders"
+              :key="'o-' + item.id"
+              class="result-item"
+              :class="{
+                active: highlightIndex === getGlobalIndex('orders', idx),
+              }"
+              @click="goToOrder(item)"
+              @mouseenter="highlightIndex = getGlobalIndex('orders', idx)"
+            >
+              <div class="result-icon order-icon">
+                <i class="fa fa-file-invoice"></i>
+              </div>
+              <div class="result-info">
+                <div class="result-name">{{ item.order_code }}</div>
+                <div class="result-meta">
+                  <span :class="'status-badge status-' + item.status">{{
+                    getOrderStatusText(item.status)
+                  }}</span>
+                  <span v-if="item.customer_name" class="meta-customer">{{
+                    item.customer_name
+                  }}</span>
+                </div>
+              </div>
+              <div class="result-price">
+                {{ formatPrice(item.final_amount) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Khách hàng -->
+          <div v-if="searchResults.customers.length" class="result-section">
+            <div class="result-section-header">
+              <i class="fa fa-users"></i>
+              <span>Khách hàng</span>
+              <span class="result-count">{{
+                searchResults.customers.length
+              }}</span>
+            </div>
+            <div
+              v-for="(item, idx) in searchResults.customers"
+              :key="'c-' + item.id"
+              class="result-item"
+              :class="{
+                active: highlightIndex === getGlobalIndex('customers', idx),
+              }"
+              @click="goToCustomer(item)"
+              @mouseenter="highlightIndex = getGlobalIndex('customers', idx)"
+            >
+              <div class="result-icon customer-icon">
+                <i class="fa fa-user"></i>
+              </div>
+              <div class="result-info">
+                <div
+                  class="result-name"
+                  v-html="highlightMatch(item.full_name)"
+                ></div>
+                <div class="result-meta">
+                  <span v-if="item.phone" class="meta-phone"
+                    ><i class="fa fa-phone"></i> {{ item.phone }}</span
+                  >
+                  <span v-if="item.email" class="meta-email">{{
+                    item.email
+                  }}</span>
+                </div>
+              </div>
+              <div v-if="item.group_name" class="result-tag">
+                {{ item.group_name }}
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Không tìm thấy -->
         <div
-          v-for="(item, index) in filteredSuggestions"
-          :key="index"
-          class="suggestion-item"
-          @click="selectSuggestion(item)"
+          v-else-if="
+            searchQuery.trim().length > 0 && !hasResults && !isSearching
+          "
+          class="search-empty"
         >
-          <span class="suggestion-icon">{{ item.icon }}</span>
-          <span>{{ item.text }}</span>
+          <i class="fa fa-search"></i>
+          <div>
+            Không tìm thấy kết quả cho "<strong>{{ searchQuery }}</strong
+            >"
+          </div>
+          <div class="search-empty-hint">Thử tìm với từ khóa khác</div>
+        </div>
+
+        <!-- Tìm kiếm gần đây (khi chưa nhập gì) -->
+        <template v-else-if="recentSearches.length > 0">
+          <div class="result-section">
+            <div class="result-section-header">
+              <i class="fa fa-clock"></i>
+              <span>Tìm kiếm gần đây</span>
+              <span class="clear-recent" @click.stop="clearRecentSearches"
+                >Xóa</span
+              >
+            </div>
+            <div
+              v-for="(term, idx) in recentSearches"
+              :key="'recent-' + idx"
+              class="result-item recent-item"
+              @click="searchFromRecent(term)"
+            >
+              <div class="result-icon recent-icon">
+                <i class="fa fa-history"></i>
+              </div>
+              <div class="result-info">
+                <div class="result-name">{{ term }}</div>
+              </div>
+              <span class="remove-recent" @click.stop="removeRecentSearch(idx)">
+                <i class="fa fa-times"></i>
+              </span>
+            </div>
+          </div>
+        </template>
+
+        <!-- Gợi ý mặc định -->
+        <template v-else>
+          <div class="result-section">
+            <div class="result-section-header">
+              <i class="fa fa-lightbulb"></i>
+              <span>Gợi ý tìm kiếm</span>
+            </div>
+            <div class="suggestion-chips">
+              <span class="chip" @click="searchFromRecent('Sản phẩm bán chạy')"
+                >🔥 Sản phẩm bán chạy</span
+              >
+              <span class="chip" @click="searchFromRecent('Đơn hàng mới')"
+                >📦 Đơn hàng mới</span
+              >
+              <span class="chip" @click="searchFromRecent('Khách hàng VIP')"
+                >⭐ Khách hàng VIP</span
+              >
+            </div>
+          </div>
+        </template>
+
+        <!-- Footer shortcut -->
+        <div v-if="hasResults" class="search-footer">
+          <span><kbd>↑↓</kbd> Di chuyển</span>
+          <span><kbd>↵</kbd> Chọn</span>
+          <span><kbd>Esc</kbd> Đóng</span>
         </div>
       </div>
     </div>
@@ -190,52 +392,259 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+} from "vue";
+import { useRouter } from "vue-router";
 import { ElPopover, ElTabs, ElTabPane } from "element-plus";
 import { useAuth } from "@/composables/useAuth";
 import authService from "@/services/authService";
 import apiClient from "@/services/apiClient";
 import { getProfile } from "@/services/userService";
+import { globalSearch } from "@/services/searchService";
 
 export default {
   name: "AppHeader",
   setup() {
-    // Search + gợi ý
+    const router = useRouter();
+
+    // =================== GLOBAL SEARCH ===================
     const searchQuery = ref("");
-    const showSuggestions = ref(false);
-    const suggestions = ref([
-      { icon: "🔍", text: "Sản phẩm bán chạy", type: "product" },
-      { icon: "📦", text: "Đơn hàng gần đây", type: "order" },
-      { icon: "👤", text: "Khách hàng thân thiết", type: "customer" },
-      { icon: "💰", text: "Khuyến mãi đặc biệt", type: "promotion" },
-    ]);
-    const filteredSuggestions = computed(() => {
-      if (!searchQuery.value) return suggestions.value;
-      return suggestions.value.filter((item) =>
-        item.text.toLowerCase().includes(searchQuery.value.toLowerCase()),
-      );
-    });
-    const selectSuggestion = (item) => {
-      searchQuery.value = item.text;
-      showSuggestions.value = false;
-      console.log("Đã chọn:", item);
+    const showDropdown = ref(false);
+    const isSearching = ref(false);
+    const highlightIndex = ref(-1);
+    const searchInputRef = ref(null);
+    const searchContainerRef = ref(null);
+    const searchResults = ref({ products: [], orders: [], customers: [] });
+    const recentSearches = ref([]);
+
+    // Load recent searches from localStorage
+    const RECENT_KEY = "supermarket_recent_searches";
+    const loadRecentSearches = () => {
+      try {
+        const saved = localStorage.getItem(RECENT_KEY);
+        recentSearches.value = saved ? JSON.parse(saved) : [];
+      } catch {
+        recentSearches.value = [];
+      }
     };
-    const onInputBlur = () => {
-      setTimeout(() => {
-        showSuggestions.value = false;
-      }, 200);
+    loadRecentSearches();
+
+    const saveRecentSearch = (term) => {
+      if (!term || term.trim().length < 2) return;
+      const trimmed = term.trim();
+      recentSearches.value = [
+        trimmed,
+        ...recentSearches.value.filter((t) => t !== trimmed),
+      ].slice(0, 8);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recentSearches.value));
     };
 
-    // Trợ giúp / Thông báo popover
+    const clearRecentSearches = () => {
+      recentSearches.value = [];
+      localStorage.removeItem(RECENT_KEY);
+    };
+
+    const removeRecentSearch = (idx) => {
+      recentSearches.value.splice(idx, 1);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recentSearches.value));
+    };
+
+    const hasResults = computed(() => {
+      const r = searchResults.value;
+      return (
+        r.products.length > 0 || r.orders.length > 0 || r.customers.length > 0
+      );
+    });
+
+    const allResultItems = computed(() => {
+      const items = [];
+      searchResults.value.products.forEach((p) =>
+        items.push({ type: "product", data: p }),
+      );
+      searchResults.value.orders.forEach((o) =>
+        items.push({ type: "order", data: o }),
+      );
+      searchResults.value.customers.forEach((c) =>
+        items.push({ type: "customer", data: c }),
+      );
+      return items;
+    });
+
+    const getGlobalIndex = (section, idx) => {
+      let offset = 0;
+      if (section === "orders") offset = searchResults.value.products.length;
+      if (section === "customers")
+        offset =
+          searchResults.value.products.length +
+          searchResults.value.orders.length;
+      return offset + idx;
+    };
+
+    // Debounce
+    let debounceTimer = null;
+    const debounceSearch = (fn, delay = 300) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fn, delay);
+    };
+
+    watch(searchQuery, (val) => {
+      highlightIndex.value = -1;
+      if (!val || val.trim().length < 1) {
+        searchResults.value = { products: [], orders: [], customers: [] };
+        isSearching.value = false;
+        return;
+      }
+      isSearching.value = true;
+      debounceSearch(async () => {
+        try {
+          const res = await globalSearch(val.trim(), 5);
+          if (res.success) {
+            searchResults.value = res.data;
+          }
+        } catch (err) {
+          console.error("Search error:", err);
+          searchResults.value = { products: [], orders: [], customers: [] };
+        } finally {
+          isSearching.value = false;
+        }
+      }, 300);
+    });
+
+    const onSearchFocus = () => {
+      showDropdown.value = true;
+    };
+
+    const onInputBlur = () => {
+      setTimeout(() => {
+        showDropdown.value = false;
+      }, 250);
+    };
+
+    const clearSearch = () => {
+      searchQuery.value = "";
+      searchResults.value = { products: [], orders: [], customers: [] };
+      highlightIndex.value = -1;
+      nextTick(() => searchInputRef.value?.focus());
+    };
+
+    const onSearchKeydown = (e) => {
+      const total = allResultItems.value.length;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlightIndex.value = (highlightIndex.value + 1) % Math.max(total, 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlightIndex.value =
+          highlightIndex.value <= 0 ? total - 1 : highlightIndex.value - 1;
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (highlightIndex.value >= 0 && highlightIndex.value < total) {
+          const item = allResultItems.value[highlightIndex.value];
+          selectResult(item);
+        }
+      } else if (e.key === "Escape") {
+        showDropdown.value = false;
+        searchInputRef.value?.blur();
+      }
+    };
+
+    const selectResult = (item) => {
+      saveRecentSearch(searchQuery.value);
+      showDropdown.value = false;
+      if (item.type === "product") goToProduct(item.data);
+      else if (item.type === "order") goToOrder(item.data);
+      else if (item.type === "customer") goToCustomer(item.data);
+    };
+
+    const goToProduct = (item) => {
+      saveRecentSearch(searchQuery.value);
+      showDropdown.value = false;
+      router.push({ path: "/products", query: { search: item.code } });
+    };
+
+    const goToOrder = (item) => {
+      saveRecentSearch(searchQuery.value);
+      showDropdown.value = false;
+      router.push({ path: `/orders/edit/${item.id}` });
+    };
+
+    const goToCustomer = (item) => {
+      saveRecentSearch(searchQuery.value);
+      showDropdown.value = false;
+      router.push({
+        path: "/customer-list",
+        query: { search: item.phone || item.full_name },
+      });
+    };
+
+    const searchFromRecent = (term) => {
+      searchQuery.value = term;
+      showDropdown.value = true;
+      nextTick(() => searchInputRef.value?.focus());
+    };
+
+    // Helpers
+    const getImageUrl = (url) => {
+      if (!url) return "";
+      if (url.startsWith("http")) return url;
+      return `http://localhost:5000${url}`;
+    };
+
+    const formatPrice = (price) => {
+      if (!price && price !== 0) return "";
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(price);
+    };
+
+    const highlightMatch = (text) => {
+      if (!text || !searchQuery.value) return text;
+      const q = searchQuery.value.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (!q) return text;
+      return text.replace(new RegExp(`(${q})`, "gi"), "<mark>$1</mark>");
+    };
+
+    const orderStatusMap = {
+      pending: "Chờ xử lý",
+      confirmed: "Đã xác nhận",
+      shipping: "Đang giao",
+      completed: "Hoàn thành",
+      cancelled: "Đã hủy",
+      returned: "Đã trả",
+    };
+    const getOrderStatusText = (status) => orderStatusMap[status] || status;
+
+    // Keyboard shortcut: Ctrl+K to focus search
+    const handleGlobalKeydown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.value?.focus();
+        showDropdown.value = true;
+      }
+    };
+
+    onMounted(() => {
+      window.addEventListener("keydown", handleGlobalKeydown);
+    });
+    onBeforeUnmount(() => {
+      window.removeEventListener("keydown", handleGlobalKeydown);
+      clearTimeout(debounceTimer);
+    });
+
+    // =================== HELP / NOTIF / USER (unchanged) ===================
     const helpOpen = ref(false);
     const notifOpen = ref(false);
     const activeNotifTab = ref("system");
-
-    // Thông báo: để trống để hiển thị trạng thái rỗng như ảnh
     const notifications = ref([]);
     const unreadCount = computed(() => notifications.value.length);
 
-    // User dropdown
     const { user, logout } = useAuth();
     const dropdownOpen = ref(false);
     const avatarUrl = ref("");
@@ -257,20 +666,18 @@ export default {
       }
     });
 
-    const userDisplayName = computed(() => {
-      return (
-        user.value?.full_name || user.value?.username || "Admin Supermarket"
-      );
-    });
-
-    const userInitials = computed(() => {
-      return (userDisplayName.value || "")
+    const userDisplayName = computed(
+      () =>
+        user.value?.full_name || user.value?.username || "Admin Supermarket",
+    );
+    const userInitials = computed(() =>
+      (userDisplayName.value || "")
         .split(" ")
         .map((w) => w[0])
         .join("")
         .slice(0, 2)
-        .toUpperCase();
-    });
+        .toUpperCase(),
+    );
     const toggleDropdown = () => {
       dropdownOpen.value = !dropdownOpen.value;
     };
@@ -279,8 +686,6 @@ export default {
         dropdownOpen.value = false;
       }, 150);
     };
-
-    // Utils
     const goTo = (path) => {
       window.location.href = path;
     };
@@ -288,10 +693,30 @@ export default {
     return {
       // search
       searchQuery,
-      showSuggestions,
-      filteredSuggestions,
-      selectSuggestion,
+      showDropdown,
+      isSearching,
+      searchResults,
+      hasResults,
+      allResultItems,
+      highlightIndex,
+      searchInputRef,
+      searchContainerRef,
+      recentSearches,
+      onSearchFocus,
       onInputBlur,
+      onSearchKeydown,
+      clearSearch,
+      goToProduct,
+      goToOrder,
+      goToCustomer,
+      searchFromRecent,
+      clearRecentSearches,
+      removeRecentSearch,
+      getGlobalIndex,
+      getImageUrl,
+      formatPrice,
+      highlightMatch,
+      getOrderStatusText,
       // popovers
       helpOpen,
       notifOpen,
@@ -327,14 +752,14 @@ export default {
   display: flex;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
   border-bottom: 1px solid var(--border, #e2e8f0);
 }
 
 /* Search */
 .search-container {
   position: relative;
-  max-width: 480px;
+  max-width: 520px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -347,8 +772,8 @@ export default {
   z-index: 2;
 }
 .search-input {
-  width: 400px;
-  padding: 10px 16px 10px 40px;
+  width: 440px;
+  padding: 10px 36px 10px 40px;
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 10px;
   font-size: 0.9rem;
@@ -364,6 +789,371 @@ export default {
   background: #fff;
   border-color: var(--primary, #2563eb);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  width: 480px;
+}
+.search-clear {
+  position: absolute;
+  right: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+.search-clear:hover {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+/* Search Dropdown */
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 480px;
+  background: #fff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 2001;
+  max-height: 460px;
+  overflow-y: auto;
+  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.search-dropdown::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* Loading */
+.search-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 16px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+.search-loading i {
+  color: var(--primary, #2563eb);
+}
+
+/* Result sections */
+.result-section {
+  padding: 4px 0;
+}
+.result-section + .result-section {
+  border-top: 1px solid #f1f5f9;
+}
+.result-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.result-section-header i {
+  font-size: 0.8rem;
+  color: #b0b8c4;
+}
+.result-count {
+  margin-left: auto;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* Result items */
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: all 0.12s;
+  border-radius: 8px;
+  margin: 1px 6px;
+}
+.result-item:hover,
+.result-item.active {
+  background: #f1f5f9;
+}
+.result-item.active {
+  background: #eff6ff;
+}
+
+/* Thumbnail */
+.result-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.result-thumb i {
+  color: #cbd5e1;
+  font-size: 1rem;
+}
+
+/* Result icon (for orders, customers) */
+.result-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+.order-icon {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.customer-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.recent-icon {
+  background: #f8fafc;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+/* Result info */
+.result-info {
+  flex: 1;
+  min-width: 0;
+}
+.result-name {
+  font-size: 0.88rem;
+  color: #1e293b;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result-name :deep(mark) {
+  background: #fef08a;
+  color: #1e293b;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+.meta-code {
+  color: #64748b;
+  font-family: "SF Mono", "Cascadia Code", monospace;
+  font-size: 0.75rem;
+}
+.meta-cat {
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+}
+.meta-phone i {
+  font-size: 0.7rem;
+  margin-right: 3px;
+}
+.meta-customer {
+  color: #64748b;
+}
+
+/* Price */
+.result-price {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Tags */
+.result-tag {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-confirmed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.status-shipping {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.status-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+.status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.status-returned {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+/* Empty state */
+.search-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: #94a3b8;
+}
+.search-empty i {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #cbd5e1;
+}
+.search-empty strong {
+  color: #64748b;
+}
+.search-empty-hint {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+/* Recent searches */
+.recent-item {
+  gap: 10px;
+}
+.remove-recent {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.remove-recent:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+.clear-recent {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--primary, #2563eb);
+  cursor: pointer;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.clear-recent:hover {
+  text-decoration: underline;
+}
+
+/* Suggestion chips */
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px 12px;
+}
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.chip:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+/* Search footer */
+.search-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px 16px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+.search-footer kbd {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  color: #64748b;
+  margin-right: 3px;
 }
 
 /* Icon buttons */
@@ -406,8 +1196,15 @@ export default {
 }
 
 @keyframes pulse-ring {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
 }
 
 /* Help Popover */
@@ -534,53 +1331,6 @@ export default {
   white-space: nowrap;
 }
 
-/* Suggestions */
-.suggestions-box {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
-  max-height: 320px;
-  overflow-y: auto;
-  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.suggestion-header {
-  padding: 10px 16px;
-  font-weight: 600;
-  color: #94a3b8;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.suggestion-item {
-  padding: 10px 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: all 0.15s;
-  border-radius: 6px;
-  margin: 2px 4px;
-}
-.suggestion-item:hover {
-  background: #f1f5f9;
-}
-.suggestion-icon {
-  margin-right: 10px;
-  font-size: 1rem;
-}
-
 /* User dropdown */
 .user-dropdown {
   position: relative;
@@ -684,7 +1434,17 @@ export default {
     min-width: 120px;
     max-width: 350px;
     font-size: 0.85rem;
-    padding: 8px 12px 8px 36px;
+    padding: 8px 32px 8px 36px;
+  }
+  .search-input:focus {
+    width: 100%;
+    max-width: 350px;
+  }
+  .search-dropdown {
+    min-width: 320px;
+    left: 0;
+    right: auto;
+    max-height: 380px;
   }
   .icon-btn {
     margin-left: 4px;
@@ -715,6 +1475,13 @@ export default {
     min-width: 80px;
     max-width: 200px;
     font-size: 0.85rem;
+  }
+  .search-dropdown {
+    min-width: 280px;
+    max-height: 340px;
+  }
+  .result-price {
+    display: none;
   }
   .user-avatar,
   .user-avatar-img {
