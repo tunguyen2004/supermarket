@@ -246,15 +246,22 @@
               <div class="customer-name">{{ selectedCustomer.name }}</div>
               <div class="customer-meta-row">
                 <span class="customer-phone">{{ selectedCustomer.phone }}</span>
-                <span v-if="selectedCustomer.group_name" class="customer-group-badge"
+                <span
+                  v-if="selectedCustomer.group_name"
+                  class="customer-group-badge"
                   :class="{
                     'badge-vip': selectedCustomer.group_name?.includes('VIP'),
                     'badge-gold': selectedCustomer.group_name?.includes('Vàng'),
-                    'badge-bronze': selectedCustomer.group_name?.includes('Đồng'),
-                    'badge-silver': selectedCustomer.group_name?.includes('Bạc'),
-                  }">
+                    'badge-bronze':
+                      selectedCustomer.group_name?.includes('Đồng'),
+                    'badge-silver':
+                      selectedCustomer.group_name?.includes('Bạc'),
+                  }"
+                >
                   {{ selectedCustomer.group_name }}
-                  <template v-if="memberDiscountPercent > 0"> (-{{ memberDiscountPercent }}%)</template>
+                  <template v-if="memberDiscountPercent > 0">
+                    (-{{ memberDiscountPercent }}%)</template
+                  >
                 </span>
               </div>
             </div>
@@ -293,9 +300,12 @@
               </span>
             </div>
 
-            <div v-if="memberDiscount > 0" class="summary-row member-discount-row">
+            <div
+              v-if="memberDiscount > 0"
+              class="summary-row member-discount-row"
+            >
               <span class="summary-label">
-                <i class="fa-solid fa-crown mr-1" style="color: #f59e0b;"></i>
+                <i class="fa-solid fa-crown mr-1" style="color: #f59e0b"></i>
                 CK thành viên ({{ memberDiscountPercent }}%)
               </span>
               <span class="summary-value member-discount-value">
@@ -344,7 +354,7 @@
 
       <!-- Empty -->
       <div v-else-if="activeDiscounts.length === 0" class="discount-empty">
-        <i class="fa-solid fa-ticket text-4xl mb-3" style="opacity: 0.3;"></i>
+        <i class="fa-solid fa-ticket text-4xl mb-3" style="opacity: 0.3"></i>
         <p>Không có mã giảm giá nào đang hoạt động</p>
       </div>
 
@@ -369,13 +379,18 @@
           </div>
 
           <!-- Selected check -->
-          <div v-if="currentOrder.discountId === dc.id" class="discount-card__check">
+          <div
+            v-if="currentOrder.discountId === dc.id"
+            class="discount-card__check"
+          >
             <i class="fa-solid fa-circle-check"></i>
           </div>
 
           <!-- Value -->
           <div class="discount-card__value">
-            <template v-if="dc.type_code === 'PERCENTAGE'">{{ dc.value }}%</template>
+            <template v-if="dc.type_code === 'PERCENTAGE'"
+              >{{ dc.value }}%</template
+            >
             <template v-else>{{ formatDiscountPrice(dc.value) }}</template>
           </div>
 
@@ -389,7 +404,10 @@
 
           <!-- Details -->
           <div class="discount-card__details">
-            <div v-if="dc.min_order_amount > 0" class="discount-card__condition">
+            <div
+              v-if="dc.min_order_amount > 0"
+              class="discount-card__condition"
+            >
               <i class="fa-solid fa-cart-shopping"></i>
               Đơn tối thiểu {{ formatDiscountPrice(dc.min_order_amount) }}
             </div>
@@ -397,7 +415,10 @@
               <i class="fa-solid fa-arrow-down"></i>
               Giảm tối đa {{ formatDiscountPrice(dc.max_discount_amount) }}
             </div>
-            <div v-if="dc.remaining_uses !== null" class="discount-card__condition">
+            <div
+              v-if="dc.remaining_uses !== null"
+              class="discount-card__condition"
+            >
               <i class="fa-solid fa-layer-group"></i>
               Còn {{ dc.remaining_uses }} lượt
             </div>
@@ -410,7 +431,10 @@
           </div>
 
           <!-- Min order warning -->
-          <div v-if="dc.min_order_amount > subtotal" class="discount-card__warning">
+          <div
+            v-if="dc.min_order_amount > subtotal"
+            class="discount-card__warning"
+          >
             Chưa đủ điều kiện đơn hàng
           </div>
         </div>
@@ -418,7 +442,10 @@
 
       <template #footer>
         <div class="discount-modal-footer">
-          <el-button @click="removeDiscount" :disabled="!currentOrder.discountId">
+          <el-button
+            @click="removeDiscount"
+            :disabled="!currentOrder.discountId"
+          >
             <i class="fa-solid fa-xmark mr-1"></i> Bỏ giảm giá
           </el-button>
           <el-button @click="showDiscountModal = false">Đóng</el-button>
@@ -620,14 +647,14 @@ const currentStoreName = ref(user.store_name || "");
 
 // Logged-in staff display
 const staffDisplayName = computed(() => {
-  return user.full_name || user.username || 'Nhân viên';
+  return user.full_name || user.username || "Nhân viên";
 });
 const staffInitials = computed(() => {
-  const name = staffDisplayName.value || '';
+  const name = staffDisplayName.value || "";
   return name
-    .split(' ')
+    .split(" ")
     .map((w) => w[0])
-    .join('')
+    .join("")
     .slice(0, 2)
     .toUpperCase();
 });
@@ -745,7 +772,7 @@ const memberDiscountPercent = computed(() => {
 
 const memberDiscount = computed(() => {
   if (!selectedCustomer.value || memberDiscountPercent.value <= 0) return 0;
-  return Math.round(subtotal.value * memberDiscountPercent.value / 100);
+  return Math.round((subtotal.value * memberDiscountPercent.value) / 100);
 });
 
 const total = computed(() => {
@@ -956,7 +983,8 @@ const loadActiveDiscounts = async () => {
   try {
     isLoadingDiscounts.value = true;
     const params = {};
-    if (selectedCustomer.value?.id) params.customer_id = selectedCustomer.value.id;
+    if (selectedCustomer.value?.id)
+      params.customer_id = selectedCustomer.value.id;
     if (subtotal.value > 0) params.order_amount = subtotal.value;
     const response = await posService.getActiveDiscounts(params);
     if (response.success) {
@@ -965,7 +993,7 @@ const loadActiveDiscounts = async () => {
       activeDiscounts.value = [];
     }
   } catch (error) {
-    console.error('Error loading active discounts:', error);
+    console.error("Error loading active discounts:", error);
     activeDiscounts.value = [];
   } finally {
     isLoadingDiscounts.value = false;
@@ -981,7 +1009,11 @@ const selectDiscountCard = async (dc) => {
 
   // Check min order amount
   if (dc.min_order_amount > subtotal.value) {
-    ElMessage.warning(`Đơn hàng tối thiểu ${formatDiscountPrice(dc.min_order_amount)} để dùng mã này`);
+    ElMessage.warning(
+      `Đơn hàng tối thiểu ${formatDiscountPrice(
+        dc.min_order_amount,
+      )} để dùng mã này`,
+    );
     return;
   }
 
@@ -999,42 +1031,46 @@ const selectDiscountCard = async (dc) => {
       currentOrder.value.discountId = result.discount_id || dc.id;
       currentOrder.value.discountCode = result.code || dc.code;
 
-      if (result.type === 'PERCENTAGE' || dc.type_code === 'PERCENTAGE') {
-        currentOrder.value.discountType = 'percent';
+      if (result.type === "PERCENTAGE" || dc.type_code === "PERCENTAGE") {
+        currentOrder.value.discountType = "percent";
         currentOrder.value.discount = result.value || dc.value;
       } else {
-        currentOrder.value.discountType = 'fixed';
+        currentOrder.value.discountType = "fixed";
         currentOrder.value.discount = result.discount_amount || dc.value;
       }
 
       ElMessage.success(`Đã áp dụng mã ${dc.code}: ${dc.name}`);
     } else {
-      ElMessage.warning(response.message || 'Mã giảm giá không hợp lệ');
+      ElMessage.warning(response.message || "Mã giảm giá không hợp lệ");
     }
   } catch (error) {
-    console.error('Error applying discount card:', error);
-    ElMessage.error('Lỗi áp dụng mã giảm giá');
+    console.error("Error applying discount card:", error);
+    ElMessage.error("Lỗi áp dụng mã giảm giá");
   }
 };
 
 const removeDiscount = () => {
   currentOrder.value.discount = 0;
-  currentOrder.value.discountCode = '';
+  currentOrder.value.discountCode = "";
   currentOrder.value.discountId = null;
-  currentOrder.value.discountType = 'fixed';
-  discountType.value = 'fixed';
+  currentOrder.value.discountType = "fixed";
+  discountType.value = "fixed";
   discountValue.value = 0;
-  ElMessage.info('Đã bỏ giảm giá');
+  ElMessage.info("Đã bỏ giảm giá");
 };
 
 const formatDiscountPrice = (value) => {
-  return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+  return new Intl.NumberFormat("vi-VN").format(value) + "đ";
 };
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return d.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 };
 
 const applyDiscount = async () => {
@@ -1266,9 +1302,15 @@ const handlePaymentComplete = async (paymentData) => {
       discount_code: currentOrder.value.discountCode || null,
       discount_id: currentOrder.value.discountId || null,
       payment_method:
-        paymentData.method || paymentData.paymentMethod || currentOrder.value.paymentMethod || "cash",
-      amount_received: paymentData.amountReceived || paymentData.amountPaid || total.value,
-      change: paymentData.change || (paymentData.amountPaid || total.value) - total.value,
+        paymentData.method ||
+        paymentData.paymentMethod ||
+        currentOrder.value.paymentMethod ||
+        "cash",
+      amount_received:
+        paymentData.amountReceived || paymentData.amountPaid || total.value,
+      change:
+        paymentData.change ||
+        (paymentData.amountPaid || total.value) - total.value,
       notes: currentOrder.value.notes || null,
       // Delivery data
       shipping_fee: paymentData.delivery?.shippingFee || 0,
@@ -1298,7 +1340,7 @@ const handlePaymentComplete = async (paymentData) => {
           const g = response.data.upgraded_group;
           ElMessage({
             message: `🎉 Khách hàng được nâng hạng lên ${g.name} (giảm ${g.discount_percentage}%)!`,
-            type: 'success',
+            type: "success",
             duration: 5000,
             showClose: true,
           });
@@ -1436,13 +1478,17 @@ const handleKeyPress = async (e) => {
 <style scoped>
 .pos-page {
   background-color: #f1f5f9;
-  min-height: 100vh;
+  /* min-height: 97vh; */
   animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ===== MAIN LAYOUT ===== */
@@ -1451,13 +1497,16 @@ const handleKeyPress = async (e) => {
   grid-template-columns: 1fr 360px;
   gap: 16px;
   padding: 16px;
-  min-height: calc(100vh - 48px);
+  height: calc(100vh - 48px);
+  overflow: hidden;
 }
 
 /* ===== LEFT COLUMN: CART ===== */
 .left-column {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .cart-panel {
@@ -1466,7 +1515,9 @@ const handleKeyPress = async (e) => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   border: 1px solid #e2e8f0;
 }
 
@@ -1764,9 +1815,8 @@ const handleKeyPress = async (e) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: calc(100vh - 80px);
-  position: sticky;
-  top: 64px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .payment-section {
@@ -1996,7 +2046,7 @@ const handleKeyPress = async (e) => {
   border-radius: 4px;
   font-size: 0.7rem;
   font-weight: 700;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
   letter-spacing: 0.5px;
   margin-left: 6px;
 }
@@ -2102,6 +2152,7 @@ const handleKeyPress = async (e) => {
   padding: 12px 16px;
   gap: 16px;
   margin-top: 12px;
+  flex-shrink: 0;
 }
 
 .footer-left {
@@ -2618,7 +2669,7 @@ const handleKeyPress = async (e) => {
   font-weight: 700;
   color: #475569;
   letter-spacing: 0.5px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
 }
 
 .discount-card__details {

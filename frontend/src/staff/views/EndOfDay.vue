@@ -3,9 +3,11 @@
     <PageHeader title="Báo cáo cuối ngày" />
 
     <!-- content -->
-    <div class="p-4 space-y-4 mt-16">
+    <div class="p-4 space-y-4">
       <!-- Filters row -->
-      <div class="flex items-center gap-3 flex-wrap">
+      <div
+        class="sticky top-0 z-30 bg-slate-50 pb-3 -mt-0 flex items-center gap-3 flex-wrap"
+      >
         <!-- Tabs -->
         <div
           class="bg-white border border-slate-200 rounded-xl p-1 flex items-center flex-wrap"
@@ -622,11 +624,24 @@
     </div>
 
     <!-- Submit Report Dialog -->
-    <div v-if="showSubmitDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showSubmitDialog = false">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="text-lg font-bold text-slate-800">Nộp báo cáo cuối ngày</h3>
-          <button class="text-slate-400 hover:text-slate-600" @click="showSubmitDialog = false">
+    <div
+      v-if="showSubmitDialog"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      @click.self="showSubmitDialog = false"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+      >
+        <div
+          class="px-6 py-4 border-b border-slate-200 flex items-center justify-between"
+        >
+          <h3 class="text-lg font-bold text-slate-800">
+            Nộp báo cáo cuối ngày
+          </h3>
+          <button
+            class="text-slate-400 hover:text-slate-600"
+            @click="showSubmitDialog = false"
+          >
             <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
@@ -635,7 +650,9 @@
           <div class="bg-blue-50 rounded-xl p-4 space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-blue-600 font-medium">Kỳ báo cáo</span>
-              <span class="font-semibold">{{ dateRange.from }} → {{ dateRange.to }}</span>
+              <span class="font-semibold"
+                >{{ dateRange.from }} → {{ dateRange.to }}</span
+              >
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-blue-600 font-medium">Nhân viên</span>
@@ -643,17 +660,23 @@
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-blue-600 font-medium">Doanh thu thuần</span>
-              <span class="font-semibold text-emerald-600">{{ formatCurrency(revenueSummary.net_revenue) }}</span>
+              <span class="font-semibold text-emerald-600">{{
+                formatCurrency(revenueSummary.net_revenue)
+              }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-blue-600 font-medium">Tổng đơn</span>
-              <span class="font-semibold">{{ revenueSummary.total_orders }}</span>
+              <span class="font-semibold">{{
+                revenueSummary.total_orders
+              }}</span>
             </div>
           </div>
 
           <!-- Title -->
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Tiêu đề báo cáo</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1"
+              >Tiêu đề báo cáo</label
+            >
             <input
               v-model="submitForm.title"
               type="text"
@@ -664,7 +687,9 @@
 
           <!-- Notes -->
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Ghi chú (tuỳ chọn)</label>
+            <label class="block text-sm font-medium text-slate-700 mb-1"
+              >Ghi chú (tuỳ chọn)</label
+            >
             <textarea
               v-model="submitForm.notes"
               rows="3"
@@ -673,11 +698,15 @@
             ></textarea>
           </div>
         </div>
-        <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+        <div
+          class="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3"
+        >
           <button
             class="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
             @click="showSubmitDialog = false"
-          >Hủy</button>
+          >
+            Hủy
+          </button>
           <button
             class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition flex items-center gap-2"
             :disabled="submitting"
@@ -692,24 +721,40 @@
     </div>
 
     <!-- Success dialog with report code -->
-    <div v-if="showSuccessDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" @click.self="showSuccessDialog = false">
-      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-center">
+    <div
+      v-if="showSuccessDialog"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      @click.self="showSuccessDialog = false"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden text-center"
+      >
         <div class="p-8 space-y-4">
-          <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+          <div
+            class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto"
+          >
             <i class="fa-solid fa-check text-3xl text-emerald-600"></i>
           </div>
-          <h3 class="text-xl font-bold text-slate-800">Nộp báo cáo thành công!</h3>
+          <h3 class="text-xl font-bold text-slate-800">
+            Nộp báo cáo thành công!
+          </h3>
           <div class="bg-slate-50 rounded-xl p-4">
             <div class="text-sm text-slate-500 mb-1">Mã báo cáo</div>
-            <div class="text-2xl font-bold text-blue-600 tracking-wide">{{ submittedCode }}</div>
+            <div class="text-2xl font-bold text-blue-600 tracking-wide">
+              {{ submittedCode }}
+            </div>
           </div>
-          <p class="text-sm text-slate-500">Admin có thể xem báo cáo này trong mục Danh sách báo cáo</p>
+          <p class="text-sm text-slate-500">
+            Admin có thể xem báo cáo này trong mục Danh sách báo cáo
+          </p>
         </div>
         <div class="px-6 py-4 border-t border-slate-200">
           <button
             class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
             @click="showSuccessDialog = false"
-          >Đóng</button>
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>
@@ -803,7 +848,8 @@ const submitForm = ref({ title: "", notes: "" });
 
 const defaultReportTitle = computed(() => {
   const { from, to } = dateRange.value;
-  const tabLabel = tabs.find(t => t.key === activeTab.value)?.label || 'Tùy chọn';
+  const tabLabel =
+    tabs.find((t) => t.key === activeTab.value)?.label || "Tùy chọn";
   return `Báo cáo cuối ngày - ${tabLabel} (${from} → ${to})`;
 });
 
@@ -993,7 +1039,7 @@ async function handleSubmitReport() {
       by_payment_method: [...revenueByPayment.value],
       by_staff: [...revenueByStaff.value],
       products_summary: { ...productsSummary.value },
-      top_products: products.value.slice(0, 10).map(p => ({
+      top_products: products.value.slice(0, 10).map((p) => ({
         product_name: p.product_name,
         sku: p.sku,
         quantity_sold: p.quantity_sold,

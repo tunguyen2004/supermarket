@@ -1,7 +1,7 @@
 <template>
   <div class="h-screen w-screen bg-slate-50 overflow-hidden relative">
     <!-- content: chừa chỗ header (pt-16) + chừa sidebar (pl-16) -->
-    <div class="pt-16 pl-16 h-full">
+    <div class="pt-16 pl-16 h-full overflow-y-auto">
       <router-view v-slot="{ Component, route }">
         <transition name="page" mode="out-in">
           <component :is="Component" :key="route.path" />
