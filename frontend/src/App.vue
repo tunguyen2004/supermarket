@@ -11,6 +11,7 @@
 
 <script setup>
 import ChatbotWidget from "./components/ChatbotWidget.vue";
+import { SpeedInsights } from "@vercel/speed-insights/vue";
 </script>
 
 <style>
