@@ -5,10 +5,6 @@
 -- =====================================================
 
 
--- docker cp D:\supermarket\database\incremental_data_generator.sql minimart_postgres:/tmp/incremental_data_generator.sql;
--- docker exec -i minimart_postgres psql -U admin -d minimart_db -f /tmp/incremental_data_generator.sql
-
-
 -- TỔNG QUAN KIẾN TRÚC DATA ENGINEERING
 -- =====================================
 -- File này mô phỏng quy trình INCREMENTAL LOAD trong production:

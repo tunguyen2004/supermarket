@@ -132,7 +132,7 @@
       "id": 19,
       "category": "Khách hàng",
       "question": "Cách thêm khách hàng mới?",
-      "answer": "Thêm khách hàng:\n1. Vào **Khách hàng** → **Thêm khách hàng**\n2. Điền thông tin:\n   • Họ tên, Số điện thoại (bắt buộc)\n   • Email, Giới tính, Ngày sinh\n   • Địa chỉ, Thành phố\n3. Chọn nhóm khách hàng (VIP, Thường...)\n4. Nhấn **Lưu**\n\n✅ Mã khách hàng tự động: KH000001, KH000002...\n⚠️ Số điện thoại và email không được trùng.",
+      "answer": "Thêm khách hàng:\n1. Vào **Khách hàng** → **Thêm khách hàng**\n2. Điền thông tin:\n   • Họ tên, Số điện thoại (bắt buộc)\n   • Email, Giới tính, Ngày sinh\n   • Địa chỉ, Thành phố\n3. Chọn nhóm khách hàng (VIP, Thường...)\n4. Nhấn **Lưu**\n\n✅ Mã khách hàng tự động: KH-YYYYMM-00001, KH-YYYYMM-00002...\n⚠️ Số điện thoại và email không được trùng.",
       "keywords": ["thêm khách", "tạo khách hàng", "customer mới", "add customer"]
     },
     {

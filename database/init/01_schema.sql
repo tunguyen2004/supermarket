@@ -8,6 +8,9 @@
 -- LEVEL 3: SUB-SUB DIMENSIONS
 -- =========================
 -- Regions
+
+SET timezone = 'Asia/Ho_Chi_Minh';
+
 CREATE TABLE subdim_regions (
     id SERIAL PRIMARY KEY,
     code VARCHAR(10) UNIQUE NOT NULL,
@@ -353,10 +356,8 @@ CREATE TABLE dim_bank_accounts (
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_bank_account_store FOREIGN KEY (store_id) REFERENCES dim_stores(id) ON DELETE
-    SET
-        NULL,
-        CONSTRAINT fk_bank_account_creator FOREIGN KEY (created_by) REFERENCES dim_users(id)
+    CONSTRAINT fk_bank_account_store FOREIGN KEY (store_id) REFERENCES dim_stores(id) ON DELETE SET NULL,
+    CONSTRAINT fk_bank_account_creator FOREIGN KEY (created_by) REFERENCES dim_users(id)
 );
 
 CREATE INDEX idx_bank_accounts_store ON dim_bank_accounts(store_id);
@@ -408,6 +409,16 @@ CREATE TABLE fact_inventory_transactions (
     CONSTRAINT fk_inv_user FOREIGN KEY (created_by) REFERENCES dim_users(id)
 );
 
+CREATE INDEX idx_inv_trans_date ON fact_inventory_transactions(date_key);
+
+CREATE INDEX idx_inv_trans_store ON fact_inventory_transactions(store_id);
+
+CREATE INDEX idx_inv_trans_variant ON fact_inventory_transactions(variant_id);
+
+CREATE INDEX idx_inv_trans_type ON fact_inventory_transactions(transaction_type_id);
+
+CREATE INDEX idx_inv_trans_reference ON fact_inventory_transactions(reference_type, reference_id);
+
 -- Sales Orders
 CREATE TABLE fact_orders (
     id SERIAL PRIMARY KEY,
@@ -433,8 +444,20 @@ CREATE TABLE fact_orders (
     CONSTRAINT fk_order_date FOREIGN KEY (date_key) REFERENCES dim_time(date_key),
     CONSTRAINT fk_order_customer FOREIGN KEY (customer_id) REFERENCES dim_customers(id),
     CONSTRAINT fk_order_store FOREIGN KEY (store_id) REFERENCES dim_stores(id),
-    CONSTRAINT fk_order_user FOREIGN KEY (created_by) REFERENCES dim_users(id)
+    CONSTRAINT fk_order_user FOREIGN KEY (created_by) REFERENCES dim_users(id),
+    CONSTRAINT chk_order_status CHECK (status IN ('pending', 'confirmed', 'processing', 'completed', 'cancelled', 'returned')),
+    CONSTRAINT chk_order_payment_status CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'refunded'))
 );
+
+CREATE INDEX idx_orders_date ON fact_orders(date_key);
+
+CREATE INDEX idx_orders_customer ON fact_orders(customer_id);
+
+CREATE INDEX idx_orders_store ON fact_orders(store_id);
+
+CREATE INDEX idx_orders_status ON fact_orders(status);
+
+CREATE INDEX idx_orders_created_at ON fact_orders(created_at);
 
 -- Order Items
 CREATE TABLE fact_order_items (
@@ -450,6 +473,10 @@ CREATE TABLE fact_order_items (
     CONSTRAINT fk_orderitem_order FOREIGN KEY (order_id) REFERENCES fact_orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_orderitem_variant FOREIGN KEY (variant_id) REFERENCES dim_product_variants(id)
 );
+
+CREATE INDEX idx_order_items_order ON fact_order_items(order_id);
+
+CREATE INDEX idx_order_items_variant ON fact_order_items(variant_id);
 
 -- Discount Usages
 CREATE TABLE fact_discount_usages (
@@ -709,6 +736,39 @@ CREATE INDEX idx_submitted_reports_code ON fact_submitted_reports(report_code);
 CREATE INDEX idx_submitted_reports_submitted_by ON fact_submitted_reports(submitted_by);
 CREATE INDEX idx_submitted_reports_date ON fact_submitted_reports(period_from, period_to);
 CREATE INDEX idx_submitted_reports_status ON fact_submitted_reports(status);
+
+-- =========================
+-- TRIGGER: Auto-update updated_at
+-- =========================
+CREATE OR REPLACE FUNCTION trigger_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Áp dụng cho tất cả bảng có cột updated_at
+DO $$
+DECLARE
+    t TEXT;
+    tables TEXT[] := ARRAY[
+        'dim_products', 'dim_discounts', 'dim_bank_accounts',
+        'fact_cashbook_transactions', 'fact_store_balances',
+        'fact_shipments', 'fact_submitted_reports'
+    ];
+BEGIN
+    FOREACH t IN ARRAY tables LOOP
+        EXECUTE format(
+            'CREATE TRIGGER trg_%s_updated_at
+             BEFORE UPDATE ON %I
+             FOR EACH ROW
+             EXECUTE FUNCTION trigger_set_updated_at()',
+            t, t
+        );
+    END LOOP;
+    RAISE NOTICE 'Created updated_at triggers for % tables', array_length(tables, 1);
+END $$;
 
 -- =========================
 -- COMPLETION MESSAGE

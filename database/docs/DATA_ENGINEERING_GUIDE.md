@@ -850,7 +850,7 @@ docker exec -i minimart_postgres psql -U admin -d minimart_db -c "
 "
 
 # 3. Check data quality
-.\scripts\check-quality.ps1
+docker exec -i minimart_postgres psql -U admin -d minimart_db -c "SELECT * FROM check_data_quality();"
 
 # 4. Xem trend 7 ngày gần nhất
 docker exec -i minimart_postgres psql -U admin -d minimart_db -c "

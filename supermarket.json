@@ -1243,7 +1243,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"SUP001\",\n  \"name\": \"Nhà cung cấp ABC\",\n  \"contact_person\": \"Nguyễn Văn A\",\n  \"phone\": \"0901234567\",\n  \"email\": \"abc@supplier.com\",\n  \"address\": \"123 Đường XYZ\",\n  \"tax_code\": \"0123456789\",\n  \"notes\": \"Nhà cung cấp sữa\"\n}"
+              "raw": "{\n  \"name\": \"Nhà cung cấp ABC\",\n  \"phone\": \"0901234567\",\n  \"email\": \"abc@supplier.com\",\n  \"address\": \"123 Đường XYZ\",\n  \"tax_code\": \"0123456789\",\n  \"notes\": \"Nhà cung cấp sữa\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/suppliers",

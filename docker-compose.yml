@@ -1,21 +1,23 @@
 services:
   # ==================== DATABASE ====================
   postgres:
-    image: postgres:14
+    image: postgres:16
     container_name: minimart_postgres
     restart: always
     environment:
       POSTGRES_DB: minimart_db
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
-      - ./database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql
-      - ./database/incremental_data_generator.sql:/docker-entrypoint-initdb.d/3_incremental.sql
-      - ./database/catchup_runner.sql:/docker-entrypoint-initdb.d/4_catchup.sql
+      - ./database/init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/init/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+      - ./database/init/03_functions.sql:/docker-entrypoint-initdb.d/03_functions.sql
+      - ./database/init/04_catchup.sql:/docker-entrypoint-initdb.d/04_catchup.sql
     networks:
       - minimart_network
     healthcheck:
@@ -43,7 +45,7 @@ services:
       JWT_SECRET: your_jwt_secret_key_change_in_production
       JWT_EXPIRE: 7d
       GEMINI_API_KEY: AIzaSyB_pT_WxXhlXxVRbbUPQgyLpOCR0YRtTHc
-      SEPAY_API_KEY: "FQB5ZE3QZ5ATW1BCSFHFZL6VW0GAX7CNTDPSDXNS8P6VICUBA4UMT9MNMKTOOWY2"  # Điền API Key từ Sepay.vn (Cấu hình Công ty → API Access)
+      SEPAY_API_KEY: "FQB5ZE3QZ5ATW1BCSFHFZL6VW0GAX7CNTDPSDXNS8P6VICUBA4UMT9MNMKTOOWY2"
     ports:
       - "5000:5000"
     volumes:
@@ -68,18 +70,23 @@ services:
     networks:
       - minimart_network
 
-  # ==================== PGADMIN ====================
+  # ==================== PGADMIN4 ====================
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
     container_name: minimart_pgadmin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@minimart.com
       PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      TZ: Asia/Ho_Chi_Minh
     ports:
       - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - minimart_network
 
@@ -89,3 +96,4 @@ networks:
 
 volumes:
   postgres_data:
+  pgadmin_data:

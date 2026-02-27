@@ -54,7 +54,7 @@ git clone https://github.com/tunguyen2004/supermarket.git
 
 ---| Backend API | http://localhost:5000 | REST API |
 
-| pgAdmin | http://localhost:5050 | Quản lý Database |
+| CloudBeaver | http://localhost:8978 | Quản lý Database (DBeaver Web) |
 
 ## 🎯 Tổng quan
 
@@ -72,7 +72,7 @@ git clone https://github.com/tunguyen2004/supermarket.git
 
 - 👥 Quản lý nhân viên và phân quyền
 
-- 📈 Báo cáo thống kê và phân tích doanh thu**pgAdmin:**
+- 📈 Báo cáo thống kê và phân tích doanh thu**CloudBeaver:** http://localhost:8978
 
 - 🖼️ Quản lý hình ảnh sản phẩm| Email | Password |
 
@@ -274,7 +274,7 @@ supermarket/
 
 | Nginx | Reverse proxy (Frontend) |└── README.md              # This file
 
-| pgAdmin | Database management |```
+| CloudBeaver | Database management (DBeaver Web) |```
 
 
 ---
@@ -374,7 +374,7 @@ npm run serve
 |---------|-----|-------|
 | 🖥️ Frontend | http://localhost:8080 | Giao diện web |
 | ⚙️ Backend API | http://localhost:5000 | REST API |
-| 🗄️ pgAdmin | http://localhost:5050 | Quản lý Database |
+| 🗄️ CloudBeaver | http://localhost:8978 | Quản lý Database (DBeaver Web) |
 
 ### Tài khoản mặc định
 
@@ -383,10 +383,7 @@ npm run serve
 |----------|----------|------|
 | `admin` | `1` | Administrator |
 
-**pgAdmin:**
-| Email | Password |
-|-------|----------|
-| admin@minimart.com | admin123 |
+**CloudBeaver:** http://localhost:8978 (tạo admin password khi truy cập lần đầu)
 
 ---
 
@@ -442,9 +439,13 @@ supermarket/
 │   └── package.json
 │
 ├── 📂 database/                   # Database scripts
-│   ├── schema.sql                 # Database schema
-│   ├── seed.sql                   # Sample data
-│   └── insert_time.sql            # Time dimension data
+│   ├── 📂 init/                   # Docker auto-init scripts
+│   │   ├── 01_schema.sql          # DDL: tables, indexes, triggers, views
+│   │   ├── 02_seed.sql            # DML: seed data
+│   │   ├── 03_functions.sql       # Data generator functions
+│   │   └── 04_catchup.sql         # Catchup data to today
+│   ├── 📂 scripts/                # Backup, health check, reset
+│   └── 📂 docs/                   # Schema design & data engineering guide
 │
 ├── docker-compose.yml             # Docker orchestration
 ├── API.md                         # API documentation

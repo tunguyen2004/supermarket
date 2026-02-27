@@ -47,7 +47,7 @@ Frontend (Vue 3)                    Backend (Express.js)               Database 
 | `backend/src/routes/chatbotRoutes.js` | 5 API endpoints + Swagger docs (197 dòng) |
 | `backend/src/validators/chatbotValidator.js` | Joi validation schemas (57 dòng) |
 | `backend/src/data/chatbotFAQ.json` | 44 câu FAQ, 15 danh mục (314 dòng) |
-| `database/chatbot_migration.sql` | Script migration cho DB đã có sẵn (31 dòng) |
+| `database/init/01_schema.sql` | Bảng `fact_chat_history` (nằm trong schema chính) |
 | `frontend/src/components/ChatbotWidget.vue` | Widget chat draggable + FAQ UI (847 dòng) |
 | `frontend/src/services/chatbotService.js` | Axios client cho chatbot API (42 dòng) |
 
@@ -59,7 +59,7 @@ Frontend (Vue 3)                    Backend (Express.js)               Database 
 | `backend/src/config/swagger.js` | Giữ bản upstream sau merge |
 | `backend/src/services/inventoryService.js` | Giữ bản upstream sau merge |
 | `backend/package.json` | Thêm dependency `@google/generative-ai` |
-| `database/schema.sql` | Thêm bảng `fact_chat_history` + indexes |
+| `database/init/01_schema.sql` | Thêm bảng `fact_chat_history` + indexes |
 | `docker-compose.yml` | Thêm env `GEMINI_API_KEY` |
 | `frontend/nginx.conf` | Thêm `Cache-Control: no-cache` headers |
 | `frontend/src/App.vue` | Thêm `<ChatbotWidget />`, wrap single root div |
@@ -182,13 +182,13 @@ CREATE TABLE fact_chat_history (
 
 ## 🐳 Docker
 
-Không cần cấu hình thêm. Bảng `fact_chat_history` đã có trong `schema.sql`, tự tạo khi chạy:
+Không cần cấu hình thêm. Bảng `fact_chat_history` đã có trong `init/01_schema.sql`, tự tạo khi chạy:
 
 ```bash
 docker-compose up -d --build
 ```
 
-**File `chatbot_migration.sql`** chỉ dùng khi DB đã tồn tại trước đó (dùng `CREATE TABLE IF NOT EXISTS`).
+Bảng `fact_chat_history` đã được tích hợp trực tiếp trong `init/01_schema.sql`, tự tạo khi khởi tạo DB.
 
 ---
 
@@ -197,7 +197,7 @@ docker-compose up -d --build
 | Hạng mục | Kết quả |
 |----------|---------|
 | Docker build from scratch (xóa volume) | ✅ Pass |
-| 36 tables created (schema.sql) | ✅ Pass |
+| 36 tables created (init/01_schema.sql) | ✅ Pass |
 | Seed data: 6 users, 49 SP, 150 đơn, 25 KH | ✅ Pass |
 | 14/14 data intents nhận diện đúng | ✅ Pass |
 | FAQ API trả 44 entries, 15 categories | ✅ Pass |
