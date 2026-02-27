@@ -26,6 +26,7 @@ const posRoutes = require("./posRoutes");
 const bankAccountRoutes = require("./bankAccountRoutes");
 const checkoutRoutes = require("./checkoutRoutes");
 const chatbotRoutes = require("./chatbotRoutes");
+const searchRoutes = require("./searchRoutes");
 
 // Import services for routes not yet modularized
 const dashboardService = require("../services/dashboardService");
@@ -91,6 +92,9 @@ router.use("/checkouts", checkoutRoutes);
 
 // Chatbot routes: /api/chatbot/*
 router.use("/chatbot", chatbotRoutes);
+
+// Search routes: /api/search/*
+router.use("/search", searchRoutes);
 
 // Brands & Units
 router.get("/brands", verifyToken, productService.getBrands);
