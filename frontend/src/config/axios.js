@@ -1,8 +1,9 @@
 import axios from "axios";
+import { getApiUrl } from "@/config/apiUrl";
 
 // Create axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: process.env.VUE_APP_API_URL || "http://localhost:5000",
+  baseURL: getApiUrl(),
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

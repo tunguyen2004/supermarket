@@ -1,9 +1,10 @@
 // src/services/apiClient.js
 import axios from "axios";
+import { getApiUrl } from "@/config/apiUrl";
 
 // Tạo instance axios
 const apiClient = axios.create({
-  baseURL: "http://localhost:5000", // Đổi sang API backend thật của bạn
+  baseURL: getApiUrl(),
   timeout: 20000, // 20 giây
   headers: {
     "Content-Type": "application/json",
