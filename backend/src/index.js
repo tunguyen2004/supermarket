@@ -63,13 +63,7 @@ app.use(compression());
  */
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",")
-      : [
-          "http://localhost:8080",
-          "http://localhost:3000",
-          "https://mini-supermarket-fe.vercel.app",
-        ],
+    origin: true, // Allow all origins for demo (tunnel URLs change frequently)
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

@@ -50,10 +50,8 @@ import MyAccount from "@/views/Account/MyAccount.vue";
 // import trang quáº£n lÃ½ nhÃ¢n viÃªn
 import Staff from "@/views/Users/personnel-management/staff.vue";
 
-
-// test role nhÃ¢n viÃªn 
+// test role nhÃ¢n viÃªn
 import staffRoutes from "./modules/staff.routes";
-
 
 const routes = [
   {
@@ -69,152 +67,181 @@ const routes = [
         path: "dashboard",
         name: "DashboardOverview",
         component: DashboardOverview,
+        meta: { title: "Tổng quan" },
       },
       {
         path: "staff",
         name: "Staff",
         component: Staff,
+        meta: { title: "Quản lý nhân viên" },
       },
       {
         path: "products",
         name: "ProductCollections",
         component: ProductList,
+        meta: { title: "Danh sách sản phẩm" },
       },
       {
         path: "catalogs",
         name: "Catalogs",
         component: Catalogs,
+        meta: { title: "Bảng giá" },
       },
       {
         path: "collections",
         name: "Collections",
         component: Collections,
+        meta: { title: "Danh mục sản phẩm" },
       },
       {
         path: "inventories",
         name: "Inventories",
         component: Inventories,
+        meta: { title: "Tồn kho" },
       },
       {
         path: "purchase-orders",
         name: "PurchaseOrders",
         component: Purchase_orders,
+        meta: { title: "Đơn đặt hàng nhập" },
       },
       {
         path: "receive-inventories",
         name: "ReceiveInventories",
         component: Receive_inventories,
+        meta: { title: "Nhập hàng" },
       },
       {
         path: "stock-transfers",
         name: "StockTransfers",
         component: Stock_transfers,
+        meta: { title: "Chuyển kho" },
       },
       {
         path: "supplier-returns",
         name: "SupplierReturns",
         component: Supplier_returns,
+        meta: { title: "Trả hàng nhập" },
       },
       {
         path: "suppliers",
         name: "Suppliers",
         component: Suppliers,
+        meta: { title: "Nhà cung cấp" },
       },
       {
         path: "orders",
         name: "Orders",
         component: Orders,
+        meta: { title: "Đơn hàng" },
       },
       {
         path: "draft-orders",
         name: "DraftOrders",
         component: Draft_Orders,
+        meta: { title: "Đơn hàng nháp" },
       },
       {
         path: "order-returns",
         name: "OrderReturns",
         component: Order_Returns,
+        meta: { title: "Trả hàng" },
       },
       {
         path: "checkouts",
         name: "Checkouts",
         component: Checkouts,
+        meta: { title: "Đơn hàng chưa hoàn tất" },
       },
       {
         path: "orders/new",
         name: "NewOrder",
         component: OrderForm,
+        meta: { title: "Tạo đơn hàng" },
       },
       {
         path: "orders/edit/:id",
         name: "EditOrder",
         component: OrderForm,
+        meta: { title: "Chỉnh sửa đơn hàng" },
       },
       {
         path: "discounts",
         name: "Discounts",
         component: Discounts,
+        meta: { title: "Giảm giá" },
       },
       {
         path: "discounts/new",
         name: "CreateDiscount",
         component: DiscountForm,
+        meta: { title: "Tạo chương trình giảm giá" },
       },
       {
         path: "discounts/edit/:id",
         name: "EditDiscount",
         component: DiscountForm,
+        meta: { title: "Chỉnh sửa giảm giá" },
       },
       {
         path: "shipments",
         name: "Shipments",
         component: Shipments,
+        meta: { title: "Vận chuyển" },
       },
       {
         path: "shipments/new",
         name: "CreateShipment",
         component: ShipmentForm,
+        meta: { title: "Tạo vận đơn" },
       },
       {
         path: "reports",
         name: "Reports",
         component: Reports,
+        meta: { title: "Báo cáo tổng quan" },
       },
       {
         path: "customer-list",
         name: "CustomerList",
         component: CustomerList,
+        meta: { title: "Danh sách khách hàng" },
       },
       {
         path: "customer-groups",
         name: "CustomerGroups",
         component: Customer_groups,
+        meta: { title: "Nhóm khách hàng" },
       },
       {
         path: "reports-list",
         name: "ReportsList",
         component: Reports_list,
+        meta: { title: "Danh sách báo cáo" },
       },
       {
         path: "reports-shipments",
         name: "Reports-Shipments",
         component: Reports_Shipments,
+        meta: { title: "Báo cáo vận chuyển" },
       },
       {
         path: "Fundbook",
         name: "Fundbook",
         component: Fundbook,
+        meta: { title: "Sổ quỹ" },
       },
       {
         path: "account",
         name: "MyAccount",
         component: MyAccount,
-        meta: { requiresAuth: true, title: "TÃ i khoáº£n cÃ¡ nhÃ¢n" },
+        meta: { requiresAuth: true, title: "Tài khoản cá nhân" },
       },
       {
         path: "products/new",
         name: "CreateProduct",
         component: () => import("@/components/CreateProduct.vue"),
+        meta: { title: "Tạo sản phẩm" },
       },
 
       // ThÃªm cÃ¡c route con khÃ¡c náº¿u cáº§n
@@ -228,6 +255,7 @@ const routes = [
         path: "",
         name: "Login",
         component: LoginPage,
+        meta: { title: "Đăng nhập" },
       },
     ],
   },
@@ -247,6 +275,7 @@ const routes = [
     path: "/:pathMatch(.*)*",
     name: "NotFound",
     component: () => import("@/views/NotFoundPage.vue"),
+    meta: { title: "Không tìm thấy trang" },
   },
 ];
 
@@ -256,6 +285,15 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+  // Set document title
+  const title =
+    to.meta?.title ||
+    to.matched
+      .slice()
+      .reverse()
+      .find((r) => r.meta?.title)?.meta?.title;
+  document.title = title ? `${title} | Mini Supermarket` : "Mini Supermarket";
+
   const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth);
   const routeRoles = to.matched.flatMap((record) => record.meta?.roles || []);
   const token = localStorage.getItem("token");
@@ -280,4 +318,3 @@ router.beforeEach((to, from, next) => {
 });
 
 export default router;
-
