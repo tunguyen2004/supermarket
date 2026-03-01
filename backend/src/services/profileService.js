@@ -1,10 +1,10 @@
-const bcrypt = require('bcryptjs');
-const db = require('../config/database');
-const path = require('path');
-const fs = require('fs');
+const bcrypt = require("bcryptjs");
+const db = require("../config/database");
+const path = require("path");
+const fs = require("fs");
 
 // Thư mục lưu avatar
-const avatarDir = path.join(__dirname, '../../uploads/avatars');
+const avatarDir = path.join(__dirname, "../../uploads/avatars");
 
 /**
  * Xem thông tin cá nhân - GET /api/users/profile
@@ -23,26 +23,26 @@ const getProfile = async (req, res) => {
        FROM dim_users u
        LEFT JOIN subdim_roles r ON u.role_id = r.id
        WHERE u.id = $1`,
-      [userId]
+      [userId],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
     res.json({
-      status: 'OK',
-      message: 'Profile retrieved successfully',
+      status: "OK",
+      message: "Profile retrieved successfully",
       data: result.rows[0],
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error("Get profile error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to get profile',
+      status: "ERROR",
+      message: "Failed to get profile",
       error: error.message,
     });
   }
@@ -58,47 +58,74 @@ const updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { full_name, phone, date_of_birth, gender, address } = req.body;
 
-    // Kiểm tra input
-    if (!full_name) {
+    // Validate gender nếu được cung cấp
+    if (gender && !["male", "female", "other"].includes(gender)) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'Full name is required',
+        status: "ERROR",
+        message: "Gender must be one of: male, female, other",
       });
     }
 
-    // Validate gender nếu được cung cấp
-    if (gender && !['male', 'female', 'other'].includes(gender)) {
+    // Build dynamic update query
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (full_name !== undefined) {
+      updates.push(`full_name = $${paramIndex++}`);
+      values.push(full_name);
+    }
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramIndex++}`);
+      values.push(phone || null);
+    }
+    if (date_of_birth !== undefined) {
+      updates.push(`date_of_birth = $${paramIndex++}`);
+      values.push(date_of_birth || null);
+    }
+    if (gender !== undefined) {
+      updates.push(`gender = $${paramIndex++}`);
+      values.push(gender || null);
+    }
+    if (address !== undefined) {
+      updates.push(`address = $${paramIndex++}`);
+      values.push(address || null);
+    }
+
+    if (updates.length === 0) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'Gender must be one of: male, female, other',
+        status: "ERROR",
+        message: "No fields to update",
       });
     }
+
+    values.push(userId);
 
     const result = await db.query(
       `UPDATE dim_users 
-       SET full_name = $1, phone = $2, date_of_birth = $3, gender = $4, address = $5
-       WHERE id = $6
+       SET ${updates.join(", ")}
+       WHERE id = $${paramIndex}
        RETURNING id, username, email, full_name, phone, date_of_birth, gender, address, avatar_url, is_active`,
-      [full_name, phone || null, date_of_birth || null, gender || null, address || null, userId]
+      values,
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
     res.json({
-      status: 'OK',
-      message: 'Profile updated successfully',
+      status: "OK",
+      message: "Profile updated successfully",
       data: result.rows[0],
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    console.error("Update profile error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to update profile',
+      status: "ERROR",
+      message: "Failed to update profile",
       error: error.message,
     });
   }
@@ -117,47 +144,50 @@ const changePassword = async (req, res) => {
     // Kiểm tra input
     if (!oldPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'All password fields are required',
+        status: "ERROR",
+        message: "All password fields are required",
       });
     }
 
     if (newPassword !== confirmPassword) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'New password and confirm password do not match',
+        status: "ERROR",
+        message: "New password and confirm password do not match",
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'New password must be at least 6 characters',
+        status: "ERROR",
+        message: "New password must be at least 6 characters",
       });
     }
 
     // Lấy user hiện tại
     const userResult = await db.query(
-      'SELECT password_hash FROM dim_users WHERE id = $1',
-      [userId]
+      "SELECT password_hash FROM dim_users WHERE id = $1",
+      [userId],
     );
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
     const user = userResult.rows[0];
 
     // Kiểm tra mật khẩu cũ
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password_hash);
+    const isOldPasswordValid = await bcrypt.compare(
+      oldPassword,
+      user.password_hash,
+    );
 
     if (!isOldPasswordValid) {
       return res.status(401).json({
-        status: 'ERROR',
-        message: 'Old password is incorrect',
+        status: "ERROR",
+        message: "Old password is incorrect",
       });
     }
 
@@ -165,20 +195,20 @@ const changePassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Cập nhật mật khẩu
-    await db.query(
-      'UPDATE dim_users SET password_hash = $1 WHERE id = $2',
-      [hashedPassword, userId]
-    );
+    await db.query("UPDATE dim_users SET password_hash = $1 WHERE id = $2", [
+      hashedPassword,
+      userId,
+    ]);
 
     res.json({
-      status: 'OK',
-      message: 'Password changed successfully',
+      status: "OK",
+      message: "Password changed successfully",
     });
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error("Change password error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to change password',
+      status: "ERROR",
+      message: "Failed to change password",
       error: error.message,
     });
   }
@@ -188,7 +218,7 @@ const changePassword = async (req, res) => {
  * Upload avatar - POST /api/users/avatar
  * Cần header: Authorization: Bearer <token>
  * Body: FormData với file 'avatar'
- * 
+ *
  * Lưu ảnh vào thư mục uploads/avatars/
  * Cập nhật avatar_url trong database
  */
@@ -199,15 +229,16 @@ const uploadAvatar = async (req, res) => {
     // Kiểm tra file đã được upload chưa
     if (!req.file) {
       return res.status(400).json({
-        status: 'ERROR',
-        message: 'No file uploaded. Please select an image file (JPG, PNG, GIF, WEBP)',
+        status: "ERROR",
+        message:
+          "No file uploaded. Please select an image file (JPG, PNG, GIF, WEBP)",
       });
     }
 
     // Lấy thông tin avatar cũ để xóa
     const oldAvatarResult = await db.query(
-      'SELECT avatar_url FROM dim_users WHERE id = $1',
-      [userId]
+      "SELECT avatar_url FROM dim_users WHERE id = $1",
+      [userId],
     );
 
     const oldAvatarUrl = oldAvatarResult.rows[0]?.avatar_url;
@@ -221,51 +252,51 @@ const uploadAvatar = async (req, res) => {
        SET avatar_url = $1
        WHERE id = $2
        RETURNING id, username, email, full_name, avatar_url`,
-      [avatarUrl, userId]
+      [avatarUrl, userId],
     );
 
     if (result.rows.length === 0) {
       // Xóa file vừa upload nếu không tìm thấy user
       fs.unlinkSync(req.file.path);
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
     // Xóa avatar cũ nếu có (và không phải default)
-    if (oldAvatarUrl && oldAvatarUrl.startsWith('/uploads/avatars/')) {
+    if (oldAvatarUrl && oldAvatarUrl.startsWith("/uploads/avatars/")) {
       const oldAvatarPath = path.join(avatarDir, path.basename(oldAvatarUrl));
       if (fs.existsSync(oldAvatarPath)) {
         try {
           fs.unlinkSync(oldAvatarPath);
         } catch (unlinkError) {
-          console.warn('Could not delete old avatar:', unlinkError.message);
+          console.warn("Could not delete old avatar:", unlinkError.message);
         }
       }
     }
 
     res.json({
-      status: 'OK',
-      message: 'Avatar uploaded successfully',
+      status: "OK",
+      message: "Avatar uploaded successfully",
       data: {
         avatar_url: avatarUrl,
         user: result.rows[0],
       },
     });
   } catch (error) {
-    console.error('Upload avatar error:', error);
+    console.error("Upload avatar error:", error);
     // Xóa file nếu có lỗi
     if (req.file && req.file.path) {
       try {
         fs.unlinkSync(req.file.path);
       } catch (unlinkError) {
-        console.warn('Could not delete uploaded file:', unlinkError.message);
+        console.warn("Could not delete uploaded file:", unlinkError.message);
       }
     }
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to upload avatar',
+      status: "ERROR",
+      message: "Failed to upload avatar",
       error: error.message,
     });
   }
@@ -281,46 +312,45 @@ const deleteAvatar = async (req, res) => {
 
     // Lấy thông tin avatar hiện tại
     const avatarResult = await db.query(
-      'SELECT avatar_url FROM dim_users WHERE id = $1',
-      [userId]
+      "SELECT avatar_url FROM dim_users WHERE id = $1",
+      [userId],
     );
 
     if (avatarResult.rows.length === 0) {
       return res.status(404).json({
-        status: 'ERROR',
-        message: 'User not found',
+        status: "ERROR",
+        message: "User not found",
       });
     }
 
     const avatarUrl = avatarResult.rows[0].avatar_url;
 
     // Xóa avatar_url trong database
-    await db.query(
-      'UPDATE dim_users SET avatar_url = NULL WHERE id = $1',
-      [userId]
-    );
+    await db.query("UPDATE dim_users SET avatar_url = NULL WHERE id = $1", [
+      userId,
+    ]);
 
     // Xóa file avatar nếu có
-    if (avatarUrl && avatarUrl.startsWith('/uploads/avatars/')) {
+    if (avatarUrl && avatarUrl.startsWith("/uploads/avatars/")) {
       const avatarPath = path.join(avatarDir, path.basename(avatarUrl));
       if (fs.existsSync(avatarPath)) {
         try {
           fs.unlinkSync(avatarPath);
         } catch (unlinkError) {
-          console.warn('Could not delete avatar file:', unlinkError.message);
+          console.warn("Could not delete avatar file:", unlinkError.message);
         }
       }
     }
 
     res.json({
-      status: 'OK',
-      message: 'Avatar deleted successfully',
+      status: "OK",
+      message: "Avatar deleted successfully",
     });
   } catch (error) {
-    console.error('Delete avatar error:', error);
+    console.error("Delete avatar error:", error);
     res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to delete avatar',
+      status: "ERROR",
+      message: "Failed to delete avatar",
       error: error.message,
     });
   }

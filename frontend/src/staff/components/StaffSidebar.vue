@@ -22,28 +22,39 @@
 
     <!-- Bottom actions -->
     <div class="flex flex-col items-center gap-2 pb-2">
-      <!-- Green payment button -->
-      <button
-        class="w-12 h-12 rounded-xl bg-green-500 hover:bg-green-600 transition grid place-items-center shadow-sm"
-        title="Nhập hàng"
+      <!-- Profile button -->
+      <RouterLink
+        to="/staff/my-profile"
+        class="w-12 h-12 rounded-xl grid place-items-center transition"
+        :class="
+          isActive('/staff/my-profile')
+            ? 'bg-blue-100 text-blue-600'
+            : 'text-slate-500 hover:bg-slate-100'
+        "
+        title="Tài khoản"
       >
-        <span class="text-white text-xl">💰</span>
-      </button>
+        <i class="fa-solid fa-user-circle text-2xl"></i>
+      </RouterLink>
 
-      <!-- Settings button -->
+      <!-- Logout button -->
       <button
-        class="w-12 h-12 rounded-xl grid place-items-center text-slate-500 hover:bg-slate-100 transition"
-        title="Cài đặt"
+        @click="handleLogout"
+        class="w-12 h-12 rounded-xl grid place-items-center text-red-500 hover:bg-red-50 transition"
+        title="Đăng xuất"
       >
-        <span class="text-2xl"><i class="fa-solid fa-gear"></i></span>
+        <i class="fa-solid fa-right-from-bracket text-2xl"></i>
       </button>
     </div>
   </nav>
 </template>
 
 <script setup>
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessageBox, ElMessage } from "element-plus";
+import authService from "@/services/authService";
+
 const route = useRoute();
+const router = useRouter();
 
 const items = [
   {
@@ -71,4 +82,24 @@ const items = [
 ];
 
 const isActive = (to) => route.path.startsWith(to);
+
+async function handleLogout() {
+  try {
+    await ElMessageBox.confirm(
+      "Bạn có chắc chắn muốn đăng xuất?",
+      "Xác nhận đăng xuất",
+      {
+        confirmButtonText: "Đăng xuất",
+        cancelButtonText: "Hủy",
+        type: "warning",
+      },
+    );
+
+    authService.logout();
+    router.push("/login");
+    ElMessage.success("Đăng xuất thành công!");
+  } catch (e) {
+    // User cancelled
+  }
+}
 </script>

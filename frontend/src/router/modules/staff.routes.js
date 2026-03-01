@@ -38,6 +38,12 @@ export default [
         component: () => import("@/staff/views/InventoryLookupDetail.vue"),
         meta: { title: "Chi tiết tồn kho" },
       },
+      {
+        path: "my-profile",
+        name: "StaffProfile",
+        component: () => import("@/staff/views/MyProfile.vue"),
+        meta: { title: "Thông tin cá nhân" },
+      },
     ],
   },
 ];
