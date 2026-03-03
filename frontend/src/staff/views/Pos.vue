@@ -343,7 +343,8 @@
     <el-dialog
       v-model="showDiscountModal"
       title="Chọn mã giảm giá"
-      width="720px"
+      width="90%"
+      style="max-width: 720px"
       @opened="loadActiveDiscounts"
     >
       <!-- Loading -->
@@ -472,7 +473,8 @@
     <el-dialog
       v-model="showCustomProductModal"
       title="Thêm sản phẩm tuỳ chỉnh"
-      width="480px"
+      width="90%"
+      style="max-width: 480px"
       @opened="focusCustomProductName"
     >
       <div class="space-y-4">
@@ -537,7 +539,8 @@
     <el-dialog
       v-model="showDraftListModal"
       title="Danh sách đơn nháp"
-      width="600px"
+      width="90%"
+      style="max-width: 600px"
       @opened="loadDraftOrders"
     >
       <div v-if="isLoadingDrafts" class="text-center py-4">
@@ -2415,26 +2418,559 @@ const handleKeyPress = async (e) => {
 }
 
 /* ===== RESPONSIVE ===== */
+
+/* --- Tablet Landscape & Small Desktop (≤1200px) --- */
 @media (max-width: 1200px) {
   .pos-main {
     grid-template-columns: 1fr;
     gap: 12px;
+    height: auto;
+    min-height: calc(100vh - 48px);
+    overflow: visible;
+  }
+
+  .left-column {
+    overflow: visible;
+  }
+
+  .cart-panel {
+    max-height: 50vh;
   }
 
   .right-column {
-    position: static;
+    position: sticky;
+    bottom: 0;
     max-height: none;
+    z-index: 20;
   }
 
   .footer-bar {
     flex-wrap: wrap;
     height: auto;
     padding: 12px;
+    gap: 10px;
   }
 
   .footer-left,
   .footer-right {
     flex-wrap: wrap;
+  }
+
+  .footer-center {
+    order: 3;
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+}
+
+/* --- Tablet Portrait (≤992px) --- */
+@media (max-width: 992px) {
+  .pos-main {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .cart-panel {
+    border-radius: 10px;
+  }
+
+  .footer-bar {
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .payment-section {
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  /* Hide less important footer items */
+  .footer-btn-subtitle {
+    display: none;
+  }
+
+  .footer-btn {
+    padding: 8px 10px;
+  }
+
+  .footer-btn-icon {
+    font-size: 1.2rem;
+  }
+
+  .footer-staff-name {
+    max-width: 80px;
+    font-size: 0.78rem;
+  }
+
+  .footer-kbd {
+    display: none;
+  }
+
+  /* Reduce cart table column sizes */
+  .cart-table th.col-product {
+    width: 35%;
+  }
+
+  .product-note-input {
+    max-width: 180px;
+  }
+
+  .product-thumbnail {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* --- Mobile (≤768px) --- */
+@media (max-width: 768px) {
+  .pos-main {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .cart-panel {
+    max-height: 45vh;
+    border-radius: 8px;
+  }
+
+  /* ---- Cart table → Card layout ---- */
+  .cart-table thead {
+    display: none;
+  }
+
+  .cart-table,
+  .cart-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .cart-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    position: relative;
+  }
+
+  .cart-row:hover {
+    box-shadow: none;
+  }
+
+  .cart-table td {
+    padding: 0;
+    border: none;
+  }
+
+  /* Product info - full width row */
+  .product-cell {
+    flex: 1 1 100%;
+    padding: 0 !important;
+    order: 1;
+  }
+
+  .product-row {
+    gap: 10px;
+  }
+
+  .product-thumbnail {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+
+  .product-name {
+    font-size: 0.88rem;
+    margin-bottom: 2px;
+  }
+
+  .product-meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .product-note-input {
+    display: none;
+  }
+
+  .product-unit {
+    font-size: 0.72rem;
+  }
+
+  /* Price - inline with quantity row */
+  .price-cell {
+    order: 2;
+    flex: 0 0 auto;
+  }
+
+  .price-value {
+    font-size: 0.82rem;
+    color: #64748b;
+  }
+
+  /* Quantity controls */
+  .quantity-cell {
+    order: 3;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .qty-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+
+  .qty-input {
+    width: 40px;
+    font-size: 0.85rem;
+  }
+
+  /* Total */
+  .total-cell {
+    order: 4;
+    flex: 0 0 auto;
+    margin-left: 8px;
+  }
+
+  .total-value {
+    font-size: 0.9rem;
+  }
+
+  /* Remove button - top right corner */
+  .action-cell {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    order: 5;
+  }
+
+  .btn-remove-item {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+
+  /* ---- Cart header ---- */
+  .cart-header {
+    padding: 10px 14px;
+  }
+
+  .cart-title {
+    font-size: 0.95rem;
+  }
+
+  .btn-split-line {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .btn-split-line .mr-1 {
+    display: none;
+  }
+
+  /* ---- Footer bar ---- */
+  .footer-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+
+  .footer-left {
+    display: none;
+  }
+
+  .footer-center {
+    order: 2;
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+
+  .footer-note-input {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    border-radius: 6px;
+  }
+
+  .footer-right {
+    flex: 1;
+    order: 1;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .footer-icon-btn {
+    min-width: auto;
+    padding: 8px 10px;
+    font-size: 1.05rem;
+  }
+
+  .footer-icon-label {
+    display: none;
+  }
+
+  .footer-divider {
+    display: none;
+  }
+
+  .footer-staff {
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+
+  .footer-staff-name {
+    display: none;
+  }
+
+  .footer-staff-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.65rem;
+  }
+
+  .footer-accent-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+
+  .footer-accent-btn span {
+    display: none;
+  }
+
+  .footer-accent-btn .footer-kbd {
+    display: none;
+  }
+
+  .footer-accent-btn i {
+    font-size: 1rem;
+  }
+
+  /* ---- Right column / Payment ---- */
+  .right-column {
+    position: sticky;
+    bottom: 0;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .payment-section {
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .customer-section {
+    padding: 8px;
+  }
+
+  .customer-section :deep(.customer-picker-wrapper) {
+    font-size: 0.85rem;
+  }
+
+  /* ---- Summary section compact ---- */
+  .summary-title {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .summary-row {
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+  }
+
+  .summary-label {
+    font-size: 0.82rem;
+  }
+
+  .total-row {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .total-value {
+    font-size: 1.3rem;
+  }
+
+  .btn-checkout-main {
+    padding: 14px;
+    font-size: 1rem;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+
+  .auto-print-checkbox {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .auto-print-checkbox .kbd {
+    display: none;
+  }
+
+  /* ---- Empty state ---- */
+  .empty-state {
+    padding: 24px;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+
+  .empty-title {
+    font-size: 0.95rem;
+  }
+
+  .empty-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .kbd {
+    padding: 2px 5px;
+    font-size: 0.68rem;
+  }
+
+  /* ---- Selected customer compact ---- */
+  .selected-customer {
+    padding: 8px;
+    margin-top: 8px;
+  }
+
+  .customer-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .customer-name {
+    font-size: 0.82rem;
+  }
+
+  .customer-phone {
+    font-size: 0.72rem;
+  }
+}
+
+/* --- Small Mobile (≤480px) --- */
+@media (max-width: 480px) {
+  .pos-main {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .cart-panel {
+    max-height: 40vh;
+    border-radius: 6px;
+  }
+
+  .cart-header {
+    padding: 8px 10px;
+  }
+
+  .cart-title {
+    font-size: 0.88rem;
+  }
+
+  .btn-split-line {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+
+  /* Card layout even more compact */
+  .cart-row {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .product-thumbnail {
+    width: 36px;
+    height: 36px;
+  }
+
+  .product-name {
+    font-size: 0.82rem;
+  }
+
+  .price-value {
+    font-size: 0.78rem;
+  }
+
+  .qty-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .qty-input {
+    width: 34px;
+    font-size: 0.8rem;
+  }
+
+  .total-cell {
+    font-size: 0.85rem;
+  }
+
+  /* Footer more compact */
+  .footer-bar {
+    padding: 8px;
+    margin-top: 6px;
+    border-radius: 6px;
+  }
+
+  .footer-note-input {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  .footer-accent-btn {
+    padding: 6px 10px;
+  }
+
+  /* Payment compact */
+  .payment-section {
+    padding: 10px;
+    border-radius: 6px;
+  }
+
+  .summary-title {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+  }
+
+  .summary-row {
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+  }
+
+  .total-value {
+    font-size: 1.15rem;
+  }
+
+  .btn-checkout-main {
+    padding: 12px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+  }
+
+  .auto-print-checkbox {
+    font-size: 0.75rem;
+  }
+
+  .btn-discount {
+    font-size: 0.72rem;
+    padding: 3px 6px;
+  }
+
+  .applied-code-tag {
+    font-size: 0.62rem;
+    padding: 0 6px;
   }
 }
 
@@ -2748,6 +3284,65 @@ const handleKeyPress = async (e) => {
 @media (max-width: 768px) {
   .discount-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-height: 400px;
+  }
+
+  .discount-card {
+    padding: 14px 10px 10px;
+    border-radius: 10px;
+    min-height: 150px;
+  }
+
+  .discount-card__value {
+    font-size: 1.3rem;
+  }
+
+  .discount-card__name {
+    font-size: 0.75rem;
+  }
+
+  .discount-card__code {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+  }
+
+  .discount-card__condition {
+    font-size: 0.65rem;
+  }
+
+  .discount-card__expiry {
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .discount-grid {
+    grid-template-columns: 1fr;
+    max-height: 350px;
+  }
+
+  .discount-card {
+    flex-direction: row;
+    text-align: left;
+    align-items: center;
+    min-height: auto;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .discount-card__value {
+    font-size: 1.15rem;
+    min-width: 60px;
+    margin-top: 0;
+  }
+
+  .discount-card__details {
+    align-items: flex-start;
+  }
+
+  .discount-card__condition {
+    justify-content: flex-start;
   }
 }
 </style>

@@ -44,7 +44,7 @@
     </div>
 
     <!-- Search - Large -->
-    <div class="flex-1 max-w-xl mr-4 relative">
+    <div class="flex-1 max-w-xl mr-2 md:mr-4 relative">
       <div
         class="bg-white rounded-[50px] px-4 py-2 flex items-center gap-3 h-[45px] shadow-sm focus-within:outline-none focus-within:ring-0"
       >
@@ -85,7 +85,11 @@
           @mousedown="selectProduct(product)"
         >
           <div class="search-thumb">
-            <img v-if="product.image" :src="product.image" :alt="product.name" />
+            <img
+              v-if="product.image"
+              :src="product.image"
+              :alt="product.name"
+            />
             <span v-else>📦</span>
           </div>
           <div class="flex-1">
@@ -112,7 +116,7 @@
     </div>
 
     <!-- Tabs Đơn hàng - Center -->
-    <div class="flex items-center gap-2 mx-4">
+    <div class="flex items-center gap-2 mx-4 overflow-x-auto scrollbar-hide">
       <button
         v-for="t in tabs"
         :key="t.id"
@@ -137,17 +141,17 @@
     </div>
 
     <!-- Right Section - Info & User -->
-    <div class="ml-auto flex items-center gap-3">
+    <div class="ml-auto flex items-center gap-2 md:gap-3 flex-shrink-0">
       <!-- Branch Info -->
       <div
-        class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 transition cursor-pointer"
+        class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 transition cursor-pointer"
       >
         <span class="text-xl"><i class="fa-solid fa-location-dot"></i></span>
         <span class="text-xs font-medium">{{ props.storeName }}</span>
       </div>
 
       <!-- Status Icons -->
-      <div class="flex items-center gap-1">
+      <div class="hidden md:flex items-center gap-1">
         <button
           class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition"
           title="Kết nối WiFi"
@@ -547,5 +551,112 @@ header {
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Tablet (≤992px) */
+@media (max-width: 992px) {
+  header {
+    padding: 0 8px !important;
+    gap: 4px;
+  }
+
+  .tab-button {
+    padding: 0 10px;
+    font-size: 0.8rem;
+    height: 32px;
+  }
+
+  .add-tab-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .search-kbd {
+    display: none;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  header {
+    flex-wrap: wrap;
+    height: auto !important;
+    padding: 6px 8px !important;
+    gap: 6px;
+  }
+
+  /* Tabs row: scroll horizontally */
+  .tab-button {
+    padding: 0 8px;
+    font-size: 0.75rem;
+    height: 30px;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .close-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 14px;
+    margin-left: 2px;
+  }
+
+  .add-tab-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  /* Smaller search dropdown items */
+  .search-item {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .search-thumb {
+    width: 32px;
+    height: 32px;
+  }
+
+  .product-name {
+    font-size: 0.8rem;
+  }
+
+  .product-meta {
+    font-size: 0.68rem;
+  }
+
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Small Mobile (≤480px) */
+@media (max-width: 480px) {
+  header {
+    padding: 4px 6px !important;
+  }
+
+  .tab-button {
+    padding: 0 6px;
+    font-size: 0.7rem;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .add-tab-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .search-dropdown {
+    max-height: 200px;
+  }
 }
 </style>

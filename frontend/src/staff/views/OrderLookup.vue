@@ -2,11 +2,13 @@
   <div class="h-full bg-slate-50">
     <PageHeader title="Tra cứu đơn hàng" />
 
-    <div class="p-4">
-      <div class="grid grid-cols-[380px_1fr] gap-4 h-[calc(100vh-64px-32px)]">
+    <div class="p-3 sm:p-4">
+      <div
+        class="grid grid-cols-1 md:grid-cols-[360px_1fr] gap-4 md:h-[calc(100vh-64px-32px)]"
+      >
         <!-- LEFT: Order list -->
         <aside
-          class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col"
+          class="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col max-h-[50vh] md:max-h-none"
         >
           <!-- Search & filters -->
           <div class="p-3 border-b border-slate-200 space-y-3">
@@ -34,7 +36,7 @@
               </button>
             </div>
 
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap">
               <el-date-picker
                 v-model="dateRange"
                 type="daterange"
@@ -44,7 +46,7 @@
                 format="DD/MM/YYYY"
                 value-format="YYYY-MM-DD"
                 size="default"
-                class="flex-1 !w-auto"
+                class="flex-1 !w-auto min-w-0"
                 @change="fetchOrders()"
               />
             </div>
@@ -105,7 +107,7 @@
                 class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600"
               ></div>
 
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start justify-between gap-3 flex-wrap">
                 <div class="min-w-0 flex-1">
                   <div class="font-semibold text-slate-900">
                     #{{ o.order_code }}
@@ -203,7 +205,7 @@
           <template v-else-if="detail">
             <!-- Header -->
             <div
-              class="p-4 border-b border-slate-200 flex items-start justify-between gap-4"
+              class="p-3 sm:p-4 border-b border-slate-200 flex flex-wrap items-start justify-between gap-3"
             >
               <div>
                 <div class="flex items-center gap-3">
@@ -260,7 +262,7 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
                 <button
                   v-if="detail.status === 'completed'"
                   class="h-10 px-5 rounded-xl border border-orange-300 text-orange-700 bg-white hover:bg-orange-50 transition font-semibold text-sm"
@@ -279,7 +281,7 @@
 
             <!-- Product table -->
             <div class="flex-1 min-h-0 overflow-auto">
-              <div class="p-4">
+              <div class="p-3 sm:p-4">
                 <div
                   class="border border-slate-200 rounded-2xl overflow-hidden"
                 >
@@ -292,7 +294,7 @@
                     </span>
                   </div>
 
-                  <div class="divide-y divide-slate-100">
+                  <div class="divide-y divide-slate-100 overflow-x-auto">
                     <!-- Header row -->
                     <div
                       class="px-4 py-2 flex items-center gap-4 text-xs font-medium text-slate-500 uppercase tracking-wide"
@@ -341,7 +343,7 @@
 
                   <!-- Summary area -->
                   <div
-                    class="border-t border-slate-200 p-4 grid grid-cols-2 gap-6"
+                    class="border-t border-slate-200 p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6"
                   >
                     <!-- Left summary -->
                     <div class="space-y-2 text-sm">
@@ -465,7 +467,8 @@
     <el-dialog
       v-model="showReturnDialog"
       title="Hoàn trả đơn hàng"
-      width="600px"
+      width="90%"
+      style="max-width: 600px"
       :close-on-click-modal="false"
     >
       <div class="space-y-4">

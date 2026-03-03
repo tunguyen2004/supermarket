@@ -390,7 +390,9 @@
       <div class="data-card">
         <div class="card-header">
           <h3>Khách hàng thân thiết</h3>
-          <a href="#" @click.prevent="$router.push('/customers')">Xem tất cả</a>
+          <a href="#" @click.prevent="$router.push('/customer-list')"
+            >Xem tất cả</a
+          >
         </div>
         <div class="customer-grid">
           <div

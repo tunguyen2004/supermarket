@@ -3,14 +3,14 @@
     <PageHeader title="Báo cáo cuối ngày" />
 
     <!-- content -->
-    <div class="p-4 space-y-4">
+    <div class="p-3 sm:p-4 space-y-4">
       <!-- Filters row -->
       <div
-        class="sticky top-0 z-30 bg-slate-50 pb-3 -mt-0 flex items-center gap-3 flex-wrap"
+        class="sticky top-0 z-30 bg-slate-50 pb-3 -mt-0 flex flex-wrap items-center gap-3"
       >
         <!-- Tabs -->
         <div
-          class="bg-white border border-slate-200 rounded-xl p-1 flex items-center flex-wrap"
+          class="bg-white border border-slate-200 rounded-xl p-1 flex items-center flex-wrap gap-1"
         >
           <button
             v-for="t in tabs"
@@ -39,17 +39,20 @@
         </div>
 
         <!-- Custom date range -->
-        <div v-if="activeTab === 'custom'" class="flex items-center gap-2">
+        <div
+          v-if="activeTab === 'custom'"
+          class="flex flex-wrap items-center gap-2 w-full sm:w-auto"
+        >
           <input
             type="date"
             v-model="customFrom"
-            class="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="flex-1 min-w-[130px] bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <span class="text-slate-400">→</span>
           <input
             type="date"
             v-model="customTo"
-            class="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="flex-1 min-w-[130px] bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
@@ -62,7 +65,7 @@
         <!-- Staff select -->
         <div class="relative" ref="staffDropdownRef">
           <button
-            class="bg-white border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2 w-[260px] text-sm hover:border-blue-400 transition"
+            class="bg-white border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2 w-full sm:w-[220px] text-sm hover:border-blue-400 transition"
             @click="showStaffDropdown = !showStaffDropdown"
           >
             <i class="fa-solid fa-user text-slate-400"></i>
@@ -73,7 +76,7 @@
           </button>
           <div
             v-if="showStaffDropdown"
-            class="absolute top-full left-0 mt-1 w-[260px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-64 overflow-auto"
+            class="absolute top-full left-0 mt-1 w-full sm:w-[220px] bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-64 overflow-auto"
           >
             <button
               class="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition"
@@ -102,9 +105,11 @@
           </div>
         </div>
 
-        <div class="ml-auto flex items-center gap-2">
+        <div
+          class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0 sm:ml-auto w-full sm:w-auto"
+        >
           <button
-            class="h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 transition text-white font-semibold flex items-center gap-2"
+            class="flex-1 sm:flex-none h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-blue-600 hover:bg-blue-700 transition text-white font-semibold flex items-center justify-center gap-2 text-sm"
             @click="printReport"
             :disabled="printing"
           >
@@ -112,7 +117,7 @@
             {{ printing ? "Đang tải..." : "In báo cáo" }}
           </button>
           <button
-            class="h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition text-white font-semibold flex items-center gap-2"
+            class="flex-1 sm:flex-none h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 transition text-white font-semibold flex items-center justify-center gap-2 text-sm"
             @click="showSubmitDialog = true"
             :disabled="submitting || loading"
           >
@@ -469,8 +474,8 @@
             </div>
           </div>
 
-          <div class="border-t border-slate-200 overflow-auto">
-            <table class="w-full text-sm">
+          <div class="border-t border-slate-200 overflow-x-auto">
+            <table class="w-full text-sm min-w-[750px]">
               <thead class="bg-slate-50 text-slate-600">
                 <tr>
                   <th class="text-left font-medium px-4 py-3 w-[50px]">STT</th>
