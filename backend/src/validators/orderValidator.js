@@ -97,6 +97,7 @@ const orderListQuerySchema = Joi.object({
   from: Joi.date().iso().allow(""),
   to: Joi.date().iso().allow(""),
   customer_type: Joi.string().valid("walk_in").allow(""),
+  store_id: Joi.number().integer().min(1),
 });
 
 module.exports = {

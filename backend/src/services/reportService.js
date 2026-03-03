@@ -796,7 +796,7 @@ const getStaffList = async (req, res) => {
 //                    SUBMITTED REPORTS (NỘP BÁO CÁO)
 // ============================================================================
 
-const { generateSequentialCode, getDateStr } = require("../utils/codeGenerator");
+const { generateSequentialCode, generateCashbookCode, getDateStr } = require("../utils/codeGenerator");
 
 /**
  * POST /api/reports/submit
@@ -950,10 +950,14 @@ const getSubmittedReports = async (req, res) => {
         r.products_summary, r.top_products, r.returns_data,
         r.reviewed_at,
         u.full_name as submitted_by_name,
-        u2.full_name as reviewed_by_name
+        u2.full_name as reviewed_by_name,
+        ct.transaction_code as linked_transaction_code,
+        ct.amount as linked_transaction_amount
        FROM fact_submitted_reports r
        JOIN dim_users u ON r.submitted_by = u.id
        LEFT JOIN dim_users u2 ON r.reviewed_by = u2.id
+       LEFT JOIN fact_cashbook_transactions ct 
+         ON ct.reference_type = 'submitted_report' AND ct.reference_id = r.id
        ${where}
        ORDER BY r.submitted_at DESC
        LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
@@ -1007,9 +1011,31 @@ const getSubmittedReportById = async (req, res) => {
       });
     }
 
+    const report = result.rows[0];
+
+    // Nếu báo cáo đã duyệt, lấy phiếu thu liên kết
+    let linkedTransaction = null;
+    if (report.status === 'approved') {
+      const txResult = await db.query(
+        `SELECT ct.id, ct.transaction_code, ct.amount, ct.status, ct.date_key,
+                ct.created_at, s.name as store_name
+         FROM fact_cashbook_transactions ct
+         JOIN dim_stores s ON ct.store_id = s.id
+         WHERE ct.reference_type = 'submitted_report' AND ct.reference_id = $1
+         LIMIT 1`,
+        [id]
+      );
+      if (txResult.rows.length > 0) {
+        linkedTransaction = txResult.rows[0];
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      data: result.rows[0],
+      data: {
+        ...report,
+        linked_transaction: linkedTransaction,
+      },
     });
   } catch (error) {
     console.error("Get submitted report detail error:", error);
@@ -1022,10 +1048,38 @@ const getSubmittedReportById = async (req, res) => {
 };
 
 /**
+ * Helper: Đảm bảo ngày tồn tại trong dim_time (dùng cho auto tạo phiếu thu)
+ */
+async function ensureDateExistsForReport(client, dateStr) {
+  const date = new Date(dateStr);
+  const dayOfWeek = date.getDay();
+  const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                      'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+
+  const checkResult = await client.query('SELECT date_key FROM dim_time WHERE date_key = $1', [dateStr]);
+  if (checkResult.rows.length === 0) {
+    await client.query(`
+      INSERT INTO dim_time (date_key, day_of_week, day_name, week_of_year, month, month_name, quarter, year, is_weekend)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (date_key) DO NOTHING
+    `, [
+      dateStr, dayOfWeek, dayNames[dayOfWeek],
+      Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / (7 * 24 * 60 * 60 * 1000)),
+      date.getMonth() + 1, monthNames[date.getMonth()],
+      Math.ceil((date.getMonth() + 1) / 3), date.getFullYear(),
+      dayOfWeek === 0 || dayOfWeek === 6
+    ]);
+  }
+}
+
+/**
  * PATCH /api/reports/submitted/:id/status
  * Admin duyệt / từ chối báo cáo
+ * Khi duyệt (approved) → tự động tạo phiếu thu (SALES_INCOME) vào sổ quỹ
  */
 const updateReportStatus = async (req, res) => {
+  const client = await db.pool.connect();
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -1037,34 +1091,137 @@ const updateReportStatus = async (req, res) => {
       });
     }
 
-    const result = await db.query(
-      `UPDATE fact_submitted_reports
-       SET status = $1, reviewed_by = $2, reviewed_at = NOW(), updated_at = NOW()
-       WHERE id = $3
-       RETURNING id, report_code, status`,
-      [status, req.user.id, id]
+    await client.query("BEGIN");
+
+    // Lấy thông tin báo cáo + store_id của người nộp
+    const reportResult = await client.query(
+      `SELECT r.id, r.report_code, r.status, r.grand_total, r.net_revenue,
+              r.period_from, r.period_to, r.submitted_by, r.title,
+              r.actual_summary,
+              u.store_id, u.full_name as submitted_by_name
+       FROM fact_submitted_reports r
+       JOIN dim_users u ON r.submitted_by = u.id
+       WHERE r.id = $1`,
+      [id]
     );
 
-    if (result.rows.length === 0) {
+    if (reportResult.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy báo cáo",
       });
     }
 
+    const report = reportResult.rows[0];
+
+    // Chỉ báo cáo đang ở trạng thái submitted mới được duyệt/từ chối
+    if (report.status !== 'submitted') {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        success: false,
+        message: `Báo cáo đang ở trạng thái "${report.status}", không thể cập nhật`,
+      });
+    }
+
+    // Cập nhật trạng thái báo cáo
+    await client.query(
+      `UPDATE fact_submitted_reports
+       SET status = $1, reviewed_by = $2, reviewed_at = NOW(), updated_at = NOW()
+       WHERE id = $3`,
+      [status, req.user.id, id]
+    );
+
+    let cashbookTransaction = null;
+
+    // Nếu duyệt → tự động tạo phiếu thu vào sổ quỹ
+    if (status === "approved") {
+      const actualSummary = report.actual_summary || {};
+      const grandTotal = parseFloat(actualSummary.grand_total || report.grand_total || report.net_revenue || 0);
+
+      if (grandTotal > 0 && report.store_id) {
+        // Lấy cashbook_type_id cho SALES_INCOME
+        const typeResult = await client.query(
+          "SELECT id FROM subdim_cashbook_types WHERE code = 'SALES_INCOME'"
+        );
+
+        // Lấy payment_method_id cho CASH (mặc định)
+        const pmResult = await client.query(
+          "SELECT id FROM subdim_payment_methods WHERE code = 'CASH'"
+        );
+
+        if (typeResult.rows.length > 0) {
+          const cashbookTypeId = typeResult.rows[0].id;
+          const paymentMethodId = pmResult.rows.length > 0 ? pmResult.rows[0].id : null;
+          const transactionDate = report.period_to || new Date().toISOString().split("T")[0];
+
+          // Đảm bảo ngày tồn tại trong dim_time
+          await ensureDateExistsForReport(client, transactionDate);
+
+          // Sinh mã phiếu thu
+          const transactionCode = await generateCashbookCode(client, 1);
+
+          // Tạo phiếu thu
+          const insertResult = await client.query(
+            `INSERT INTO fact_cashbook_transactions (
+              transaction_code, date_key, store_id, cashbook_type_id, payment_method_id,
+              amount, reference_type, reference_id, description, recipient_name,
+              created_by, approved_by, approved_at, status, notes
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14)
+            RETURNING id, transaction_code`,
+            [
+              transactionCode,
+              transactionDate,
+              report.store_id,
+              cashbookTypeId,
+              paymentMethodId,
+              grandTotal,
+              'submitted_report',
+              report.id,
+              `Thu tiền bán hàng - ${report.title || report.report_code}`,
+              report.submitted_by_name || null,
+              report.submitted_by,
+              req.user.id,
+              'approved',
+              `Tự động tạo khi duyệt báo cáo ${report.report_code} (${report.period_from} → ${report.period_to})`
+            ]
+          );
+
+          cashbookTransaction = insertResult.rows[0];
+        }
+      }
+    }
+
+    await client.query("COMMIT");
+
     const statusLabel = status === "approved" ? "duyệt" : "từ chối";
+    const responseData = {
+      id: report.id,
+      report_code: report.report_code,
+      status,
+    };
+
+    if (cashbookTransaction) {
+      responseData.cashbook_transaction = cashbookTransaction;
+    }
+
     return res.status(200).json({
       success: true,
-      message: `Đã ${statusLabel} báo cáo ${result.rows[0].report_code}`,
-      data: result.rows[0],
+      message: cashbookTransaction
+        ? `Đã ${statusLabel} báo cáo ${report.report_code} và tạo phiếu thu ${cashbookTransaction.transaction_code}`
+        : `Đã ${statusLabel} báo cáo ${report.report_code}`,
+      data: responseData,
     });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Update report status error:", error);
     return res.status(500).json({
       success: false,
       message: "Lỗi khi cập nhật trạng thái báo cáo",
       error: error.message,
     });
+  } finally {
+    client.release();
   }
 };
 

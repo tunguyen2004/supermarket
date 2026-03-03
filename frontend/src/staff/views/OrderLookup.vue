@@ -526,6 +526,9 @@ import orderService from "@/services/orderService";
 import formatCurrency from "@/utils/formatCurrency";
 
 // ── State ──────────────────────────────────────────
+const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+const currentStoreId = currentUser.store_id || null;
+
 const searchText = ref("");
 const dateRange = ref(null);
 const statusFilter = ref("");
@@ -589,6 +592,7 @@ async function fetchOrders(resetPage = true) {
       sort: "created_at",
       order: "DESC",
     };
+    if (currentStoreId) params.store_id = currentStoreId;
     if (searchText.value.trim()) params.search = searchText.value.trim();
     if (statusFilter.value) params.status = statusFilter.value;
     if (paymentFilter.value) params.payment_status = paymentFilter.value;

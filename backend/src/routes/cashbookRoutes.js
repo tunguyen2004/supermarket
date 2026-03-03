@@ -147,6 +147,36 @@ router.get('/summary', authenticate, cashbookService.getTransactionSummary);
 
 /**
  * @swagger
+ * /api/transactions/my-transactions:
+ *   get:
+ *     summary: Lấy danh sách giao dịch của nhân viên đang đăng nhập
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [thu, chi]
+ *     responses:
+ *       200:
+ *         description: Danh sách giao dịch cá nhân
+ */
+router.get('/my-transactions', authenticate, cashbookService.getMyTransactions);
+
+/**
+ * @swagger
  * /api/transactions/{id}:
  *   get:
  *     summary: Chi tiết giao dịch

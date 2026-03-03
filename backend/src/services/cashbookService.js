@@ -16,7 +16,7 @@
  */
 
 const db = require('../config/database');
-const { generateCashbookCode } = require('../utils/codeGenerator');
+const { generateCashbookCode, generateTransactionCode } = require('../utils/codeGenerator');
 
 /**
  * Helper: Đảm bảo ngày tồn tại trong dim_time
@@ -778,23 +778,29 @@ const getPaymentMethods = async (req, res) => {
  * 9. Duyệt giao dịch - PATCH /api/transactions/:id/approve
  */
 const approveTransaction = async (req, res) => {
+  const client = await db.pool.connect();
   try {
     const { id } = req.params;
     const { action } = req.body; // 'approve' or 'reject'
 
-    const existingResult = await db.query(
-      'SELECT id, transaction_code, status FROM fact_cashbook_transactions WHERE id = $1',
+    const existingResult = await client.query(
+      `SELECT id, transaction_code, status, reference_type, notes, store_id
+       FROM fact_cashbook_transactions WHERE id = $1`,
       [id]
     );
 
     if (existingResult.rows.length === 0) {
+      client.release();
       return res.status(404).json({
         success: false,
         message: 'Không tìm thấy giao dịch'
       });
     }
 
-    if (existingResult.rows[0].status !== 'pending') {
+    const transaction = existingResult.rows[0];
+
+    if (transaction.status !== 'pending') {
+      client.release();
       return res.status(400).json({
         success: false,
         message: 'Chỉ có thể duyệt giao dịch ở trạng thái chờ duyệt'
@@ -803,23 +809,214 @@ const approveTransaction = async (req, res) => {
 
     const newStatus = action === 'reject' ? 'rejected' : 'approved';
 
-    await db.query(
+    await client.query('BEGIN');
+
+    await client.query(
       `UPDATE fact_cashbook_transactions 
        SET status = $1, approved_by = $2, approved_at = NOW(), updated_at = NOW()
        WHERE id = $3`,
       [newStatus, req.user.id, id]
     );
 
+    // Auto-create inventory transactions when approving a purchase_request
+    let inventoryResult = null;
+    if (newStatus === 'approved' && transaction.reference_type === 'purchase_request') {
+      inventoryResult = await processPurchaseRequestInventory(client, transaction, req.user.id);
+    }
+
+    await client.query('COMMIT');
+
+    const message = action === 'reject'
+      ? `Đã từ chối giao dịch ${transaction.transaction_code}`
+      : `Đã duyệt giao dịch ${transaction.transaction_code}`;
+
     res.json({
       success: true,
-      message: `Đã ${action === 'reject' ? 'từ chối' : 'duyệt'} giao dịch ${existingResult.rows[0].transaction_code}`
+      message: inventoryResult
+        ? `${message}. Đã nhập kho ${inventoryResult.items_count} sản phẩm.`
+        : message,
+      inventory: inventoryResult || null
     });
 
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Approve transaction error:', error);
     res.status(500).json({
       success: false,
       message: 'Lỗi khi duyệt giao dịch',
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Helper: Process purchase request → create inventory receive transactions
+ */
+async function processPurchaseRequestInventory(client, transaction, userId) {
+  let purchaseData;
+  try {
+    purchaseData = JSON.parse(transaction.notes);
+  } catch (e) {
+    console.error('Cannot parse purchase_request notes:', e);
+    return null;
+  }
+
+  const items = purchaseData?.items;
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  const storeId = transaction.store_id;
+  if (!storeId) return null;
+
+  // Get IMPORT transaction type
+  const typeResult = await client.query(
+    "SELECT id FROM subdim_transaction_types WHERE code = 'IMPORT'"
+  );
+  if (typeResult.rows.length === 0) return null;
+  const transactionTypeId = typeResult.rows[0].id;
+
+  const today = new Date().toISOString().split('T')[0];
+  await ensureDateExists(client, today);
+
+  const transactionCodes = [];
+
+  for (const item of items) {
+    const { variant_id, quantity, unit_cost } = item;
+    if (!variant_id || !quantity || quantity <= 0) continue;
+
+    // Get current stock
+    const currentResult = await client.query(
+      'SELECT quantity_on_hand FROM fact_inventory_stocks WHERE store_id = $1 AND variant_id = $2',
+      [storeId, variant_id]
+    );
+    const currentStock = currentResult.rows.length > 0
+      ? parseFloat(currentResult.rows[0].quantity_on_hand)
+      : 0;
+    const newStock = currentStock + parseFloat(quantity);
+
+    // Update or insert stock
+    if (currentResult.rows.length > 0) {
+      await client.query(
+        `UPDATE fact_inventory_stocks
+         SET quantity_on_hand = $1, last_updated = CURRENT_TIMESTAMP
+         WHERE store_id = $2 AND variant_id = $3`,
+        [newStock, storeId, variant_id]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO fact_inventory_stocks (store_id, variant_id, quantity_on_hand, last_updated)
+         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+        [storeId, variant_id, newStock]
+      );
+    }
+
+    // Create inventory transaction
+    const txCode = await generateTransactionCode(client, 'RCV');
+    await client.query(
+      `INSERT INTO fact_inventory_transactions 
+       (transaction_code, date_key, transaction_type_id, store_id, variant_id,
+        quantity_change, balance_before, balance_after, reference_type, unit_cost, created_by, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        txCode, today, transactionTypeId, storeId, variant_id,
+        quantity, currentStock, newStock,
+        'PURCHASE_APPROVED',
+        unit_cost || 0,
+        userId,
+        `Nhập kho từ phiếu ${transaction.transaction_code}`
+      ]
+    );
+    transactionCodes.push(txCode);
+  }
+
+  return {
+    transaction_codes: transactionCodes,
+    items_count: transactionCodes.length
+  };
+}
+
+/**
+ * 10. Lấy giao dịch của nhân viên đang đăng nhập - GET /api/transactions/my-transactions
+ * Query: from, to, type (thu/chi)
+ */
+const getMyTransactions = async (req, res) => {
+  try {
+    const { from, to, type } = req.query;
+    const userId = req.user.id;
+
+    const today = new Date().toISOString().split('T')[0];
+    const fromDate = from || today;
+    const toDate = to || today;
+
+    const params = [userId, fromDate, toDate];
+    let typeFilter = '';
+
+    if (type === 'thu') {
+      typeFilter = ' AND cbt.transaction_direction = 1';
+    } else if (type === 'chi') {
+      typeFilter = ' AND cbt.transaction_direction = -1';
+    }
+
+    const query = `
+      SELECT 
+        ct.id,
+        ct.transaction_code,
+        ct.date_key,
+        s.name as store_name,
+        cbt.code as type_code,
+        cbt.name as type_name,
+        cbt.transaction_direction,
+        CASE WHEN cbt.transaction_direction = 1 THEN 'thu' ELSE 'chi' END as transaction_type,
+        pm.code as payment_method_code,
+        pm.name as payment_method_name,
+        ct.amount,
+        ct.description,
+        ct.recipient_name,
+        ct.status,
+        ct.created_at,
+        ct.notes
+      FROM fact_cashbook_transactions ct
+      JOIN subdim_cashbook_types cbt ON ct.cashbook_type_id = cbt.id
+      JOIN dim_stores s ON ct.store_id = s.id
+      LEFT JOIN subdim_payment_methods pm ON ct.payment_method_id = pm.id
+      WHERE ct.created_by = $1
+        AND ct.date_key >= $2
+        AND ct.date_key <= $3
+        ${typeFilter}
+      ORDER BY ct.created_at DESC
+    `;
+
+    const result = await db.query(query, params);
+
+    // Tính tổng thu/chi
+    let totalIncome = 0;
+    let totalExpense = 0;
+    result.rows.forEach(row => {
+      if (row.transaction_direction === 1) {
+        totalIncome += parseFloat(row.amount);
+      } else {
+        totalExpense += parseFloat(row.amount);
+      }
+    });
+
+    res.json({
+      success: true,
+      data: result.rows,
+      summary: {
+        total_income: totalIncome,
+        total_expense: totalExpense,
+        net: totalIncome - totalExpense,
+        count: result.rows.length,
+      },
+      message: 'Lấy danh sách giao dịch cá nhân thành công'
+    });
+
+  } catch (error) {
+    console.error('Get my transactions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy danh sách giao dịch cá nhân',
       error: error.message
     });
   }
@@ -834,5 +1031,6 @@ module.exports = {
   getTransactionSummary,
   getCashbookTypes,
   getPaymentMethods,
-  approveTransaction
+  approveTransaction,
+  getMyTransactions
 };

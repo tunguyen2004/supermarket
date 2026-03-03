@@ -88,6 +88,15 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="Phiếu thu" width="170" align="center">
+          <template #default="{ row }">
+            <span v-if="row.linked_transaction_code" class="linked-code-inline">
+              <i class="fa-solid fa-receipt"></i>
+              {{ row.linked_transaction_code }}
+            </span>
+            <span v-else-if="row.status === 'approved'" class="text-xs text-slate-400">—</span>
+          </template>
+        </el-table-column>
         <el-table-column label="Thao tác" width="220" align="center">
           <template #default="{ row }">
             <div class="action-buttons">
@@ -290,6 +299,28 @@
           <span><i class="fa-solid fa-user-check"></i> Người duyệt: <b>{{ viewingReport.reviewed_by_name }}</b></span>
           <span v-if="viewingReport.reviewed_at"><i class="fa-solid fa-clock"></i> {{ formatDateTime(viewingReport.reviewed_at) }}</span>
         </div>
+
+        <!-- Linked Cashbook Transaction -->
+        <div v-if="viewingReport.linked_transaction_code || viewingReport.linked_transaction" class="linked-transaction-box">
+          <div class="linked-transaction-header">
+            <i class="fa-solid fa-receipt"></i>
+            <span>Phiếu thu tự động</span>
+          </div>
+          <div class="linked-transaction-body">
+            <div class="linked-transaction-row">
+              <span>Mã phiếu thu</span>
+              <span class="linked-code">{{ viewingReport.linked_transaction_code || viewingReport.linked_transaction?.transaction_code }}</span>
+            </div>
+            <div class="linked-transaction-row">
+              <span>Số tiền</span>
+              <span class="font-semibold text-emerald-600">{{ formatCurrency(viewingReport.linked_transaction_amount || viewingReport.linked_transaction?.amount) }}</span>
+            </div>
+            <div v-if="viewingReport.linked_transaction?.store_name" class="linked-transaction-row">
+              <span>Cửa hàng</span>
+              <span>{{ viewingReport.linked_transaction.store_name }}</span>
+            </div>
+          </div>
+        </div>
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -329,6 +360,7 @@ import {
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   getSubmittedReports,
+  getSubmittedReportById,
   updateReportStatus,
 } from "@/services/reportService";
 
@@ -393,8 +425,18 @@ async function loadReports() {
   }
 }
 
-function viewReport(report) {
-  viewingReport.value = report;
+async function viewReport(report) {
+  try {
+    const { data: res } = await getSubmittedReportById(report.id);
+    if (res.success) {
+      viewingReport.value = res.data;
+    } else {
+      viewingReport.value = report;
+    }
+  } catch (e) {
+    console.error("Load report detail error:", e);
+    viewingReport.value = report;
+  }
   isViewModalVisible.value = true;
 }
 
@@ -413,7 +455,15 @@ async function handleStatusChange(report, newStatus) {
 
     const { data: res } = await updateReportStatus(report.id, newStatus);
     if (res.success) {
-      ElMessage.success(res.message);
+      // Nếu duyệt và có tạo phiếu thu tự động → thông báo chi tiết
+      if (newStatus === 'approved' && res.data?.cashbook_transaction) {
+        ElMessage.success({
+          message: res.message,
+          duration: 5000,
+        });
+      } else {
+        ElMessage.success(res.message);
+      }
       loadReports();
     }
   } catch (e) {
@@ -675,6 +725,53 @@ function paymentMethodLabel(m) {
 .top-spent-value {
   font-weight: 600;
   color: #059669;
+}
+.linked-transaction-box {
+  margin-top: 16px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.linked-transaction-header {
+  padding: 10px 14px;
+  background: #d1fae5;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.linked-transaction-body {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.linked-transaction-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+.linked-code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-weight: 700;
+  color: #059669;
+  background: #d1fae5;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.linked-code-inline {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .report-detail-grid {
   display: grid;

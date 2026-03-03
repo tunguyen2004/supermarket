@@ -1343,6 +1343,7 @@ async function searchProductsForLookup(req, res) {
                 pv.id as variant_id,
                 pv.variant_name,
                 pv.selling_price as price,
+                pv.cost_price,
                 COALESCE(SUM(fis.quantity_available), 0) as total_stock,
                 COUNT(DISTINCT fis.store_id) as store_count,
                 COALESCE(p.image_url, (SELECT image_url FROM dim_product_images WHERE product_id = p.id AND is_primary = true LIMIT 1)) as image_url
@@ -1351,7 +1352,7 @@ async function searchProductsForLookup(req, res) {
             LEFT JOIN fact_inventory_stocks fis ON pv.id = fis.variant_id ${storeCondition}
             WHERE p.is_active = true
             ${searchCondition}
-            GROUP BY p.id, p.name, p.code, pv.sku, pv.barcode, p.is_active, pv.id, pv.variant_name, pv.selling_price
+            GROUP BY p.id, p.name, p.code, pv.sku, pv.barcode, p.is_active, pv.id, pv.variant_name, pv.selling_price, pv.cost_price
             ORDER BY ${sortMap[sortColumn]} ${sortDir}
             LIMIT $${paramIndex + 1} OFFSET $${paramIndex + 2}
         `;
@@ -1385,6 +1386,7 @@ async function searchProductsForLookup(req, res) {
         sku: row.sku,
         barcode: row.barcode,
         price: parseFloat(row.price || 0),
+        cost_price: parseFloat(row.cost_price || 0),
         total_stock: parseInt(row.total_stock || 0),
         store_count: parseInt(row.store_count || 0),
         image_url: row.image_url,

@@ -29,6 +29,7 @@ const getOrderList = async (req, res) => {
       from,
       to,
       customer_type,
+      store_id,
     } = req.query;
 
     // Đảm bảo limit và offset là số
@@ -87,6 +88,12 @@ const getOrderList = async (req, res) => {
 
     if (customer_type === "walk_in") {
       whereConditions.push(`fo.customer_id IS NULL`);
+    }
+
+    if (store_id) {
+      whereConditions.push(`fo.store_id = $${paramIndex}`);
+      queryParams.push(parseInt(store_id));
+      paramIndex++;
     }
 
     const whereClause =

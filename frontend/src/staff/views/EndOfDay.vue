@@ -396,6 +396,91 @@
           </div>
         </div>
 
+        <!-- Phiếu chi tại quầy -->
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+          <div class="p-4 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <div class="text-lg font-semibold">Phiếu chi tại quầy</div>
+              <span class="text-sm text-slate-400">({{ myTransactions.length }} phiếu)</span>
+            </div>
+            <button
+              class="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition flex items-center gap-2"
+              @click="showExpenseForm = true"
+            >
+              <i class="fa-solid fa-plus"></i>
+              Tạo phiếu chi
+            </button>
+          </div>
+
+          <!-- Summary -->
+          <div v-if="myTransactionsSummary.count > 0" class="px-4 pb-3 flex items-center gap-6 text-sm flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400">Tổng chi:</span>
+              <span class="font-semibold text-red-500">-{{ formatCurrency(myTransactionsSummary.total_expense) }}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400">Số phiếu:</span>
+              <span class="font-semibold">{{ myTransactionsSummary.count }}</span>
+            </div>
+          </div>
+
+          <!-- Transaction list -->
+          <div class="border-t border-slate-200">
+            <div v-if="loadingTransactions" class="px-4 py-8 text-center text-slate-500">
+              <i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang tải...
+            </div>
+            <div v-else-if="myTransactions.length === 0" class="px-4 py-8 text-center">
+              <div class="flex flex-col items-center gap-2">
+                <i class="fa-solid fa-receipt text-3xl text-slate-300"></i>
+                <span class="text-slate-500">Chưa có phiếu chi nào trong kỳ này</span>
+              </div>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div
+                v-for="tx in myTransactions"
+                :key="tx.id"
+                class="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition"
+              >
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                  <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    :class="tx.transaction_type === 'chi' ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-500'"
+                  >
+                    <i :class="tx.transaction_type === 'chi' ? 'fa-solid fa-arrow-up' : 'fa-solid fa-arrow-down'"></i>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-slate-800 truncate">
+                      {{ tx.description || tx.type_name }}
+                    </div>
+                    <div class="text-xs text-slate-400 flex items-center gap-2">
+                      <span class="font-mono">{{ tx.transaction_code }}</span>
+                      <span>·</span>
+                      <span>{{ tx.payment_method_name || 'Tiền mặt' }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-right flex-shrink-0 ml-3">
+                  <div class="text-sm font-semibold" :class="tx.transaction_type === 'chi' ? 'text-red-500' : 'text-green-600'">
+                    {{ tx.transaction_type === 'chi' ? '-' : '+' }}{{ formatCurrency(tx.amount) }}
+                  </div>
+                  <div class="flex items-center gap-1 justify-end">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full"
+                      :class="{
+                        'bg-yellow-400': tx.status === 'pending',
+                        'bg-green-400': tx.status === 'approved',
+                        'bg-red-400': tx.status === 'rejected',
+                        'bg-slate-400': tx.status === 'cancelled',
+                      }"
+                    ></span>
+                    <span class="text-xs text-slate-400">
+                      {{ { pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối', cancelled: 'Đã huỷ' }[tx.status] || tx.status }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Sold Products Table -->
         <div
           class="bg-white border border-slate-200 rounded-2xl overflow-hidden"
@@ -765,6 +850,110 @@
     </div>
 
     <!-- Print iframe (hidden) -->
+
+    <!-- Expense Form Dialog -->
+    <div
+      v-if="showExpenseForm"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      @click.self="showExpenseForm = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-bold text-slate-800">Tạo phiếu chi</h3>
+          <button class="text-slate-400 hover:text-slate-600" @click="showExpenseForm = false">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <!-- Loại chi -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Loại chi phí</label>
+            <select
+              v-model="expenseForm.cashbook_type"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none bg-white"
+            >
+              <option v-for="t in expenseCashbookTypes" :key="t.id" :value="t.code">{{ t.name }}</option>
+            </select>
+          </div>
+
+          <!-- Số tiền -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Số tiền <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input
+                v-model="expenseFormattedAmount"
+                type="text"
+                class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none pr-10"
+                placeholder="Nhập số tiền"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">đ</span>
+            </div>
+          </div>
+
+          <!-- Phương thức -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Phương thức thanh toán</label>
+            <select
+              v-model="expenseForm.payment_method"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none bg-white"
+            >
+              <option v-for="pm in paymentMethodsList" :key="pm.id" :value="pm.code">{{ pm.name }}</option>
+            </select>
+          </div>
+
+          <!-- Đối tượng -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Người nhận / Đối tượng</label>
+            <input
+              v-model="expenseForm.recipient_name"
+              type="text"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
+              placeholder="VD: Cửa hàng tiện lợi, Shipper..."
+            />
+          </div>
+
+          <!-- Diễn giải -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Diễn giải <span class="text-red-500">*</span></label>
+            <textarea
+              v-model="expenseForm.description"
+              rows="2"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none resize-none"
+              placeholder="VD: Mua túi nilon, Đổi tiền lẻ, Trả phí ship..."
+            ></textarea>
+          </div>
+
+          <!-- Ghi chú -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Ghi chú (tuỳ chọn)</label>
+            <input
+              v-model="expenseForm.notes"
+              type="text"
+              class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 outline-none"
+              placeholder="Ghi chú thêm..."
+            />
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+          <button
+            class="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+            @click="showExpenseForm = false"
+          >
+            Hủy
+          </button>
+          <button
+            class="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition flex items-center gap-2"
+            :disabled="savingExpense"
+            @click="handleCreateExpense"
+          >
+            <i class="fa-solid fa-file-invoice" v-if="!savingExpense"></i>
+            <i class="fa-solid fa-spinner fa-spin" v-else></i>
+            {{ savingExpense ? 'Đang tạo...' : 'Tạo phiếu chi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <iframe ref="printFrame" class="hidden"></iframe>
   </div>
 </template>
@@ -780,8 +969,12 @@ import {
   getStaffList,
   submitReport,
 } from "@/services/reportService";
+import cashbookService from "@/services/cashbookService";
 
 // ========== State ==========
+const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+const currentStoreId = ref(currentUser.store_id || null);
+
 const loading = ref(false);
 const loadingProducts = ref(false);
 const printing = ref(false);
@@ -851,6 +1044,35 @@ const showSuccessDialog = ref(false);
 const submittedCode = ref("");
 const submitForm = ref({ title: "", notes: "" });
 
+// Expense (Phiếu chi) state
+const showExpenseForm = ref(false);
+const savingExpense = ref(false);
+const loadingTransactions = ref(false);
+const myTransactions = ref([]);
+const myTransactionsSummary = ref({ total_income: 0, total_expense: 0, net: 0, count: 0 });
+const expenseCashbookTypes = ref([]);
+const paymentMethodsList = ref([]);
+
+const expenseForm = ref({
+  cashbook_type: "OTHER_EXPENSE",
+  amount: null,
+  payment_method: "CASH",
+  description: "",
+  recipient_name: "",
+  notes: "",
+});
+
+const expenseFormattedAmount = computed({
+  get() {
+    if (expenseForm.value.amount === null || expenseForm.value.amount === undefined) return "";
+    return expenseForm.value.amount.toLocaleString("vi-VN");
+  },
+  set(newValue) {
+    const numericValue = newValue.replace(/[^0-9]/g, "");
+    expenseForm.value.amount = numericValue === "" ? null : parseInt(numericValue, 10);
+  },
+});
+
 const defaultReportTitle = computed(() => {
   const { from, to } = dateRange.value;
   const tabLabel =
@@ -911,6 +1133,7 @@ function getQueryParams(extra = {}) {
   const { from, to } = dateRange.value;
   const params = { from, to, ...extra };
   if (selectedStaffId.value) params.staff_id = selectedStaffId.value;
+  if (currentStoreId.value) params.store_id = currentStoreId.value;
   return params;
 }
 
@@ -969,6 +1192,7 @@ async function fetchAll() {
       fetchDailyReport(),
       fetchActualRevenue(),
       fetchSoldProducts(1),
+      fetchMyTransactions(),
     ]);
   } finally {
     loading.value = false;
@@ -1006,6 +1230,7 @@ async function printReport() {
     const { from } = dateRange.value;
     const params = { date: from };
     if (selectedStaffId.value) params.staff_id = selectedStaffId.value;
+    if (currentStoreId.value) params.store_id = currentStoreId.value;
 
     const { data: res } = await getDailyPrintReport(params);
     if (!res.success) return;
@@ -1244,6 +1469,112 @@ function paymentLabel(method) {
   return paymentLabelStatic(method);
 }
 
+// ========== Expense (Phiếu chi) methods ==========
+async function fetchMyTransactions() {
+  loadingTransactions.value = true;
+  try {
+    const { from, to } = dateRange.value;
+    const res = await cashbookService.getMyTransactions({ from, to });
+    if (res.success) {
+      myTransactions.value = res.data || [];
+      myTransactionsSummary.value = res.summary || { total_income: 0, total_expense: 0, net: 0, count: 0 };
+    }
+  } catch (e) {
+    console.error("fetchMyTransactions error:", e);
+  } finally {
+    loadingTransactions.value = false;
+  }
+}
+
+async function fetchExpenseMetadata() {
+  try {
+    const [typesRes, methodsRes] = await Promise.all([
+      cashbookService.getCashbookTypes(),
+      cashbookService.getPaymentMethods(),
+    ]);
+    if (typesRes.success) {
+      expenseCashbookTypes.value = typesRes.data.filter(
+        (t) => t.transaction_direction === -1
+      );
+    }
+    if (methodsRes.success) {
+      paymentMethodsList.value = methodsRes.data;
+    }
+  } catch (e) {
+    console.error("fetchExpenseMetadata error:", e);
+  }
+}
+
+function resetExpenseForm() {
+  expenseForm.value = {
+    cashbook_type: "OTHER_EXPENSE",
+    amount: null,
+    payment_method: "CASH",
+    description: "",
+    recipient_name: "",
+    notes: "",
+  };
+}
+
+async function handleCreateExpense() {
+  if (!expenseForm.value.amount || expenseForm.value.amount <= 0) {
+    alert("Vui lòng nhập số tiền hợp lệ");
+    return;
+  }
+  if (!expenseForm.value.description) {
+    alert("Vui lòng nhập diễn giải");
+    return;
+  }
+
+  savingExpense.value = true;
+  try {
+    const { from } = dateRange.value;
+    const payload = {
+      date_key: from,
+      cashbook_type: expenseForm.value.cashbook_type,
+      amount: expenseForm.value.amount,
+      payment_method: expenseForm.value.payment_method,
+      description: expenseForm.value.description,
+      recipient_name: expenseForm.value.recipient_name || null,
+      notes: expenseForm.value.notes || null,
+      store_id: currentStoreId.value,
+    };
+
+    const res = await cashbookService.createTransaction(payload);
+    if (res.success) {
+      alert("Tạo phiếu chi thành công! Mã: " + (res.data.transaction_code || ""));
+      showExpenseForm.value = false;
+      resetExpenseForm();
+      await fetchMyTransactions();
+    } else {
+      alert("Lỗi: " + (res.message || "Không thể tạo phiếu chi"));
+    }
+  } catch (e) {
+    console.error("handleCreateExpense error:", e);
+    alert("Lỗi khi tạo phiếu chi: " + (e.response?.data?.message || e.message));
+  } finally {
+    savingExpense.value = false;
+  }
+}
+
+function transactionStatusColor(status) {
+  const map = {
+    pending: "bg-yellow-400",
+    approved: "bg-green-400",
+    rejected: "bg-red-400",
+  };
+  return map[status] || "bg-slate-400";
+}
+
+function transactionStatusLabel(status) {
+  const map = {
+    pending: "Chờ duyệt",
+    approved: "Đã duyệt",
+    rejected: "Từ chối",
+  };
+  return map[status] || status;
+}
+
 // Close dropdown on outside click
 function handleOutsideClick(e) {
   if (staffDropdownRef.value && !staffDropdownRef.value.contains(e.target)) {
@@ -1256,6 +1587,7 @@ onMounted(() => {
   document.addEventListener("click", handleOutsideClick);
   fetchStaff();
   fetchAll();
+  fetchExpenseMetadata();
 });
 
 onBeforeUnmount(() => {

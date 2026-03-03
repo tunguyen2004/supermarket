@@ -94,10 +94,10 @@ const cashbookValidator = {
           'string.pattern.base': 'Số điện thoại không hợp lệ (10-11 số)'
         }),
       notes: Joi.string()
-        .max(1000)
+        .max(5000)
         .allow(null, '')
         .messages({
-          'string.max': 'Ghi chú không quá 1000 ký tự'
+          'string.max': 'Ghi chú không quá 5000 ký tự'
         })
     })
   },

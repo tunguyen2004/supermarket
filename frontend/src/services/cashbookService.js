@@ -58,6 +58,14 @@ const cashbookService = {
     });
     return response.data;
   },
+
+  // 10. Lấy giao dịch cá nhân - GET /api/transactions/my-transactions
+  async getMyTransactions(params = {}) {
+    const response = await apiClient.get("/api/transactions/my-transactions", {
+      params,
+    });
+    return response.data;
+  },
 };
 
 export default cashbookService;

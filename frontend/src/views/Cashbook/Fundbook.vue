@@ -566,8 +566,37 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Ghi chú:</span>
-          <span class="detail-value">{{ detailData.notes || "-" }}</span>
+          <span class="detail-value">{{ displayNotes(detailData) }}</span>
         </div>
+
+        <!-- Purchase request items -->
+        <div v-if="detailData.reference_type === 'purchase_request' && parsePurchaseItems(detailData.notes).length > 0" class="mt-4">
+          <div class="text-sm font-semibold mb-2" style="color: var(--el-color-primary)">
+            <i class="fa-solid fa-boxes-stacked mr-1"></i>
+            Danh sách sản phẩm nhập hàng
+          </div>
+          <el-table :data="parsePurchaseItems(detailData.notes)" border size="small" style="width: 100%">
+            <el-table-column label="Sản phẩm" min-width="160">
+              <template #default="{ row }">
+                <div>{{ row.name }}</div>
+                <div v-if="row.variant_name" class="text-xs" style="color: #999">{{ row.variant_name }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="sku" label="SKU" width="100" />
+            <el-table-column prop="quantity" label="SL" width="70" align="center" />
+            <el-table-column label="Đơn giá" width="110" align="right">
+              <template #default="{ row }">
+                {{ formatCurrency(row.unit_cost || 0) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Thành tiền" width="120" align="right">
+              <template #default="{ row }">
+                <span style="font-weight: 600">{{ formatCurrency(row.quantity * (row.unit_cost || 0)) }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
         <div class="detail-row">
           <span class="detail-label">Người tạo:</span>
           <span class="detail-value">{{ detailData.created_by_name }}</span>
@@ -735,6 +764,27 @@ const filteredCashbookTypes = computed(() => {
 // ===== HELPERS =====
 const formatCurrency = (value) => {
   return (value || 0).toLocaleString("vi-VN") + "đ";
+};
+
+const parsePurchaseItems = (notes) => {
+  try {
+    const parsed = JSON.parse(notes);
+    return Array.isArray(parsed?.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
+};
+
+const displayNotes = (data) => {
+  if (data.reference_type === 'purchase_request' && data.notes) {
+    try {
+      const parsed = JSON.parse(data.notes);
+      return parsed?.note || "-";
+    } catch {
+      return data.notes;
+    }
+  }
+  return data.notes || "-";
 };
 
 const formatDate = (dateStr) => {
