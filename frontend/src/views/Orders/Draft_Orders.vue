@@ -525,9 +525,11 @@ const submitCreate = () => {
       creating.value = true;
 
       const draftData = {
-        customerId: null, // Guest customer
-        items: [], // Empty items for now
-        finalAmount: Number(form.value.totalAmount) || 0,
+        customer_name: form.value.customerName?.trim() || "Khách vãng lai",
+        customer_id: null,
+        store_id: 1,
+        items: [],
+        final_amount: Number(form.value.totalAmount) || 0,
         note: form.value.note?.trim() || "",
       };
 

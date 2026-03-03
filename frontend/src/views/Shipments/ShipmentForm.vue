@@ -326,10 +326,14 @@ const loadOrders = async () => {
       orders.value = data.map((order) => ({
         id: order.id,
         orderCode: order.order_code,
-        customerName: order.customer?.name || order.customer_name,
-        customerPhone: order.customer?.phone || order.customer_phone,
+        customerName:
+          order.customer?.name || order.customer_name || "Khách hàng",
+        customerPhone: order.customer?.phone || order.customer_phone || "",
         customerAddress:
-          order.shipping_address || order.customer_address || "Chưa có địa chỉ",
+          order.shipping_address ||
+          order.customer?.address ||
+          order.customer_address ||
+          "Chưa có địa chỉ",
         finalAmount: order.amount?.total || order.final_amount || 0,
         label: `${order.order_code} - ${
           order.customer?.name || order.customer_name || "Khách hàng"

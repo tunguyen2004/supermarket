@@ -216,49 +216,140 @@
     </el-dialog>
 
     <!-- CREATE DIALOG -->
-    <el-dialog v-model="createVisible" title="Tạo đơn trả hàng" width="560">
+    <el-dialog v-model="createVisible" title="Tạo đơn trả hàng" width="680">
       <el-form
         ref="createFormRef"
         :model="form"
         :rules="rules"
         label-width="130px"
       >
+        <!-- Step 1: Tìm đơn hàng gốc -->
         <el-form-item label="Đơn gốc" prop="originalOrderCode">
-          <el-input v-model="form.originalOrderCode" placeholder="VD: POS-20260226-00001" />
+          <div style="display: flex; gap: 8px; width: 100%">
+            <el-input
+              v-model="form.originalOrderCode"
+              placeholder="Nhập mã đơn hàng (VD: POS-20260226-00001)"
+              @keyup.enter="lookupOrder"
+              :disabled="!!foundOrder"
+            />
+            <el-button
+              v-if="!foundOrder"
+              type="primary"
+              :loading="lookingUp"
+              @click="lookupOrder"
+              >Tìm</el-button
+            >
+            <el-button v-else @click="resetOrder">Đổi đơn</el-button>
+          </div>
         </el-form-item>
-        <el-form-item label="Khách hàng" prop="customerName">
-          <el-input v-model="form.customerName" placeholder="Tên khách" />
-        </el-form-item>
-        <el-form-item label="Ngày trả" prop="returnDate">
-          <el-date-picker
-            v-model="form.returnDate"
-            type="date"
-            value-format="YYYY-MM-DD"
-            placeholder="Chọn ngày"
-          />
-        </el-form-item>
-        <el-form-item label="Tiền hoàn trả" prop="refundAmount">
-          <el-input
-            v-model.number="form.refundAmount"
-            type="number"
-            min="0"
-            placeholder="0"
-          />
-        </el-form-item>
-        <el-form-item label="Ghi chú">
-          <el-input
-            v-model="form.note"
-            type="textarea"
-            :rows="2"
-            placeholder="Lý do, mô tả tình trạng hàng..."
-          />
-        </el-form-item>
+
+        <!-- Thông tin đơn gốc (sau khi tìm thấy) -->
+        <template v-if="foundOrder">
+          <el-descriptions
+            :column="2"
+            border
+            size="small"
+            style="margin-bottom: 16px"
+          >
+            <el-descriptions-item label="Mã đơn">{{
+              foundOrder.order_code
+            }}</el-descriptions-item>
+            <el-descriptions-item label="Khách hàng">{{
+              foundOrder.customer?.name || "Khách vãng lai"
+            }}</el-descriptions-item>
+            <el-descriptions-item label="Trạng thái">
+              <el-tag size="small">{{ foundOrder.status }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="Tổng đơn">{{
+              formatCurrency(foundOrder.amount?.total)
+            }}</el-descriptions-item>
+          </el-descriptions>
+
+          <!-- Step 2: Chọn sản phẩm trả -->
+          <el-divider content-position="left"
+            >Chọn sản phẩm trả hàng</el-divider
+          >
+          <el-table
+            :data="returnItems"
+            style="width: 100%; margin-bottom: 16px"
+            size="small"
+          >
+            <el-table-column label="Chọn" width="50" align="center">
+              <template #default="scope">
+                <el-checkbox v-model="scope.row.selected" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="product" label="Sản phẩm" min-width="180" />
+            <el-table-column label="Đã mua" width="80" align="center">
+              <template #default="scope">
+                {{ scope.row.maxQty }}
+              </template>
+            </el-table-column>
+            <el-table-column label="SL trả" width="120" align="center">
+              <template #default="scope">
+                <el-input-number
+                  v-model="scope.row.returnQty"
+                  :min="1"
+                  :max="scope.row.maxQty"
+                  :disabled="!scope.row.selected"
+                  size="small"
+                  controls-position="right"
+                  style="width: 100%"
+                />
+              </template>
+            </el-table-column>
+            <el-table-column label="Đơn giá" width="110" align="right">
+              <template #default="scope">
+                {{ formatCurrency(scope.row.unit_price) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Hoàn trả" width="110" align="right">
+              <template #default="scope">
+                <span v-if="scope.row.selected" class="refund-amount">
+                  {{
+                    formatCurrency(scope.row.returnQty * scope.row.unit_price)
+                  }}
+                </span>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <!-- Tổng hoàn trả -->
+          <div style="text-align: right; margin-bottom: 16px; font-size: 15px">
+            <strong>Tổng tiền hoàn trả: </strong>
+            <span class="refund-amount" style="font-size: 17px">{{
+              formatCurrency(totalRefundAmount)
+            }}</span>
+          </div>
+
+          <el-form-item label="Phương thức hoàn">
+            <el-select v-model="form.refundMethod" style="width: 200px">
+              <el-option label="Tiền mặt" value="cash" />
+              <el-option label="Thẻ" value="card" />
+              <el-option label="Chuyển khoản" value="bank_transfer" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="Lý do trả hàng">
+            <el-input
+              v-model="form.reason"
+              type="textarea"
+              :rows="2"
+              placeholder="Lý do trả hàng..."
+            />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="createVisible = false">Huỷ</el-button>
-          <el-button type="primary" :loading="creating" @click="submitCreate"
-            >Tạo</el-button
+          <el-button
+            type="primary"
+            :loading="creating"
+            :disabled="!foundOrder || selectedReturnItems.length === 0"
+            @click="submitCreate"
+            >Tạo đơn trả</el-button
           >
         </div>
       </template>
@@ -453,72 +544,144 @@ const rejectReturn = async (row) => {
 const createVisible = ref(false);
 const creating = ref(false);
 const createFormRef = ref();
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const lookingUp = ref(false);
+const foundOrder = ref(null);
+const returnItems = ref([]);
+
 const form = ref({
   originalOrderCode: "",
-  customerName: "",
-  returnDate: todayStr(),
-  refundAmount: 0,
-  note: "",
+  refundMethod: "cash",
+  reason: "",
 });
 
 const rules = {
   originalOrderCode: [
     { required: true, message: "Vui lòng nhập mã đơn gốc", trigger: "blur" },
   ],
-  customerName: [
-    { required: true, message: "Vui lòng nhập tên khách", trigger: "blur" },
-  ],
-  returnDate: [
-    { required: true, message: "Vui lòng chọn ngày trả", trigger: "change" },
-  ],
-  refundAmount: [
-    { required: true, message: "Vui lòng nhập số tiền hoàn", trigger: "blur" },
-    {
-      type: "number",
-      min: 0,
-      message: "Số tiền không hợp lệ",
-      trigger: "blur",
-    },
-  ],
 };
 
 const createReturnOrder = () => {
   createVisible.value = true;
-  // reset form mỗi lần mở
-  Object.assign(form.value, {
-    originalOrderCode: "",
-    customerName: "",
-    returnDate: todayStr(),
-    refundAmount: 0,
-    note: "",
-  });
+  resetOrder();
+  form.value.originalOrderCode = "";
+  form.value.refundMethod = "cash";
+  form.value.reason = "";
   createFormRef.value?.clearValidate?.();
 };
 
-const generateNextCode = () => {
-  const nums = returns.value.map(
-    (r) => Number(r.returnCode.replace(/\D/g, "")) || 0,
-  );
-  const next = Math.max(0, ...nums) + 1;
-  return "RT" + String(next).padStart(3, "0");
+const resetOrder = () => {
+  foundOrder.value = null;
+  returnItems.value = [];
 };
+
+// Tìm đơn hàng gốc theo mã
+const lookupOrder = async () => {
+  const code = form.value.originalOrderCode?.trim();
+  if (!code) {
+    ElMessage.warning("Vui lòng nhập mã đơn hàng");
+    return;
+  }
+
+  try {
+    lookingUp.value = true;
+
+    // Tìm đơn hàng theo mã - dùng search param
+    const listResult = await orderService.getOrders({
+      search: code,
+      limit: 10,
+    });
+    const orders = listResult.data || [];
+    const matched = orders.find(
+      (o) => o.order_code?.toLowerCase() === code.toLowerCase(),
+    );
+
+    if (!matched) {
+      ElMessage.error(`Không tìm thấy đơn hàng với mã "${code}"`);
+      return;
+    }
+
+    // Kiểm tra trạng thái - BE chấp nhận delivered hoặc completed
+    if (matched.status !== "completed" && matched.status !== "delivered") {
+      ElMessage.error(
+        `Đơn hàng có trạng thái "${matched.status}" — chỉ đơn đã giao (completed/delivered) mới được trả hàng`,
+      );
+      return;
+    }
+
+    // Lấy chi tiết đơn hàng (bao gồm items)
+    const detailResult = await orderService.getOrderById(matched.id);
+    const orderDetail = detailResult.data;
+
+    if (!orderDetail?.items || orderDetail.items.length === 0) {
+      ElMessage.error("Đơn hàng không có sản phẩm nào");
+      return;
+    }
+
+    foundOrder.value = orderDetail;
+
+    // Map items cho bảng chọn trả hàng
+    returnItems.value = orderDetail.items.map((item) => ({
+      variant_id: item.variant_id,
+      product: item.product,
+      sku: item.sku || "",
+      maxQty: item.quantity,
+      returnQty: item.quantity,
+      unit_price: item.unit_price,
+      selected: false,
+    }));
+
+    ElMessage.success(`Đã tìm thấy đơn hàng ${orderDetail.order_code}`);
+  } catch (error) {
+    console.error("Error looking up order:", error);
+    ElMessage.error(
+      "Lỗi khi tìm đơn hàng: " + (error.message || "Không xác định"),
+    );
+  } finally {
+    lookingUp.value = false;
+  }
+};
+
+// Danh sách items được chọn để trả
+const selectedReturnItems = computed(() =>
+  returnItems.value.filter((item) => item.selected && item.returnQty > 0),
+);
+
+// Tổng tiền hoàn trả (tự động tính từ items)
+const totalRefundAmount = computed(() =>
+  selectedReturnItems.value.reduce(
+    (sum, item) => sum + item.returnQty * item.unit_price,
+    0,
+  ),
+);
 
 const submitCreate = () => {
   createFormRef.value.validate(async (valid) => {
     if (!valid) return;
 
+    if (!foundOrder.value) {
+      ElMessage.error("Vui lòng tìm đơn hàng gốc trước");
+      return;
+    }
+
+    if (selectedReturnItems.value.length === 0) {
+      ElMessage.error("Vui lòng chọn ít nhất 1 sản phẩm để trả");
+      return;
+    }
+
     try {
       creating.value = true;
 
       const returnData = {
-        orderId: null, // Would need to lookup order by code
-        returnDate: form.value.returnDate,
-        refundAmount: Number(form.value.refundAmount) || 0,
-        note: form.value.note?.trim() || "",
+        items: selectedReturnItems.value.map((item) => ({
+          variant_id: item.variant_id,
+          quantity: item.returnQty,
+          reason: form.value.reason || "",
+        })),
+        reason: form.value.reason?.trim() || "",
+        refund_method: form.value.refundMethod,
       };
 
-      await orderService.createReturnOrder(returnData);
+      await orderService.createReturnOrder(foundOrder.value.id, returnData);
 
       ElNotification({
         title: "Đã tạo",
@@ -530,7 +693,11 @@ const submitCreate = () => {
       await fetchReturns();
     } catch (error) {
       console.error("Error creating return:", error);
-      ElMessage.error("Không thể tạo đơn trả hàng");
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể tạo đơn trả hàng";
+      ElMessage.error(msg);
     } finally {
       creating.value = false;
     }

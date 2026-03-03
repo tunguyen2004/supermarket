@@ -8,8 +8,8 @@
 -- LEVEL 3: SUB-SUB DIMENSIONS
 -- =========================
 -- Regions
-
-SET timezone = 'Asia/Ho_Chi_Minh';
+SET
+    timezone = 'Asia/Ho_Chi_Minh';
 
 CREATE TABLE subdim_regions (
     id SERIAL PRIMARY KEY,
@@ -356,8 +356,10 @@ CREATE TABLE dim_bank_accounts (
     created_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_bank_account_store FOREIGN KEY (store_id) REFERENCES dim_stores(id) ON DELETE SET NULL,
-    CONSTRAINT fk_bank_account_creator FOREIGN KEY (created_by) REFERENCES dim_users(id)
+    CONSTRAINT fk_bank_account_store FOREIGN KEY (store_id) REFERENCES dim_stores(id) ON DELETE
+    SET
+        NULL,
+        CONSTRAINT fk_bank_account_creator FOREIGN KEY (created_by) REFERENCES dim_users(id)
 );
 
 CREATE INDEX idx_bank_accounts_store ON dim_bank_accounts(store_id);
@@ -445,8 +447,20 @@ CREATE TABLE fact_orders (
     CONSTRAINT fk_order_customer FOREIGN KEY (customer_id) REFERENCES dim_customers(id),
     CONSTRAINT fk_order_store FOREIGN KEY (store_id) REFERENCES dim_stores(id),
     CONSTRAINT fk_order_user FOREIGN KEY (created_by) REFERENCES dim_users(id),
-    CONSTRAINT chk_order_status CHECK (status IN ('pending', 'confirmed', 'processing', 'completed', 'cancelled', 'returned')),
-    CONSTRAINT chk_order_payment_status CHECK (payment_status IN ('unpaid', 'partial', 'paid', 'refunded'))
+    CONSTRAINT chk_order_status CHECK (
+        status IN (
+            'pending',
+            'confirmed',
+            'processing',
+            'completed',
+            'cancelled',
+            'returned',
+            'draft'
+        )
+    ),
+    CONSTRAINT chk_order_payment_status CHECK (
+        payment_status IN ('unpaid', 'partial', 'paid', 'refunded')
+    )
 );
 
 CREATE INDEX idx_orders_date ON fact_orders(date_key);
@@ -707,7 +721,6 @@ CREATE TABLE fact_submitted_reports (
     submitted_by INTEGER NOT NULL REFERENCES dim_users(id),
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
-
     -- Snapshot data (JSONB)
     revenue_summary JSONB,
     actual_summary JSONB,
@@ -716,69 +729,77 @@ CREATE TABLE fact_submitted_reports (
     products_summary JSONB,
     top_products JSONB,
     returns_data JSONB,
-
     -- Quick-access summary
     total_orders INTEGER DEFAULT 0,
-    net_revenue NUMERIC(15,2) DEFAULT 0,
-    total_discount NUMERIC(15,2) DEFAULT 0,
+    net_revenue NUMERIC(15, 2) DEFAULT 0,
+    total_discount NUMERIC(15, 2) DEFAULT 0,
     unique_customers INTEGER DEFAULT 0,
-    grand_total NUMERIC(15,2) DEFAULT 0,
-
+    grand_total NUMERIC(15, 2) DEFAULT 0,
     status VARCHAR(20) DEFAULT 'submitted',
     reviewed_by INTEGER REFERENCES dim_users(id),
     reviewed_at TIMESTAMP,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_submitted_reports_code ON fact_submitted_reports(report_code);
+
 CREATE INDEX idx_submitted_reports_submitted_by ON fact_submitted_reports(submitted_by);
+
 CREATE INDEX idx_submitted_reports_date ON fact_submitted_reports(period_from, period_to);
+
 CREATE INDEX idx_submitted_reports_status ON fact_submitted_reports(status);
 
 -- =========================
 -- TRIGGER: Auto-update updated_at
 -- =========================
-CREATE OR REPLACE FUNCTION trigger_set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+CREATE
+OR REPLACE FUNCTION trigger_set_updated_at() RETURNS TRIGGER AS $ $ BEGIN NEW.updated_at = CURRENT_TIMESTAMP;
+
+RETURN NEW;
+
 END;
-$$ LANGUAGE plpgsql;
+
+$ $ LANGUAGE plpgsql;
 
 -- Áp dụng cho tất cả bảng có cột updated_at
-DO $$
-DECLARE
-    t TEXT;
-    tables TEXT[] := ARRAY[
+DO $ $ DECLARE t TEXT;
+
+tables TEXT [] := ARRAY [
         'dim_products', 'dim_discounts', 'dim_bank_accounts',
         'fact_cashbook_transactions', 'fact_store_balances',
         'fact_shipments', 'fact_submitted_reports'
     ];
-BEGIN
-    FOREACH t IN ARRAY tables LOOP
-        EXECUTE format(
-            'CREATE TRIGGER trg_%s_updated_at
+
+BEGIN FOREACH t IN ARRAY tables LOOP EXECUTE format(
+    'CREATE TRIGGER trg_%s_updated_at
              BEFORE UPDATE ON %I
              FOR EACH ROW
              EXECUTE FUNCTION trigger_set_updated_at()',
-            t, t
-        );
-    END LOOP;
-    RAISE NOTICE 'Created updated_at triggers for % tables', array_length(tables, 1);
-END $$;
+    t,
+    t
+);
+
+END LOOP;
+
+RAISE NOTICE 'Created updated_at triggers for % tables',
+array_length(tables, 1);
+
+END $ $;
 
 -- =========================
 -- COMPLETION MESSAGE
 -- =========================
-DO $$
-BEGIN
-    RAISE NOTICE 'Schema created successfully!';
-    RAISE NOTICE '   Sub-dimensions: 11 tables (regions, cities, categories, brands, units, etc.)';
-    RAISE NOTICE '   Dimensions: 10 tables (stores, suppliers, customers, products, users, etc.)';
-    RAISE NOTICE '   Fact tables: 9 tables (orders, inventory, cashbook, shipments, chat_history, etc.)';
-    RAISE NOTICE '   Views: 1 (vw_daily_cashbook_summary)';
-    RAISE NOTICE '   Total: 36 tables + indexes';
-END $$;
+DO $ $ BEGIN RAISE NOTICE 'Schema created successfully!';
+
+RAISE NOTICE '   Sub-dimensions: 11 tables (regions, cities, categories, brands, units, etc.)';
+
+RAISE NOTICE '   Dimensions: 10 tables (stores, suppliers, customers, products, users, etc.)';
+
+RAISE NOTICE '   Fact tables: 9 tables (orders, inventory, cashbook, shipments, chat_history, etc.)';
+
+RAISE NOTICE '   Views: 1 (vw_daily_cashbook_summary)';
+
+RAISE NOTICE '   Total: 36 tables + indexes';
+
+END $ $;
