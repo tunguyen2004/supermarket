@@ -546,6 +546,118 @@ const getLowStock = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/dashboard/today-stats
+ * Thống kê nhanh riêng cho ngày hôm nay
+ * Trả về: doanh thu hôm nay, số đơn hôm nay, khách mới hôm nay, đơn chờ xử lý
+ */
+const getTodayStats = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+
+    // 1. Doanh thu & đơn hàng hôm nay
+    const revenueResult = await db.query(
+      `SELECT 
+        COALESCE(SUM(final_amount), 0) as revenue,
+        COUNT(*) as order_count
+      FROM fact_orders
+      WHERE date_key = $1
+        AND status = 'completed'
+        AND payment_status = 'paid'`,
+      [today],
+    );
+
+    // 2. Đơn chờ xử lý hôm nay
+    const pendingResult = await db.query(
+      `SELECT COUNT(*) as total
+      FROM fact_orders
+      WHERE date_key = $1
+        AND status = 'pending'`,
+      [today],
+    );
+
+    // 3. Khách mới hôm nay
+    const newCustResult = await db.query(
+      `SELECT COUNT(*) as total
+      FROM dim_customers
+      WHERE created_at::date = $1`,
+      [today],
+    );
+
+    const row = revenueResult.rows[0];
+    return res.status(200).json({
+      success: true,
+      data: {
+        todayRevenue: parseFloat(row?.revenue || 0),
+        todayOrders: parseInt(row?.order_count || 0),
+        todayNewCustomers: parseInt(newCustResult.rows[0]?.total || 0),
+        pendingOrders: parseInt(pendingResult.rows[0]?.total || 0),
+      },
+      message: "Today stats retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Today stats error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy thống kê hôm nay",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/dashboard/order-status
+ * Phân bổ trạng thái đơn hàng trong khoảng thời gian
+ * Trả về mảng: [{ status, label, count }]
+ */
+const getOrderStatusBreakdown = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const endDate = to ? new Date(to) : new Date();
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate - 30 * 24 * 60 * 60 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
+
+    const result = await db.query(
+      `SELECT 
+        status,
+        COUNT(*) as count
+      FROM fact_orders
+      WHERE date_key BETWEEN $1 AND $2
+      GROUP BY status
+      ORDER BY count DESC`,
+      [formatDate(startDate), formatDate(endDate)],
+    );
+
+    const labelMap = {
+      completed: "Hoàn thành",
+      pending: "Chờ xử lý",
+      processing: "Đang giao",
+      cancelled: "Đã hủy",
+    };
+
+    const data = result.rows.map((r) => ({
+      status: r.status,
+      label: labelMap[r.status] || r.status,
+      count: parseInt(r.count),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data,
+      message: "Order status breakdown retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Order status breakdown error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy phân bổ trạng thái đơn hàng",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getOverview,
   getStats,
@@ -554,4 +666,6 @@ module.exports = {
   getSalesChannels,
   getTopCustomers,
   getLowStock,
+  getTodayStats,
+  getOrderStatusBreakdown,
 };

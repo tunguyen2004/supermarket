@@ -163,5 +163,16 @@ router.get(
   validateQuery(dashboardQuerySchema),
   dashboardService.getLowStock,
 );
+router.get(
+  "/dashboard/today-stats",
+  verifyToken,
+  dashboardService.getTodayStats,
+);
+router.get(
+  "/dashboard/order-status",
+  verifyToken,
+  validateQuery(dashboardQuerySchema),
+  dashboardService.getOrderStatusBreakdown,
+);
 
 module.exports = router;
