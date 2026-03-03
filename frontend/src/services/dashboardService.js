@@ -22,4 +22,10 @@ export default {
   getLowStock(params) {
     return apiClient.get("/api/dashboard/low-stock", { params });
   },
+  getTodayStats() {
+    return apiClient.get("/api/dashboard/today-stats");
+  },
+  getOrderStatus(params) {
+    return apiClient.get("/api/dashboard/order-status", { params });
+  },
 };

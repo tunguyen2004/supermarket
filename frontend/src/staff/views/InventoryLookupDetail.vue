@@ -34,7 +34,7 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto p-6">
+    <div class="flex-1 overflow-auto p-3 sm:p-6">
       <div class="max-w-5xl mx-auto space-y-6">
         <!-- Loading -->
         <div v-if="loading" class="bg-white rounded-lg shadow-sm border p-6">
@@ -86,8 +86,8 @@
 
         <template v-else>
           <!-- Product Header Card -->
-          <div class="bg-white rounded-lg shadow-sm border p-6">
-            <div class="flex items-start justify-between gap-6">
+          <div class="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-4">
               <!-- Left: Product Info -->
               <div class="flex-1">
                 <h1 class="text-2xl font-bold text-slate-900 mb-2">
@@ -121,7 +121,7 @@
                 </p>
 
                 <!-- Total stock summary -->
-                <div class="flex items-center gap-4 mt-3">
+                <div class="flex flex-wrap items-center gap-3 mt-3">
                   <div
                     class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg"
                   >
@@ -152,7 +152,7 @@
 
               <!-- Right: Product Image -->
               <div
-                class="w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 shadow"
+                class="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 shadow"
               >
                 <el-image
                   :src="getImageUrl(productDetail.imageUrl)"
@@ -176,7 +176,7 @@
             v-if="productDetail.variants && productDetail.variants.length > 1"
             class="bg-white rounded-lg shadow-sm border"
           >
-            <div class="px-6 py-4 border-b flex items-center gap-2">
+            <div class="px-4 sm:px-6 py-4 border-b flex items-center gap-2">
               <i class="fa-solid fa-tags text-blue-500"></i>
               <h2 class="text-base font-semibold">Biến thể sản phẩm</h2>
               <span class="text-sm text-slate-400"
@@ -187,7 +187,7 @@
               <div
                 v-for="v in productDetail.variants"
                 :key="v.id"
-                class="px-6 py-3 flex items-center justify-between"
+                class="px-3 sm:px-6 py-3 flex items-center justify-between"
               >
                 <div class="flex items-center gap-3">
                   <span class="font-medium text-slate-800">{{
@@ -215,7 +215,7 @@
 
           <!-- Branch Stock Table -->
           <div class="bg-white rounded-lg shadow-sm border">
-            <div class="px-6 py-4 border-b flex items-center gap-2">
+            <div class="px-4 sm:px-6 py-4 border-b flex items-center gap-2">
               <i class="fa-solid fa-location-dot text-green-500"></i>
               <h2 class="text-base font-semibold">Tồn kho theo chi nhánh</h2>
             </div>
@@ -227,10 +227,12 @@
               <div
                 v-for="store in productDetail.stores"
                 :key="store.store_id"
-                class="px-6 py-4"
+                class="px-4 sm:px-6 py-4"
               >
                 <!-- Store header -->
-                <div class="flex items-center justify-between mb-2">
+                <div
+                  class="flex flex-wrap items-center justify-between gap-2 mb-2"
+                >
                   <div class="flex items-center gap-2">
                     <i class="fa-solid fa-store text-slate-400"></i>
                     <span class="font-semibold text-slate-900">{{
@@ -259,7 +261,7 @@
                   <div
                     v-for="sv in store.variants"
                     :key="sv.variant_id"
-                    class="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-slate-50"
+                    class="flex flex-wrap items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-slate-50 gap-2"
                   >
                     <span class="text-slate-600">
                       {{ getVariantName(sv.variant_id) }}

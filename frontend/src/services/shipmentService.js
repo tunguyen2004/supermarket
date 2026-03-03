@@ -93,7 +93,7 @@ class ShipmentService {
    */
   async deleteShipment(id) {
     try {
-      const response = await apiClient.delete(`/shipments/${id}`);
+      const response = await apiClient.delete(`/api/shipments/${id}`);
       return response.data;
     } catch (error) {
       console.error("Error deleting shipment:", error);

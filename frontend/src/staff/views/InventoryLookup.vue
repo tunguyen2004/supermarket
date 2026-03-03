@@ -3,14 +3,14 @@
     <PageHeader title="Tra cứu tồn kho" />
 
     <!-- Search Bar -->
-    <div class="px-6 py-4 border-b">
-      <div class="flex items-center gap-4 max-w-5xl mx-auto">
-        <div class="relative flex-1 max-w-2xl">
+    <div class="px-4 sm:px-6 py-4 border-b">
+      <div class="flex flex-wrap items-center gap-3 max-w-5xl mx-auto">
+        <div class="relative flex-1 min-w-[200px]">
           <el-input
             ref="searchInputRef"
             v-model="searchQuery"
             size="large"
-            placeholder="Tìm kiếm sản phẩm (tên, mã SKU, barcode ...) (F3)"
+            placeholder="Tìm kiếm sản phẩm (tên, mã SKU, barcode ...)"
             clearable
             @input="handleSearch"
             class="search-input"
@@ -27,7 +27,8 @@
           placeholder="Tất cả chi nhánh"
           size="large"
           clearable
-          style="width: 220px"
+          class="w-full sm:w-auto"
+          style="min-width: 160px"
           @change="fetchProducts"
         >
           <el-option
@@ -41,12 +42,14 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-auto p-6">
+    <div class="flex-1 overflow-auto p-3 sm:p-6">
       <div class="max-w-5xl mx-auto">
         <!-- Product List Card -->
         <div class="bg-white rounded-lg shadow-sm border">
           <!-- Card Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b">
+          <div
+            class="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b"
+          >
             <h2 class="text-base font-semibold">
               Sản phẩm
               <span class="text-slate-500 font-normal ml-2"
@@ -113,10 +116,10 @@
             <div
               v-for="product in products"
               :key="`${product.product_id}-${product.variant_id}`"
-              class="px-6 py-4 hover:bg-blue-50/50 cursor-pointer transition-colors"
+              class="px-3 sm:px-6 py-3 sm:py-4 hover:bg-blue-50/50 cursor-pointer transition-colors"
               @click="goToDetail(product.product_id)"
             >
-              <div class="flex items-center gap-4">
+              <div class="flex items-center gap-3">
                 <!-- Thumbnail -->
                 <div
                   class="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100"
@@ -188,7 +191,7 @@
             <!-- Empty State -->
             <div
               v-if="!loading && products.length === 0"
-              class="px-6 py-16 text-center"
+              class="px-4 py-12 text-center"
             >
               <div class="text-5xl text-slate-300 mb-4">
                 <i class="fa-solid fa-boxes-stacked"></i>
@@ -209,7 +212,7 @@
           <!-- Pagination -->
           <div
             v-if="totalProducts > pageSize"
-            class="px-6 py-4 border-t flex items-center justify-between"
+            class="px-4 py-3 border-t flex flex-wrap items-center justify-between gap-2"
           >
             <span class="text-sm text-slate-500">
               Hiển thị {{ products.length }} / {{ totalProducts }} sản phẩm

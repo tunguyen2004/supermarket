@@ -40,11 +40,11 @@
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-
+        <!-- 
         <button class="btn-connect">
           <span style="font-size: 1.2em; margin-right: 4px">➕</span>
           Kết nối vận chuyển
-        </button>
+        </button> -->
       </div>
     </div>
 
@@ -107,7 +107,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, onActivated } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  onMounted,
+  onUnmounted,
+  onActivated,
+} from "vue";
 import { Chart, registerables } from "chart.js";
 import { ArrowDown } from "@element-plus/icons-vue";
 import shipmentService from "@/services/shipmentService";

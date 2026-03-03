@@ -113,6 +113,8 @@ const getOrderList = async (req, res) => {
         fo.date_key,
         COALESCE(dc.full_name, 'Guest Customer') as customer_name,
         COALESCE(dc.phone, 'N/A') as customer_phone,
+        dc.address as customer_address,
+        fo.shipping_address,
         ds.name as store_name,
         fo.status,
         fo.payment_status,
@@ -155,7 +157,9 @@ const getOrderList = async (req, res) => {
       customer: {
         name: order.customer_name,
         phone: order.customer_phone,
+        address: order.customer_address || null,
       },
+      shipping_address: order.shipping_address || null,
       store: order.store_name,
       status: order.status,
       payment_status: order.payment_status,
@@ -255,6 +259,7 @@ const getOrderDetail = async (req, res) => {
     const itemsQuery = `
       SELECT 
         foi.id,
+        foi.variant_id,
         foi.quantity,
         foi.unit_price,
         foi.discount_per_item,
@@ -276,6 +281,9 @@ const getOrderDetail = async (req, res) => {
 
     const formattedItems = itemsResult.rows.map((item) => ({
       id: item.id,
+      variant_id: item.variant_id,
+      sku: item.sku,
+      variant_name: item.variant_name,
       product:
         item.product_name || item.custom_product_name || "Unknown Product",
       quantity: parseFloat(item.quantity),
@@ -1018,9 +1026,11 @@ const returnOrder = async (req, res) => {
 
     const seqResult = await client.query(
       `SELECT COALESCE(MAX(CAST(RIGHT(order_code, 5) AS INTEGER)), 0) as max_seq
-       FROM fact_orders 
-       WHERE order_code LIKE $1
-       FOR UPDATE`,
+       FROM (
+         SELECT order_code FROM fact_orders
+         WHERE order_code LIKE $1
+         FOR UPDATE
+       ) locked`,
       [`${returnCodePrefix}-%`],
     );
 
@@ -1070,7 +1080,7 @@ const returnOrder = async (req, res) => {
       );
 
       // Create inventory transaction
-      const transactionCode = await generateTransactionCode(client, 'RET');
+      const transactionCode = await generateTransactionCode(client, "RET");
       await client.query(
         `INSERT INTO fact_inventory_transactions 
          (transaction_code, date_key, transaction_type_id, store_id, variant_id,
@@ -1322,9 +1332,31 @@ const getReturnOrders = async (req, res) => {
 
     const result = await db.query(query, params);
 
+    // Format response to match FE expectations
+    const formattedData = result.rows.map((row) => {
+      // Extract original order code from internal_note (format: "Hoàn trả từ đơn XXX. Lý do: ...")
+      const noteMatch = row.internal_note?.match(/Hoàn trả từ đơn ([^\s.]+)/);
+      const originalOrderCode = noteMatch ? noteMatch[1] : "";
+
+      return {
+        id: row.id,
+        return_code: row.order_code,
+        original_order_code: originalOrderCode,
+        customer_name: row.customer_name || "Khách vãng lai",
+        return_date: row.date_key,
+        refund_amount: Math.abs(parseFloat(row.final_amount) || 0),
+        status: "Chờ xử lý",
+        payment_method: row.payment_method,
+        note: row.internal_note,
+        store_name: row.store_name,
+        staff_name: row.staff_name,
+        created_at: row.created_at,
+      };
+    });
+
     res.json({
       success: true,
-      data: result.rows,
+      data: formattedData,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -1435,21 +1467,25 @@ const createDraftOrder = async (req, res) => {
       customer_id,
       store_id = 1,
       items = [],
+      final_amount,
       note,
     } = req.body;
 
     await client.query("BEGIN");
 
-    // Generate draft code
+    // Generate draft code (use COALESCE + FOR UPDATE to avoid race conditions)
     const today = new Date();
     const dateStr = today.toISOString().split("T")[0].replace(/-/g, "");
     const draftCountResult = await client.query(
       `
-      SELECT COUNT(*) + 1 as next_num
-      FROM fact_orders
-      WHERE date_key = $1 AND status = 'draft'
+      SELECT COALESCE(MAX(CAST(RIGHT(order_code, 5) AS INTEGER)), 0) + 1 as next_num
+      FROM (
+        SELECT order_code FROM fact_orders
+        WHERE order_code LIKE $1
+        FOR UPDATE
+      ) locked
     `,
-      [today.toISOString().split("T")[0]],
+      [`DRAFT-${dateStr}-%`],
     );
 
     const draftNumber = String(draftCountResult.rows[0].next_num).padStart(
@@ -1458,13 +1494,15 @@ const createDraftOrder = async (req, res) => {
     );
     const draftCode = `DRAFT-${dateStr}-${draftNumber}`;
 
-    // Calculate totals from items
+    // Calculate totals from items, or use provided final_amount for drafts without items
     let subtotal = 0;
     if (items && items.length > 0) {
       subtotal = items.reduce(
         (sum, item) => sum + item.quantity * item.unit_price,
         0,
       );
+    } else if (final_amount != null && final_amount > 0) {
+      subtotal = Number(final_amount);
     }
 
     // Create draft order
@@ -1472,9 +1510,9 @@ const createDraftOrder = async (req, res) => {
       `
       INSERT INTO fact_orders (
         order_code, date_key, store_id, customer_id,
-        subtotal, final_amount, status, 
+        subtotal, final_amount, status, payment_status,
         customer_note, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'draft', 'unpaid', $7, $8, NOW())
       RETURNING id, order_code
     `,
       [
