@@ -248,13 +248,13 @@ BEGIN
     -- Ngày thường: 15-25 đơn/cửa hàng, có 4 cửa hàng bán lẻ
     v_base_orders := CASE 
         WHEN p_expected_orders IS NOT NULL THEN p_expected_orders
-        ELSE FLOOR(random_normal(20, 5) * 4) -- 4 stores, ~80 orders/day base
+        ELSE FLOOR(random_normal(500, 100) ) -- 4 stores, ~80 orders/day base
     END;
     
     -- Apply multiplier cho ngày đặc biệt
     v_actual_orders := GREATEST(
         10, 
-        LEAST(500, FLOOR(v_base_orders * v_special_day.volume_multiplier))
+        LEAST(800, FLOOR(v_base_orders * v_special_day.volume_multiplier))
     );
     
     RAISE NOTICE '📅 Date: % | Weekend: % | Promo: % | Target orders: %',

@@ -1,389 +1,253 @@
-# 🛒 Supermarket Management System# 🛒 Supermarket Management System
+# 🛒 Supermarket Management System
 
-
-
-<p align="center">Hệ thống quản lý siêu thị mini - Dự án môn Mã nguồn mở
-
-  <img src="https://img.shields.io/badge/version-2.1.0-blue.svg" alt="Version">
-
-  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">## 🚀 Chạy dự án với Docker
-
+<p align="center">
+  <img src="https://img.shields.io/badge/version-4.0.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg" alt="Node">
-
-  <img src="https://img.shields.io/badge/vue-3.x-4FC08D.svg" alt="Vue">### Yêu cầu
-
-  <img src="https://img.shields.io/badge/postgresql-14+-336791.svg" alt="PostgreSQL">- [Docker Desktop](https://www.docker.com/products/docker-desktop/) đã cài đặt và đang chạy
-
+  <img src="https://img.shields.io/badge/vue-3.x-4FC08D.svg" alt="Vue 3">
+  <img src="https://img.shields.io/badge/postgresql-14+-336791.svg" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/docker-compose-2496ED.svg" alt="Docker">
 </p>
 
-### Bước 1: Clone dự án
+<p align="center">
+  Hệ thống quản lý siêu thị mini toàn diện – <strong>150+ REST API</strong> trên <strong>22 modules</strong>
+</p>
 
-Hệ thống quản lý siêu thị mini toàn diện với đầy đủ chức năng quản lý sản phẩm, đơn hàng, tồn kho, nhân viên và báo cáo thống kê.```bash
-
-git clone https://github.com/tunguyen2004/supermarket.git
-
----cd supermarket
-
-```
+---
 
 ## 📑 Mục lục
 
-### Bước 2: Chạy Docker Compose
-
-- [Tổng quan](#-tổng-quan)```bash
-
-- [Tính năng](#-tính-năng)docker-compose up -d --build
-
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)```
-
+- [Tổng quan](#-tổng-quan)
+- [Tính năng](#-tính-năng)
+- [Công nghệ](#-công-nghệ-sử-dụng)
 - [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
-
-- [Cài đặt](#-cài-đặt)Đợi khoảng 1-2 phút để các services khởi động.
-
+- [Cài đặt & Chạy dự án](#-cài-đặt--chạy-dự-án)
 - [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
-
-- [API Documentation](#-api-documentation)### Bước 3: Truy cập
-
+- [API Documentation](#-api-documentation)
 - [Database Schema](#-database-schema)
+- [Môi trường & Biến cấu hình](#-môi-trường--biến-cấu-hình)
+- [Troubleshooting](#-troubleshooting)
+- [Đóng góp](#-đóng-góp)
 
-- [Troubleshooting](#-troubleshooting)| Service | URL | Mô tả |
-
-- [Đóng góp](#-đóng-góp)|---------|-----|-------|
-
-| Frontend | http://localhost:8080 | Giao diện web |
-
----| Backend API | http://localhost:5000 | REST API |
-
-| CloudBeaver | http://localhost:8978 | Quản lý Database (DBeaver Web) |
+---
 
 ## 🎯 Tổng quan
 
-### Tài khoản đăng nhập
-
-**Supermarket Management System** là một hệ thống quản lý siêu thị mini được phát triển với mục tiêu:
-
-**Web/API:**
-
-- 📦 Quản lý sản phẩm, danh mục và thương hiệu| Username | Password | Role |
-
-- 🛒 Xử lý đơn hàng và thanh toán|----------|----------|------|
-
-- 📊 Quản lý tồn kho đa kho hàng| admin | admin123 | Administrator |
-
-- 👥 Quản lý nhân viên và phân quyền
-
-- 📈 Báo cáo thống kê và phân tích doanh thu**CloudBeaver:** http://localhost:8978
-
-- 🖼️ Quản lý hình ảnh sản phẩm| Email | Password |
-
-|-------|----------|
-
----| admin@minimart.com | admin123 |
-
-
-
-## ✨ Tính năng---
-
-
-
-### 🔐 Module 1: Authentication## 📋 Kiểm tra trạng thái
-
-- Đăng nhập / Đăng xuất
-
-- JWT Token Authentication```bash
-
-- Refresh Token# Xem các container đang chạy
-
-- Phân quyền theo Role (Admin, Manager, Staff)docker-compose ps
-
-
-
-### 👥 Module 2: Staff Management# Xem logs
-
-- CRUD nhân viêndocker-compose logs -f
-
-- Phân quyền theo vai trò
-
-- Quản lý trạng thái hoạt động# Xem logs của service cụ thể
-
-docker-compose logs -f backend
-
-### 👤 Module 3: Profile Managementdocker-compose logs -f frontend
-
-- Xem / Cập nhật thông tin cá nhân```
-
-- Đổi mật khẩu
-
-- Upload / Xóa avatar---
-
-
-
-### 📦 Module 4: Product Management## 🛑 Dừng dự án
-
-- CRUD sản phẩm
-
-- Quản lý variants (biến thể)```bash
-
-- Import / Export CSV# Dừng tất cả services
-
-- Bật/tắt trạng thái hàng loạtdocker-compose down
-
-- Quản lý thương hiệu và đơn vị tính
-
-# Dừng và xóa cả database (reset data)
-
-### 📁 Module 5: Collection (Category) Managementdocker-compose down -v
-
-- CRUD danh mục sản phẩm```
-
-- Cấu trúc cây phân cấp (Tree structure)
-
-- Hỗ trợ danh mục cha-con---
-
-
-
-### 📊 Module 6: Dashboard & Reports## 📚 API Documentation
-
-- Tổng quan doanh thu
-
-- Biểu đồ doanh thu theo thời gianXem chi tiết tại: [API_DOCS.md](./API_DOCS.md)
-
-- Top sản phẩm bán chạy
-
-- Top khách hàng### Tóm tắt API:
-
-- Thống kê kênh bán hàng
-
-- Cảnh báo sản phẩm sắp hết hàng| Module | Số API | Endpoint gốc |
-
-|--------|--------|--------------|
-
-### 💰 Module 7: Catalog (Price List)| Products (Module 4) | 10 | `/api/products` |
-
-- Quản lý bảng giá| Collections (Module 5) | 6 | `/api/collections` |
-
-- Cập nhật giá đơn lẻ / hàng loạt
-
-- Export bảng giá CSV---
-
-
-
-### 📦 Module 8: Inventory Management## 🔧 Troubleshooting
-
-- Quản lý tồn kho đa cửa hàng
-
-- Nhập kho từ nhà cung cấp### Lỗi port đã được sử dụng
-
-- Chuyển kho giữa các chi nhánh```bash
-
-- Trả hàng nhà cung cấp# Kiểm tra port
-
-- Lịch sử xuất nhập khonetstat -ano | findstr :5000
-
-netstat -ano | findstr :8080
-
-### 🖼️ Module 9: Product Images
-
-- Upload ảnh chính sản phẩm# Dừng process đang dùng port (thay PID)
-
-- Gallery ảnh (tối đa 5 ảnh)taskkill /PID <PID> /F
-
-- Đặt ảnh chính```
-
-- Sắp xếp thứ tự ảnh
-
-### Reset lại toàn bộ
-
-### 🛒 Module 10: Order Management```bash
-
-- Tạo đơn hàng mớidocker-compose down -v
-
-- Xem chi tiết đơn hàngdocker-compose up -d --build
-
-- Cập nhật trạng thái đơn hàng```
-
-- Hủy đơn hàng
-
-- Thống kê đơn hàng---
-
-
-
----## 👥 Nhóm phát triển
-
-
-
-## 🛠️ Công nghệ sử dụng| Thành viên | Module |
-
-|------------|--------|
-
-### Backend| ... | Module 1-3: Auth, Profile, Staff |
-
-| Công nghệ | Phiên bản | Mô tả || ... | Module 4-5: Products, Collections |
-
-|-----------|-----------|-------|| ... | Module 6-7: ... |
-
-| Node.js | >= 18.x | Runtime environment || ... | Module 8-9: ... |
-
-| Express.js | 4.18.x | Web framework |
-
-| PostgreSQL | 14+ | Database |---
-
-| JWT | 9.x | Authentication |
-
-| bcryptjs | 2.4.x | Password hashing |## 📁 Cấu trúc dự án
-
-| Multer | 2.x | File upload |
-
-| csv-parser | 3.x | CSV processing |```
-
-supermarket/
-
-### Frontend├── backend/                 # Node.js + Express API
-
-| Công nghệ | Phiên bản | Mô tả |│   ├── src/
-
-|-----------|-----------|-------|│   │   ├── config/         # Database config
-
-| Vue.js | 3.x | Frontend framework |│   │   ├── middleware/     # Auth, Upload middleware
-
-| Vue Router | 4.x | Routing |│   │   ├── routes/         # API routes
-
-| Pinia | 3.x | State management |│   │   └── services/       # Business logic
-
-| Element Plus | 2.x | UI Component library |│   ├── Dockerfile
-
-| Tailwind CSS | 3.x | CSS framework |│   └── package.json
-
-| Chart.js | 4.x | Charts & graphs |├── frontend/               # Vue.js 3 + Tailwind
-
-| Axios | 1.x | HTTP client |│   ├── src/
-
-| SweetAlert2 | 11.x | Popup alerts |│   ├── Dockerfile
-
-│   └── package.json
-
-### DevOps├── database/               # SQL scripts
-
-| Công nghệ | Mô tả |│   ├── schema.sql
-
-|-----------|-------|│   └── seed.sql
-
-| Docker | Containerization |├── docker-compose.yml      # Docker orchestration
-
-| Docker Compose | Multi-container orchestration |├── API_DOCS.md            # API documentation
-
-| Nginx | Reverse proxy (Frontend) |└── README.md              # This file
-
-| CloudBeaver | Database management (DBeaver Web) |```
-
+**Supermarket Management System** là ứng dụng quản lý siêu thị mini full-stack được xây dựng với:
+
+- **Frontend:** Vue 3 + Tailwind CSS (SPA)
+- **Backend:** Node.js + Express REST API
+- **Database:** PostgreSQL 14
+- **Triển khai:** Docker Compose (3 services)
+- **Tài liệu API:** Swagger / OpenAPI 3.0
 
 ---
 
-## 🏗️ Kiến trúc hệ thống
+## ✨ Tính năng
+
+### 🔐 Module 1 – Authentication
+- Đăng nhập / Đăng xuất với JWT
+- Refresh Token (7 ngày)
+- Phân quyền 3 cấp: Admin · Manager · Staff
+
+### 👥 Module 2 – Staff Management
+- Quản lý tài khoản nhân viên (CRUD)
+- Thay đổi role / trạng thái hoạt động
+
+### 🙍 Module 3 – Profile
+- Xem & cập nhật thông tin cá nhân
+- Đổi mật khẩu, upload ảnh đại diện
+
+### 📦 Module 4 – Products
+- Quản lý sản phẩm với biến thể (variants)
+- Import / Export CSV hàng loạt
+- Upload đa ảnh sản phẩm
+- Cập nhật trạng thái hàng loạt
+
+### 📂 Module 5 – Collections (Danh mục)
+- Cây danh mục đa cấp
+- Thêm / sửa / xóa danh mục
+
+### 📊 Module 6 – Dashboard
+- Tổng quan doanh thu, đơn hàng, khách hàng
+- Biểu đồ doanh thu theo thời gian
+- Top sản phẩm bán chạy, top khách hàng
+- Cảnh báo hàng sắp hết
+
+### 💰 Module 7 – Catalogs (Bảng giá)
+- Quản lý giá bán & giá vốn từng variant
+- Cập nhật giá hàng loạt (cố định / phần trăm)
+- Xuất bảng giá ra CSV
+
+### 🏪 Module 8 – Inventory (Tồn kho)
+- Nhập kho từ nhà cung cấp
+- Chuyển kho giữa các chi nhánh
+- Trả hàng nhà cung cấp
+- Điều chỉnh tồn kho thủ công
+- Lịch sử giao dịch kho chi tiết
+- Tra cứu tồn kho theo sản phẩm
+
+### 🛒 Module 9 – Orders (Đơn hàng)
+- Tạo & quản lý đơn hàng
+- Đơn nháp (Draft) → Chuyển thành đơn chính thức
+- Hoàn trả đơn hàng (partial / full)
+- In hóa đơn
+- Thống kê đơn hàng
+
+### 🧑 Module 10 – Customers
+- Quản lý hồ sơ khách hàng
+- Tìm kiếm nhanh (dùng cho POS)
+- Danh sách tỉnh/thành phố
+
+### 🏷️ Module 11 – Customer Groups
+- Phân nhóm khách hàng (VIP, Regular, v.v.)
+
+### 🏭 Module 12 – Suppliers
+- Quản lý danh sách nhà cung cấp
+
+### 🎁 Module 13 – Discounts
+- Khuyến mại: % giảm giá, giảm cố định, Buy X Get Y, Free Shipping
+- Kiểm tra & áp dụng mã giảm giá
+- Bật / tắt khuyến mại
+
+### 💳 Module 14 – Transactions (Sổ quỹ)
+- Quản lý phiếu thu / phiếu chi
+- Thống kê tồn quỹ theo cửa hàng
+- Duyệt / từ chối phiếu
+
+### 🚚 Module 15 – Shipments (Vận chuyển)
+- Quản lý vận đơn & trạng thái giao hàng
+- Tích hợp nhiều đơn vị vận chuyển (carriers)
+- Báo cáo dashboard vận chuyển
+
+### 📈 Module 16 – Reports
+- Báo cáo doanh thu theo ngày
+- Báo cáo thực thu theo phương thức thanh toán
+- Danh sách sản phẩm đã bán
+- Báo cáo cuối ngày
+
+### 🖥️ Module 17 – POS (Point of Sale)
+- Thanh toán tại quầy đầy đủ
+- Tìm kiếm sản phẩm nhanh (barcode / SKU / tên)
+- Đơn hàng tạm (Draft)
+- Tạo mã QR thanh toán (VietQR)
+- Webhook tích hợp SePay
+- Kiểm tra trạng thái thanh toán QR
+
+### 🏦 Module 18 – Bank Accounts
+- Quản lý tài khoản ngân hàng
+- Thiết lập tài khoản mặc định
+
+### 🛍️ Module 19 – Checkouts (Đơn chưa hoàn tất)
+- Theo dõi abandoned carts
+- Gửi link thanh toán qua email
+
+### 🤖 Module 20 – Chatbot AI
+- Chatbot hỏi đáp thông tin hệ thống
+- Truy vấn doanh thu, tồn kho qua ngôn ngữ tự nhiên
+- Lưu lịch sử chat theo session
+
+### 🔍 Module 21 – Search
+- Tìm kiếm toàn cục: sản phẩm, khách hàng, đơn hàng
+
+### ⚙️ Module 22 – Utilities
+- Brands, Units, Stores
+- Loại giao dịch kho, loại thu chi, phương thức thanh toán
+
+---
+
+## 🛠 Công nghệ sử dụng
+
+| Layer | Stack |
+|-------|-------|
+| **Frontend** | Vue 3, Vue Router, Pinia, Tailwind CSS, Axios |
+| **Backend** | Node.js 18+, Express 4, swagger-jsdoc, Joi, JWT |
+| **Database** | PostgreSQL 14, node-postgres (pg) |
+| **DevOps** | Docker, Docker Compose, Nginx |
+| **Tool** | Postman, CloudBeaver (DB GUI) |
+
+---
+
+## 🏗 Kiến trúc hệ thống
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT                                   │
-│                    (Web Browser)                                 │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     FRONTEND (Vue.js 3)                          │
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │
-│  │   Views   │  │Components │  │  Router   │  │   Store   │    │
-│  │           │  │           │  │           │  │  (Pinia)  │    │
-│  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │
-│                         Port: 8080                               │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    BACKEND (Express.js)                          │
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │
-│  │  Routes   │  │ Services  │  │Middleware │  │  Config   │    │
-│  │           │  │           │  │(Auth,CORS)│  │           │    │
-│  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │
-│                         Port: 5000                               │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    DATABASE (PostgreSQL)                         │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                  Snowflake Schema                          │  │
-│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │  │
-│  │  │  Fact   │  │   Dim   │  │ SubDim  │  │SubSubDim│      │  │
-│  │  │ Tables  │  │ Tables  │  │ Tables  │  │ Tables  │      │  │
-│  │  └─────────┘  └─────────┘  └─────────┘  └─────────┘      │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                         Port: 5432                               │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    Docker Compose                        │
+│                                                          │
+│  ┌─────────────┐   ┌─────────────┐   ┌───────────────┐  │
+│  │  Frontend   │   │   Backend   │   │  PostgreSQL   │  │
+│  │  Vue 3      │──▶│  Express    │──▶│  Database     │  │
+│  │  :8080      │   │  :5000      │   │  :5432        │  │
+│  └─────────────┘   └─────────────┘   └───────────────┘  │
+│                                                          │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  CloudBeaver (Database GUI)  :8978                  │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Request Flow:**
+```
+User → Frontend (Vue 3 / Nginx) → Backend API (Express) → PostgreSQL
+                                       │
+                                  JWT Auth Middleware
+                                  Rate Limiter
+                                  Joi Validator
 ```
 
 ---
 
-## 🚀 Cài đặt
+## 🚀 Cài đặt & Chạy dự án
 
-### Yêu cầu hệ thống
+### Yêu cầu
 
-- **Docker Desktop** >= 4.x
-- **Git** >= 2.x
-- **RAM** >= 4GB (khuyến nghị 8GB)
-- **Disk** >= 5GB trống
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) đã cài đặt và đang chạy
+- Git
 
-### Cách 1: Chạy với Docker (Khuyến nghị)
+### Bước 1: Clone dự án
 
 ```bash
-# Clone repository
 git clone https://github.com/tunguyen2004/supermarket.git
 cd supermarket
-
-# Chạy Docker Compose
-docker-compose up -d --build
-
-# Đợi 1-2 phút để services khởi động
 ```
 
-### Cách 2: Chạy thủ công (Development)
+### Bước 2: Chạy với Docker Compose
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/tunguyen2004/supermarket.git
-cd supermarket
-
-# 2. Chạy PostgreSQL bằng Docker
-docker-compose up -d postgres
-
-# 3. Cài đặt Backend
-cd backend
-npm install
-cp .env.example .env
-# Chỉnh sửa file .env với thông tin database
-npm run dev
-
-# 4. Cài đặt Frontend (Terminal mới)
-cd frontend
-npm install
-npm run serve
+docker compose up --build -d
 ```
 
-### Truy cập hệ thống
+Đợi khoảng **1–2 phút** để các service khởi động và seed dữ liệu.
+
+### Bước 3: Kiểm tra trạng thái
+
+```bash
+docker compose ps
+```
+
+### Bước 4: Truy cập
 
 | Service | URL | Mô tả |
 |---------|-----|-------|
-| 🖥️ Frontend | http://localhost:8080 | Giao diện web |
+| 🌐 Frontend | http://localhost:8080 | Giao diện người dùng |
 | ⚙️ Backend API | http://localhost:5000 | REST API |
-| 🗄️ CloudBeaver | http://localhost:8978 | Quản lý Database (DBeaver Web) |
+| 📚 Swagger UI | http://localhost:5000/api-docs | Tài liệu API tương tác |
+| 📋 OpenAPI JSON | http://localhost:5000/api-docs.json | Swagger spec JSON |
+| 🗄️ CloudBeaver | http://localhost:8978 | Quản lý Database (GUI) |
 
 ### Tài khoản mặc định
 
-**Đăng nhập Web/API:**
+**Web / API:**
 | Username | Password | Role |
 |----------|----------|------|
-| `admin` | `1` | Administrator |
+| `admin` | `admin123` | Administrator |
+| `manager1` | `1` | Manager |
+| `staff1` | `1` | Staff |
 
-**CloudBeaver:** http://localhost:8978 (tạo admin password khi truy cập lần đầu)
+**CloudBeaver** (http://localhost:8978):
+| Email | Password |
+|-------|----------|
+| `admin@minimart.com` | `admin123` |
 
 ---
 
@@ -391,246 +255,557 @@ npm run serve
 
 ```
 supermarket/
-├── 📂 backend/                    # Backend API (Node.js/Express)
-│   ├── 📂 src/
-│   │   ├── 📂 config/             # Database configuration
-│   │   │   └── database.js
-│   │   ├── 📂 middleware/         # Express middlewares
-│   │   │   ├── auth.js            # JWT authentication
-│   │   │   ├── authorize.js       # Role-based authorization
-│   │   │   └── upload.js          # File upload (Multer)
-│   │   ├── 📂 routes/             # API routes
-│   │   │   └── index.js
-│   │   ├── 📂 services/           # Business logic
-│   │   │   ├── authService.js
-│   │   │   ├── productService.js
-│   │   │   ├── orderService.js
-│   │   │   ├── inventoryService.js
-│   │   │   └── ...
-│   │   └── index.js               # Entry point
-│   ├── 📂 uploads/                # Uploaded files
-│   │   ├── avatars/
-│   │   └── products/
+├── docker-compose.yml          # Docker orchestration
+├── README.md
+├── supermarket.json            # Postman collection (150+ APIs)
+│
+├── backend/                    # Node.js / Express API
 │   ├── Dockerfile
-│   └── package.json
+│   ├── package.json
+│   └── src/
+│       ├── index.js            # App entry point
+│       ├── config/
+│       │   ├── database.js     # PostgreSQL connection pool
+│       │   └── swagger.js      # Swagger / OpenAPI config
+│       ├── middleware/
+│       │   ├── auth.js         # JWT verifyToken
+│       │   ├── authorize.js    # Role-based authorization
+│       │   ├── rateLimiter.js  # Rate limiting
+│       │   ├── upload.js       # Multer file upload
+│       │   └── validate.js     # Joi request validation
+│       ├── routes/             # 22 route modules
+│       ├── services/           # Business logic
+│       ├── validators/         # Joi schemas
+│       └── utils/
+│           ├── codeGenerator.js
+│           └── responseHelper.js
 │
-├── 📂 frontend/                   # Frontend (Vue.js 3)
-│   ├── 📂 src/
-│   │   ├── 📂 assets/             # Static assets
-│   │   ├── 📂 components/         # Reusable components
-│   │   ├── 📂 composables/        # Vue composables
-│   │   ├── 📂 layouts/            # Page layouts
-│   │   ├── 📂 router/             # Vue Router config
-│   │   ├── 📂 services/           # API services
-│   │   ├── 📂 store/              # Pinia stores
-│   │   ├── 📂 views/              # Page components
-│   │   │   ├── Account/
-│   │   │   ├── DashboardOverview.vue
-│   │   │   ├── Inventory/
-│   │   │   ├── Orders/
-│   │   │   ├── Product/
-│   │   │   ├── Reports/
-│   │   │   └── Users/
-│   │   ├── App.vue
-│   │   └── main.js
-│   ├── 📂 Postman/                # Postman collections
-│   │   └── supermarket.json
+├── frontend/                   # Vue 3 SPA
 │   ├── Dockerfile
-│   └── package.json
+│   ├── nginx.conf
+│   └── src/
+│       ├── main.js
+│       ├── App.vue
+│       ├── router/
+│       ├── store/              # Pinia stores
+│       ├── services/           # Axios API calls
+│       ├── views/
+│       └── components/
 │
-├── 📂 database/                   # Database scripts
-│   ├── 📂 init/                   # Docker auto-init scripts
-│   │   ├── 01_schema.sql          # DDL: tables, indexes, triggers, views
-│   │   ├── 02_seed.sql            # DML: seed data
-│   │   ├── 03_functions.sql       # Data generator functions
-│   │   └── 04_catchup.sql         # Catchup data to today
-│   ├── 📂 scripts/                # Backup, health check, reset
-│   └── 📂 docs/                   # Schema design & data engineering guide
-│
-├── docker-compose.yml             # Docker orchestration
-├── API.md                         # API documentation
-├── DOCKER_GUIDE.md                # Docker guide
-└── README.md                      # This file
+└── database/
+    ├── init/
+    │   ├── 01_schema.sql       # Tạo bảng
+    │   ├── 02_seed.sql         # Dữ liệu mẫu
+    │   ├── 03_functions.sql    # Stored functions
+    │   └── 04_catchup.sql      # Migrations bổ sung
+    └── docs/
+        ├── SCHEMA_DESIGN.md
+        └── DATA_ENGINEERING_GUIDE.md
 ```
 
 ---
 
 ## 📚 API Documentation
 
-### Tổng quan API
+### Base URL
+- Development: `http://localhost:5000/api`
+- Swagger UI: `http://localhost:5000/api-docs`
 
-Hệ thống cung cấp **67 REST APIs** được chia thành **10 modules**:
+### Xác thực
 
-| Module | Số API | Endpoint gốc | Mô tả |
-|--------|--------|--------------|-------|
-| Authentication | 5 | `/api/auth` | Đăng nhập, đăng xuất, token |
-| Staff | 6 | `/api/staff` | Quản lý nhân viên |
-| Profile | 5 | `/api/users` | Thông tin cá nhân |
-| Products | 10 | `/api/products` | Quản lý sản phẩm |
-| Collections | 7 | `/api/collections` | Danh mục sản phẩm |
-| Dashboard | 7 | `/api/dashboard` | Báo cáo, thống kê |
-| Catalog | 5 | `/api/catalogs` | Bảng giá |
-| Inventory | 9 | `/api/inventories` | Quản lý tồn kho |
-| Product Images | 7 | `/api/products/:id/images` | Ảnh sản phẩm |
-| Orders | 7 | `/api/orders` | Quản lý đơn hàng |
-
-### Authentication
-
-Tất cả API (trừ login) yêu cầu JWT token trong header:
+Tất cả API (trừ `/api/auth/login`) yêu cầu header:
 
 ```
-Authorization: Bearer <your_token>
+Authorization: Bearer <jwt_token>
 ```
 
-### Ví dụ Request
+### Response Format chuẩn
 
-```bash
-# Login
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "1"}'
-
-# Get Products
-curl -X GET http://localhost:5000/api/products \
-  -H "Authorization: Bearer <token>"
+```json
+{
+  "success": true,
+  "message": "Thao tác thành công",
+  "data": {},
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5
+  }
+}
 ```
-
-📖 **Xem chi tiết tại:** [API.md](./API.md)
-
-### Postman Collection
-
-Import file `frontend/Postman/supermarket.json` vào Postman để test API.
 
 ---
 
-## 🗄️ Database Schema
+### Module 1 – Auth `/api/auth`
 
-Database sử dụng **Snowflake Schema** với các bảng chính:
+| Method | Endpoint | Mô tả | Auth |
+|--------|----------|-------|------|
+| POST | `/api/auth/login` | Đăng nhập, lấy JWT token | ❌ |
+| POST | `/api/auth/logout` | Đăng xuất | ✅ |
+| POST | `/api/auth/refresh` | Làm mới access token | ❌ |
+| GET  | `/api/auth/me` | Thông tin user hiện tại | ✅ |
 
-### Sub-Sub Dimensions (Level 3)
-- `subdim_regions` - Vùng miền
+**Login Request:**
+```json
+{ "username": "admin", "password": "admin123" }
+```
 
-### Sub-Dimensions (Level 2)
-- `subdim_cities` - Thành phố
-- `subdim_categories` - Danh mục (cấu trúc cây)
-- `subdim_brands` - Thương hiệu
-- `subdim_units` - Đơn vị tính
-- `subdim_customer_groups` - Nhóm khách hàng
-- `subdim_store_types` - Loại cửa hàng
-- `subdim_transaction_types` - Loại giao dịch kho
-- `subdim_roles` - Vai trò người dùng
-- `subdim_permissions` - Quyền hạn
-
-### Dimensions (Level 1)
-- `dim_time` - Thời gian
-- `dim_stores` - Cửa hàng
-- `dim_suppliers` - Nhà cung cấp
-- `dim_customers` - Khách hàng
-- `dim_products` - Sản phẩm
-- `dim_product_variants` - Biến thể sản phẩm
-- `dim_users` - Người dùng hệ thống
-
-### Fact Tables
-- `fact_orders` - Đơn hàng
-- `fact_order_details` - Chi tiết đơn hàng
-- `fact_inventory_stocks` - Tồn kho
-- `fact_inventory_transactions` - Giao dịch kho
+**Login Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGci...",
+    "refreshToken": "...",
+    "role_id": 1,
+    "role_name": "Admin"
+  }
+}
+```
 
 ---
 
-## 🔧 Troubleshooting
+### Module 2 – Staff `/api/staff`
 
-### Docker Commands
+| Method | Endpoint | Mô tả | Role |
+|--------|----------|-------|------|
+| GET    | `/api/staff` | Danh sách nhân viên | Admin |
+| POST   | `/api/staff` | Thêm nhân viên mới | Admin |
+| GET    | `/api/staff/:id` | Chi tiết nhân viên | Admin |
+| PUT    | `/api/staff/:id` | Cập nhật thông tin | Admin |
+| DELETE | `/api/staff/:id` | Xóa nhân viên | Admin |
+| PATCH  | `/api/staff/:id/role` | Thay đổi role | Admin |
 
-```bash
-# Xem trạng thái containers
-docker-compose ps
+---
 
-# Xem logs tất cả services
-docker-compose logs -f
+### Module 3 – Profile `/api/users`
 
-# Xem logs service cụ thể
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f postgres
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/users/profile` | Xem thông tin cá nhân |
+| PUT    | `/api/users/profile` | Cập nhật thông tin |
+| PUT    | `/api/users/change-password` | Đổi mật khẩu |
+| POST   | `/api/users/avatar` | Upload ảnh đại diện |
+| DELETE | `/api/users/avatar` | Xóa ảnh đại diện |
 
-# Dừng tất cả services
-docker-compose down
+---
 
-# Dừng và xóa data (reset)
-docker-compose down -v
+### Module 4 – Products `/api/products`
 
-# Rebuild và chạy lại
-docker-compose up -d --build
+| Method | Endpoint | Mô tả | Role |
+|--------|----------|-------|------|
+| GET    | `/api/products` | Danh sách sản phẩm | All |
+| POST   | `/api/products` | Thêm sản phẩm mới | Manager+ |
+| GET    | `/api/products/export` | Xuất CSV | All |
+| POST   | `/api/products/import` | Nhập từ CSV | Manager+ |
+| PATCH  | `/api/products/bulk-status` | Cập nhật trạng thái loạt | Manager+ |
+| GET    | `/api/products/:id` | Chi tiết sản phẩm | All |
+| PUT    | `/api/products/:id` | Cập nhật sản phẩm | Manager+ |
+| DELETE | `/api/products/:id` | Xóa sản phẩm | Manager+ |
+| GET    | `/api/products/:id/images` | Danh sách ảnh | All |
+| POST   | `/api/products/:id/images` | Upload 1 ảnh | Manager+ |
+| POST   | `/api/products/:id/images/multiple` | Upload nhiều ảnh | Manager+ |
+| DELETE | `/api/products/:id/images/:imageId` | Xóa ảnh | Manager+ |
+| PATCH  | `/api/products/:id/images/reorder` | Sắp xếp lại ảnh | Manager+ |
+
+**Query params cho GET `/api/products`:**
+- `page`, `limit`, `search`, `category_id`, `brand_id`, `is_active`
+
+---
+
+### Module 5 – Collections `/api/collections`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/collections` | Danh sách danh mục |
+| POST   | `/api/collections` | Thêm danh mục |
+| GET    | `/api/collections/tree` | Cây danh mục (nested) |
+| GET    | `/api/collections/:id` | Chi tiết danh mục |
+| PUT    | `/api/collections/:id` | Cập nhật danh mục |
+| DELETE | `/api/collections/:id` | Xóa danh mục |
+
+---
+
+### Module 6 – Dashboard `/api/dashboard`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/dashboard/overview` | Tổng quan nhanh |
+| GET | `/api/dashboard/stats` | Thống kê KPIs |
+| GET | `/api/dashboard/revenue-chart` | Biểu đồ doanh thu |
+| GET | `/api/dashboard/top-products` | Top sản phẩm bán chạy |
+| GET | `/api/dashboard/sales-channels` | Kênh bán hàng |
+| GET | `/api/dashboard/top-customers` | Top khách hàng |
+| GET | `/api/dashboard/low-stock` | Hàng sắp hết |
+
+**Query params:** `period` (today | week | month | year), `store_id`
+
+---
+
+### Module 7 – Catalogs `/api/catalogs`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET   | `/api/catalogs` | Danh sách bảng giá |
+| GET   | `/api/catalogs/export` | Xuất CSV |
+| PATCH | `/api/catalogs/bulk-update` | Cập nhật giá hàng loạt |
+| GET   | `/api/catalogs/:id` | Chi tiết |
+| PUT   | `/api/catalogs/:id` | Cập nhật giá |
+
+---
+
+### Module 8 – Inventory `/api/inventories`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET  | `/api/inventories` | Danh sách tồn kho |
+| POST | `/api/inventories/receive` | Nhập kho |
+| POST | `/api/inventories/transfer` | Chuyển kho |
+| POST | `/api/inventories/return` | Trả hàng NCC |
+| GET  | `/api/inventories/transactions` | Lịch sử giao dịch kho |
+| GET  | `/api/inventories/transactions/:id` | Chi tiết giao dịch |
+| GET  | `/api/inventories/:variantId` | Tồn kho theo variant |
+| PUT  | `/api/inventories/:variantId` | Điều chỉnh tồn kho |
+| GET  | `/api/inventory/lookup/search` | Tra cứu nhanh |
+| GET  | `/api/inventory/lookup/:productId` | Chi tiết tồn kho SP |
+
+---
+
+### Module 9 – Orders `/api/orders`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/orders` | Danh sách đơn hàng |
+| POST   | `/api/orders` | Tạo đơn hàng mới |
+| GET    | `/api/orders/stats/summary` | Thống kê tổng quan |
+| GET    | `/api/orders/stats/detailed` | Thống kê chi tiết |
+| GET    | `/api/orders/returns` | Danh sách đơn hoàn trả |
+| GET    | `/api/orders/drafts` | Danh sách đơn nháp |
+| POST   | `/api/orders/drafts` | Tạo đơn nháp |
+| POST   | `/api/orders/drafts/:id/convert` | Chuyển nháp → chính thức |
+| DELETE | `/api/orders/drafts/:id` | Xóa đơn nháp |
+| GET    | `/api/orders/:id` | Chi tiết đơn hàng |
+| PUT    | `/api/orders/:id` | Cập nhật trạng thái |
+| DELETE | `/api/orders/:id` | Hủy đơn hàng |
+| POST   | `/api/orders/:id/return` | Hoàn trả đơn hàng |
+| GET    | `/api/orders/:id/invoice` | Lấy dữ liệu in hóa đơn |
+
+---
+
+### Module 10 – Customers `/api/customers`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET  | `/api/customers` | Danh sách khách hàng |
+| GET  | `/api/customers/search` | Tìm kiếm nhanh |
+| GET  | `/api/customers/cities` | Danh sách tỉnh/thành |
+| POST | `/api/customers` | Thêm khách hàng |
+| GET  | `/api/customers/:id` | Chi tiết khách hàng |
+| PUT  | `/api/customers/:id` | Cập nhật khách hàng |
+| DELETE | `/api/customers/:id` | Xóa khách hàng |
+| PUT  | `/api/customers/:id/group` | Chuyển nhóm KH |
+
+---
+
+### Module 11 – Customer Groups `/api/customer-groups`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/customer-groups` | Danh sách nhóm KH |
+
+---
+
+### Module 12 – Suppliers `/api/suppliers`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/suppliers` | Danh sách NCC |
+| POST   | `/api/suppliers` | Thêm NCC |
+| GET    | `/api/suppliers/:id` | Chi tiết NCC |
+| PUT    | `/api/suppliers/:id` | Cập nhật NCC |
+| DELETE | `/api/suppliers/:id` | Xóa NCC |
+
+---
+
+### Module 13 – Discounts `/api/discounts`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/discounts` | Danh sách khuyến mại |
+| POST   | `/api/discounts` | Tạo khuyến mại |
+| GET    | `/api/discounts/types` | Loại khuyến mại |
+| POST   | `/api/discounts/validate` | Kiểm tra mã giảm giá |
+| GET    | `/api/discounts/:id` | Chi tiết |
+| PUT    | `/api/discounts/:id` | Cập nhật |
+| PATCH  | `/api/discounts/:id/toggle` | Bật/tắt |
+| DELETE | `/api/discounts/:id` | Xóa |
+
+---
+
+### Module 14 – Transactions `/api/transactions`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/transactions` | Danh sách thu chi |
+| POST   | `/api/transactions` | Tạo phiếu thu/chi |
+| GET    | `/api/transactions/summary` | Thống kê tồn quỹ |
+| GET    | `/api/transactions/:id` | Chi tiết giao dịch |
+| PUT    | `/api/transactions/:id` | Cập nhật |
+| PATCH  | `/api/transactions/:id/status` | Duyệt / từ chối |
+| DELETE | `/api/transactions/:id` | Hủy giao dịch |
+
+---
+
+### Module 15 – Shipments `/api/shipments`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/shipments` | Danh sách vận đơn |
+| POST   | `/api/shipments` | Tạo vận đơn |
+| GET    | `/api/shipments/statuses` | Trạng thái vận đơn |
+| GET    | `/api/shipments/carriers` | Đơn vị vận chuyển |
+| GET    | `/api/shipments/reports/dashboard` | Báo cáo vận chuyển |
+| GET    | `/api/shipments/:id` | Chi tiết vận đơn |
+| PUT    | `/api/shipments/:id` | Cập nhật vận đơn |
+| PATCH  | `/api/shipments/:id/status` | Cập nhật trạng thái |
+| DELETE | `/api/shipments/:id` | Xóa vận đơn |
+
+---
+
+### Module 16 – Reports `/api/reports`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/reports/daily` | Báo cáo doanh thu theo ngày |
+| GET | `/api/reports/actual-revenue` | Báo cáo thực thu |
+| GET | `/api/reports/sold-products` | Sản phẩm đã bán |
+| GET | `/api/reports/end-of-day` | Báo cáo cuối ngày |
+| GET | `/api/reports/export` | Xuất báo cáo |
+
+**Query params:** `from`, `to`, `staff_id`, `store_id`, `page`, `limit`
+
+---
+
+### Module 17 – POS `/api/pos`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/api/pos/checkout` | Thanh toán đơn POS |
+| GET  | `/api/pos/products/search` | Tìm sản phẩm nhanh |
+| GET  | `/api/pos/products/:variantId/price` | Giá & tồn kho variant |
+| POST | `/api/pos/orders/draft` | Lưu đơn tạm |
+| POST | `/api/pos/orders/draft/create-empty` | Tạo đơn tạm trống |
+| GET  | `/api/pos/orders/drafts` | Danh sách đơn tạm |
+| GET  | `/api/pos/orders/drafts/:id` | Chi tiết đơn tạm |
+| PUT  | `/api/pos/orders/draft/:id` | Cập nhật đơn tạm |
+| DELETE | `/api/pos/orders/draft/:id` | Xóa đơn tạm |
+| GET  | `/api/pos/orders/:id/receipt` | Dữ liệu hóa đơn in |
+| GET  | `/api/pos/discounts/active` | Mã giảm giá đang hoạt động |
+| POST | `/api/pos/discounts/validate` | Kiểm tra mã giảm giá |
+| GET  | `/api/pos/payment-methods` | Phương thức thanh toán |
+| POST | `/api/pos/qr/generate` | Tạo mã QR (VietQR) |
+| GET  | `/api/pos/qr/check-payment` | Kiểm tra trạng thái QR |
+| POST | `/api/pos/webhook/sepay` | Webhook SePay (public) |
+
+---
+
+### Module 18 – Bank Accounts `/api/bank-accounts`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET    | `/api/bank-accounts` | Danh sách tài khoản NH |
+| POST   | `/api/bank-accounts` | Thêm tài khoản NH |
+| GET    | `/api/bank-accounts/:id` | Chi tiết tài khoản |
+| PUT    | `/api/bank-accounts/:id` | Cập nhật |
+| DELETE | `/api/bank-accounts/:id` | Xóa / Vô hiệu hóa |
+
+---
+
+### Module 19 – Checkouts `/api/checkouts`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET  | `/api/checkouts` | Danh sách đơn chưa hoàn tất |
+| GET  | `/api/checkouts/stats` | Thống kê abandoned carts |
+| GET  | `/api/checkouts/:id` | Chi tiết đơn |
+| POST | `/api/checkouts/:id/send-payment-link` | Gửi link thanh toán |
+
+---
+
+### Module 20 – Chatbot `/api/chatbot`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/api/chatbot/message` | Gửi tin nhắn |
+| GET  | `/api/chatbot/suggestions` | Gợi ý câu hỏi |
+| GET  | `/api/chatbot/history` | Lịch sử chat |
+| DELETE | `/api/chatbot/history` | Xóa lịch sử chat |
+
+**Ví dụ câu hỏi chatbot:**
+- `"Doanh thu hôm nay bao nhiêu?"`
+- `"Sản phẩm nào sắp hết hàng?"`
+- `"Top 5 sản phẩm bán chạy tuần này"`
+
+---
+
+### Module 21 – Search `/api/search`
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/search?q=keyword&limit=5` | Tìm kiếm toàn cục |
+
+Kết quả trả về: sản phẩm, khách hàng, đơn hàng phù hợp với từ khóa.
+
+---
+
+### Module 22 – Utilities
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/brands` | Danh sách thương hiệu |
+| GET | `/api/units` | Đơn vị tính |
+| GET | `/api/stores` | Danh sách cửa hàng / kho |
+| GET | `/api/transaction-types` | Loại giao dịch kho |
+| GET | `/api/cashbook-types` | Loại phiếu thu chi |
+| GET | `/api/payment-methods` | Phương thức thanh toán |
+
+---
+
+## 🗄 Database Schema
+
+PostgreSQL database với **30+ bảng** chia thành các nhóm:
+
+```
+Core:       employees, roles, stores
+Product:    products, product_variants, categories, brands, units
+            product_images, catalogs
+Inventory:  inventory_transactions, stock_levels
+Order:      orders, order_items, order_return_items
+Customer:   customers, customer_groups, cities
+Financial:  cashbook_transactions, cashbook_types, payment_methods
+Shipping:   shipments, shipment_status_history, carriers
+Discount:   discounts, discount_usage
+Banking:    bank_accounts
+Chat:       chatbot_conversations
 ```
 
-### Lỗi thường gặp
+Schema đầy đủ: [`database/init/01_schema.sql`](database/init/01_schema.sql)
 
-#### Lỗi port đã sử dụng
+Tài liệu thiết kế: [`database/docs/SCHEMA_DESIGN.md`](database/docs/SCHEMA_DESIGN.md)
+
+---
+
+## 🔧 Môi trường & Biến cấu hình
+
+File `.env` trong thư mục `backend/`:
+
+```env
+# Server
+PORT=5000
+NODE_ENV=development
+
+# Database
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=supermarket_db
+DB_USER=supermarket_user
+DB_PASSWORD=your_password
+
+# JWT
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_SECRET=your_refresh_secret
+JWT_REFRESH_EXPIRES_IN=7d
+
+# File Upload
+UPLOAD_PATH=./uploads
+MAX_FILE_SIZE=5242880   # 5MB
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000   # 15 phút
+RATE_LIMIT_MAX=100
+
+# SePay Webhook (tùy chọn)
+SEPAY_WEBHOOK_KEY=your_sepay_key
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Container không khởi động được
 
 ```bash
-# Windows - Kiểm tra port
+# Xem log chi tiết
+docker compose logs backend
+docker compose logs postgres
+
+# Khởi động lại
+docker compose down
+docker compose up --build -d
+```
+
+### Lỗi database connection
+
+```bash
+# Kiểm tra PostgreSQL
+docker compose exec postgres psql -U supermarket_user -d supermarket_db -c "\dt"
+
+# Reset database (xóa sạch và tạo lại)
+docker compose down -v
+docker compose up --build -d
+```
+
+### Lỗi port đã được sử dụng
+
+```bash
+# Kiểm tra port đang chạy
 netstat -ano | findstr :5000
 netstat -ano | findstr :8080
-
-# Dừng process (thay <PID>)
-taskkill /PID <PID> /F
 ```
 
-#### Reset database
+### Xem logs real-time
 
 ```bash
-docker-compose down -v
-docker-compose up -d --build
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
 
-#### Lỗi kết nối database
+---
 
-```bash
-# Kiểm tra postgres container
-docker-compose logs postgres
+## 📮 Test API với Postman
 
-# Kết nối trực tiếp vào postgres
-docker exec -it minimart_postgres psql -U admin -d minimart_db
-```
+Import file [`supermarket.json`](supermarket.json) vào Postman:
+
+1. Mở Postman → **Import** → chọn file `supermarket.json`
+2. Đặt biến `baseUrl = http://localhost:5000/api`
+3. Chạy request **1.1 Login** → token sẽ tự động lưu vào collection variable
+4. Các request khác sẽ tự động dùng token này
 
 ---
 
 ## 🤝 Đóng góp
 
 1. Fork repository
-2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
+2. Tạo branch feature: `git checkout -b feature/ten-tinh-nang`
+3. Commit: `git commit -m "feat: mô tả thay đổi"`
+4. Push: `git push origin feature/ten-tinh-nang`
 5. Tạo Pull Request
+
+### Quy tắc commit message
+
+```
+feat:     Tính năng mới
+fix:      Sửa lỗi
+docs:     Cập nhật tài liệu
+refactor: Tái cấu trúc code
+test:     Thêm tests
+chore:    Các thay đổi khác
+```
 
 ---
 
 ## 📄 License
 
-Dự án được phân phối dưới giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.
-
----
-
-## 👨‍💻 Tác giả
-
-**Tú Nguyễn** - [tunguyen2004](https://github.com/tunguyen2004)
-
----
-
-## 📞 Liên hệ
-
-- **GitHub:** https://github.com/tunguyen2004/supermarket
-- **Issues:** https://github.com/tunguyen2004/supermarket/issues
-
----
-
-<p align="center">
-  <b>⭐ Nếu dự án hữu ích, hãy cho một star trên GitHub! ⭐</b>
-</p>
-
----
-
-**Created:** 19/01/2026  
-**Updated:** 28/01/2026  
-**Version:** 2.1.0
+[MIT](LICENSE) © 2026 Supermarket Management System Team
