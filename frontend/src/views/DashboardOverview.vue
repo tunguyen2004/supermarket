@@ -49,7 +49,7 @@
     </div>
 
     <!-- ============ QUICK ACTIONS ============ -->
-    <div class="quick-actions">
+    <!-- <div class="quick-actions">
       <button class="action-btn" @click="$router.push('/pos')">
         <div class="action-icon pos">
           <i class="fa-solid fa-cash-register"></i>
@@ -80,7 +80,7 @@
         </div>
         <span>Báo cáo</span>
       </button>
-    </div>
+    </div> -->
 
     <!-- ============ TODAY STATS (HIGHLIGHT) ============ -->
     <div class="today-section" v-if="!loading">

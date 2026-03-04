@@ -45,7 +45,7 @@ docker exec -i minimart_postgres psql -U admin -d minimart_db -c "SELECT * FROM 
 .\scripts\backfill-data.ps1 -StartDate "2026-01-01" -EndDate "2026-01-31"
 
 # Hoặc trực tiếp
-docker exec -i minimart_postgres psql -U admin -d minimart_db -c "SELECT * FROM backfill_daily_data('2025-01-01', '2026-01-30');"
+docker exec -i minimart_postgres psql -U admin -d minimart_db -c "SELECT * FROM backfill_daily_data('2025-01-01', '2026-01-31');"
 ```
 
 ### Bắt kịp data đến hôm nay

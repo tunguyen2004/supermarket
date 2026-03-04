@@ -754,16 +754,16 @@ CREATE INDEX idx_submitted_reports_status ON fact_submitted_reports(status);
 -- TRIGGER: Auto-update updated_at
 -- =========================
 CREATE
-OR REPLACE FUNCTION trigger_set_updated_at() RETURNS TRIGGER AS $ $ BEGIN NEW.updated_at = CURRENT_TIMESTAMP;
+OR REPLACE FUNCTION trigger_set_updated_at() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = CURRENT_TIMESTAMP;
 
 RETURN NEW;
 
 END;
 
-$ $ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Áp dụng cho tất cả bảng có cột updated_at
-DO $ $ DECLARE t TEXT;
+DO $$ DECLARE t TEXT;
 
 tables TEXT [] := ARRAY [
         'dim_products', 'dim_discounts', 'dim_bank_accounts',
@@ -785,12 +785,12 @@ END LOOP;
 RAISE NOTICE 'Created updated_at triggers for % tables',
 array_length(tables, 1);
 
-END $ $;
+END $$;
 
 -- =========================
 -- COMPLETION MESSAGE
 -- =========================
-DO $ $ BEGIN RAISE NOTICE 'Schema created successfully!';
+DO $$ BEGIN RAISE NOTICE 'Schema created successfully!';
 
 RAISE NOTICE '   Sub-dimensions: 11 tables (regions, cities, categories, brands, units, etc.)';
 
@@ -802,4 +802,4 @@ RAISE NOTICE '   Views: 1 (vw_daily_cashbook_summary)';
 
 RAISE NOTICE '   Total: 36 tables + indexes';
 
-END $ $;
+END $$;
