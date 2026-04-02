@@ -310,6 +310,7 @@ import { Search, Plus, Edit, Delete } from "@element-plus/icons-vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import staffService from "@/services/staffService";
 import dayjs from "dayjs";
+import { resolveApiAssetUrl } from "@/config/apiUrl";
 
 // --- RESPONSIVE STATE ---
 const isMobile = ref(false);
@@ -362,9 +363,7 @@ const fetchStaffList = async () => {
       joinDate: item.created_at
         ? dayjs(item.created_at).format("DD/MM/YYYY")
         : "",
-      avatarUrl: item.avatar_url
-        ? `http://localhost:5000${item.avatar_url}`
-        : "",
+      avatarUrl: item.avatar_url ? resolveApiAssetUrl(item.avatar_url) : "",
       notes: "",
     }));
   } catch (error) {

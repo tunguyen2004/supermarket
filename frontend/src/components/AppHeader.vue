@@ -407,6 +407,7 @@ import authService from "@/services/authService";
 import apiClient from "@/services/apiClient";
 import { getProfile } from "@/services/userService";
 import { globalSearch } from "@/services/searchService";
+import { resolveApiAssetUrl } from "@/config/apiUrl";
 
 export default {
   name: "AppHeader",
@@ -592,8 +593,7 @@ export default {
     // Helpers
     const getImageUrl = (url) => {
       if (!url) return "";
-      if (url.startsWith("http")) return url;
-      return `http://localhost:5000${url}`;
+      return resolveApiAssetUrl(url);
     };
 
     const formatPrice = (price) => {
@@ -651,8 +651,7 @@ export default {
 
     const fullAvatarUrl = computed(() => {
       if (!avatarUrl.value) return "";
-      if (avatarUrl.value.startsWith("http")) return avatarUrl.value;
-      return `http://localhost:5000${avatarUrl.value}`;
+      return resolveApiAssetUrl(avatarUrl.value);
     });
 
     onMounted(async () => {

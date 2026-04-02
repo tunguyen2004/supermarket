@@ -7,6 +7,7 @@
  */
 
 import apiClient from "@/config/axios";
+import { isMockDataEnabled } from "@/config/dataSource";
 
 class PosService {
   /**
@@ -298,7 +299,73 @@ class PosService {
    * Print receipt (open in new window or download)
    * @param {number} orderId - ID đơn hàng
    */
-  printReceipt(orderId) {
+  async printReceipt(orderId) {
+    if (isMockDataEnabled()) {
+      const response = await this.getReceipt(orderId);
+      const receipt = response.data || response;
+      const popup = window.open("", "_blank", "width=420,height=640");
+
+      if (!popup) return;
+
+      const itemsHtml = (receipt.items || [])
+        .map(
+          (item) => `
+            <tr>
+              <td>${item.name}</td>
+              <td style="text-align:center">${item.quantity}</td>
+              <td style="text-align:right">${Number(item.unit_price || 0).toLocaleString("vi-VN")}</td>
+              <td style="text-align:right">${Number(item.total || 0).toLocaleString("vi-VN")}</td>
+            </tr>`,
+        )
+        .join("");
+
+      popup.document.write(`<!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${receipt.invoice_number || receipt.order_code}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 16px; font-size: 12px; }
+              h2, p { margin: 0 0 6px; text-align: center; }
+              table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+              th, td { padding: 6px 4px; border-bottom: 1px dashed #d1d5db; }
+              .summary { margin-top: 12px; }
+              .summary div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+              .total { font-weight: 700; border-top: 1px solid #111827; padding-top: 8px; }
+            </style>
+          </head>
+          <body>
+            <h2>${receipt.store?.name || "Supermarket Demo"}</h2>
+            <p>${receipt.store?.address || ""}</p>
+            <p>${receipt.store?.phone || ""}</p>
+            <p>Hoa don: ${receipt.invoice_number || receipt.order_code}</p>
+            <p>${new Date(receipt.created_at || Date.now()).toLocaleString("vi-VN")}</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>San pham</th>
+                  <th>SL</th>
+                  <th>Don gia</th>
+                  <th>Thanh tien</th>
+                </tr>
+              </thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+            <div class="summary">
+              <div><span>Tam tinh</span><span>${Number(receipt.subtotal || 0).toLocaleString("vi-VN")}d</span></div>
+              <div><span>Giam gia</span><span>${Number(receipt.discount || 0).toLocaleString("vi-VN")}d</span></div>
+              <div><span>Thue</span><span>${Number(receipt.tax || 0).toLocaleString("vi-VN")}d</span></div>
+              <div><span>Phi giao hang</span><span>${Number(receipt.shipping || 0).toLocaleString("vi-VN")}d</span></div>
+              <div class="total"><span>Tong cong</span><span>${Number(receipt.total || 0).toLocaleString("vi-VN")}d</span></div>
+            </div>
+          </body>
+        </html>`);
+      popup.document.close();
+      popup.focus();
+      setTimeout(() => popup.print(), 150);
+      return;
+    }
+
     const printUrl = `${apiClient.defaults.baseURL}/api/pos/orders/${orderId}/receipt?print=1`;
     window.open(printUrl, "_blank", "width=800,height=600,scrollbars=yes");
   }

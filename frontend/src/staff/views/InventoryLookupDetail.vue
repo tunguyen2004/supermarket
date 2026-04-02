@@ -326,6 +326,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { ArrowLeft, Search, Picture } from "@element-plus/icons-vue";
 import { getProductInventoryDetail } from "@/services/inventoryLookupService";
+import { resolveApiAssetUrl } from "@/config/apiUrl";
 
 const route = useRoute();
 const router = useRouter();
@@ -352,8 +353,7 @@ const stockClass = (stock) => {
 // Image URL
 const getImageUrl = (url) => {
   if (!url) return "";
-  if (url.startsWith("http")) return url;
-  return `http://localhost:5000${url}`;
+  return resolveApiAssetUrl(url);
 };
 
 // Get variant name by ID

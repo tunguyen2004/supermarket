@@ -216,6 +216,7 @@ import {
   uploadAvatar,
 } from "@/services/userService";
 import authService from "@/services/authService";
+import { resolveApiAssetUrl } from "@/config/apiUrl";
 
 const router = useRouter();
 
@@ -253,8 +254,7 @@ const passwordForm = reactive({
 const fullAvatarUrl = computed(() => {
   if (!user.avatarUrl)
     return "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png";
-  if (user.avatarUrl.startsWith("http")) return user.avatarUrl;
-  return `http://localhost:5000${user.avatarUrl}`;
+  return resolveApiAssetUrl(user.avatarUrl);
 });
 
 function formatDate(dateString) {

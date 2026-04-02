@@ -1,15 +1,10 @@
 // src/services/apiClient.js
-import axios from "axios";
-import { getApiUrl } from "@/config/apiUrl";
+import httpClient from "@/config/httpClient";
 
 // Tạo instance axios
-const apiClient = axios.create({
-  baseURL: getApiUrl(),
+export default httpClient;
+/*
   timeout: 20000, // 20 giây
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
 
 // Thêm interceptors để tự động gắn token
 apiClient.interceptors.request.use(
@@ -35,4 +30,4 @@ apiClient.interceptors.response.use(
   },
 );
 
-export default apiClient;
+*/

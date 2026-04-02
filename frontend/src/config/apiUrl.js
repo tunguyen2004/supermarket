@@ -18,3 +18,20 @@ export function getApiUrl() {
   }
   return process.env.VUE_APP_API_URL || "http://localhost:5000";
 }
+
+export function resolveApiAssetUrl(url) {
+  if (!url) return "";
+
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+
+  const baseUrl = getApiUrl().replace(/\/$/, "");
+  const assetPath = url.startsWith("/") ? url : `/${url}`;
+  return `${baseUrl}${assetPath}`;
+}
